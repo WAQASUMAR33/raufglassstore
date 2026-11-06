@@ -117,11 +117,13 @@ const formatMonthLabel = (mStr) => {
   return `${monthNames[mIndex] || parts[1]} '${parts[0].slice(2)}`;
 };
 
-const fmtK = v => {
+const fmtK = (v) => {
+  if (v == null || isNaN(v)) return '0';
   const abs = Math.abs(v);
   if (abs >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
-  if (abs >= 1000) return `${(v / 1000).toFixed(0)}K`;
-  return v.toFixed(0);
+  if (abs >= 1000) return `${(v / 1000).toFixed(abs % 1000 === 0 ? 0 : 1)}K`;
+  if (abs < 1 && abs > 0) return v.toFixed(1);
+  return Math.round(v).toLocaleString();
 };
 
 const CARD = 'relative bg-white rounded-none border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.03),0_6px_20px_rgba(15,23,42,0.04)]';
@@ -135,10 +137,22 @@ function last30DaysFilter() {
 
 const ReportViewContext = createContext(null);
 
+function getNiceMax(val) {
+  if (!val || val <= 0) return 100;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(val)));
+  const fraction = val / magnitude;
+  let niceFraction;
+  if (fraction <= 1) niceFraction = 1;
+  else if (fraction <= 2) niceFraction = 2;
+  else if (fraction <= 2.5) niceFraction = 2.5;
+  else if (fraction <= 5) niceFraction = 5;
+  else niceFraction = 10;
+  return niceFraction * magnitude;
+}
+
 function ReportFullscreenExpandButton() {
   const ctx = useContext(ReportViewContext);
   if (!ctx || ctx.isFullscreen) return null;
-  const neon = getReportNeonStyles(ctx.accent);
   return (
     <Tooltip title="Full screen view" arrow>
       <IconButton
@@ -149,10 +163,10 @@ function ReportFullscreenExpandButton() {
           width: 30,
           height: 30,
           borderRadius: 0,
-          border: `1px solid ${neon.chartBorder}`,
-          color: neon.primary,
+          border: '1px solid #e2e8f0',
+          color: '#64748b',
           bgcolor: '#ffffff',
-          '&:hover': { bgcolor: '#f8fafc' },
+          '&:hover': { bgcolor: '#f8fafc', color: '#0f172a', borderColor: '#cbd5e1' },
         }}
       >
         <Maximize2 className="w-3.5 h-3.5" strokeWidth={2.25} />
@@ -176,7 +190,6 @@ function buildMonthChartPreset(months) {
 
 /** Month pickers + calendar-month presets for month-end closing charts. */
 function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, children }) {
-  const neon = getReportNeonStyles(accent);
   const fromMonth = filters.fromDate?.slice(0, 7) || '';
   const toMonth = filters.toDate?.slice(0, 7) || '';
 
@@ -192,29 +205,18 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
     if (range) onChange(range);
   };
 
-  const pillClass = 'flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0';
-  const labelClass = 'text-[9px] font-bold text-slate-400 uppercase';
-  const inputClass = 'text-[11px] font-medium text-slate-800 bg-transparent focus:outline-none w-[80px]';
+  const pillClass = 'flex items-center gap-1.5 bg-white border border-slate-200 rounded-none px-2 py-1 shrink-0 shadow-[0_1px_2px_rgba(15,23,42,0.02)]';
+  const labelClass = 'text-[9px] font-bold text-slate-500 uppercase tracking-wider';
+  const inputClass = 'text-[11px] font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer';
 
   return (
-    <div
-      className={REPORT.filterBody}
-      style={{ 
-        background: neon.filterBg, 
-        borderColor: neon.divider,
-        flexWrap: 'nowrap',
-        overflow: 'hidden',
-        paddingLeft: '0.5rem',
-        paddingRight: '0.5rem',
-        gap: '0.4rem',
-      }}
-    >
-      <div className="flex items-center gap-1 shrink-0">
-        <Filter className="w-3 h-3 shrink-0" style={{ color: neon.primary }} />
+    <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-[#fafbfd]">
+      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+        <Filter className="w-3 h-3 text-slate-400 shrink-0" />
         
         {children}
 
-        <div className={pillClass} style={{ borderColor: neon.chartBorder }}>
+        <div className={pillClass}>
           <span className={labelClass}>From</span>
           <input
             type="month"
@@ -224,7 +226,7 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
             className={inputClass}
           />
         </div>
-        <div className={pillClass} style={{ borderColor: neon.chartBorder }}>
+        <div className={pillClass}>
           <span className={labelClass}>To</span>
           <input
             type="month"
@@ -234,10 +236,7 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
             className={inputClass}
           />
         </div>
-        <div 
-          className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-none border shrink-0" 
-          style={{ borderColor: neon.chartBorder }}
-        >
+        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-none border border-slate-200 shrink-0">
           {[
             { label: '3M', months: 3 },
             { label: '6M', months: 6 },
@@ -251,10 +250,9 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
                 key={label}
                 type="button"
                 onClick={() => onChange(preset)}
-                className={`px-1.5 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
-                  active ? 'bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                className={`px-2 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
+                  active ? 'bg-white text-[#1A55E3] shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
-                style={active ? { color: neon.primary } : undefined}
               >
                 {label}
               </button>
@@ -265,21 +263,17 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
           <button
             type="button"
             onClick={() => onChange(lastNCalendarMonthsFilter(6))}
-            className="text-[10px] font-bold px-1 py-1 rounded-none transition-colors whitespace-nowrap text-red-500 hover:bg-red-50"
+            className="text-[10px] font-bold px-1.5 py-1 rounded-none transition-colors whitespace-nowrap text-red-500 hover:bg-red-50"
           >
             Reset
           </button>
         )}
       </div>
-      <div className="flex items-center gap-1.5 ml-auto shrink-0">
-        {loading && (
-          <div
-            className="w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin"
-            style={{ borderColor: `${neon.primary}33`, borderTopColor: 'transparent', borderRightColor: neon.primary, borderBottomColor: neon.primary, borderLeftColor: neon.primary }}
-          />
-        )}
-        <ReportFullscreenExpandButton />
-      </div>
+      {loading && (
+        <div
+          className="w-3.5 h-3.5 border-2 border-t-transparent border-blue-600 rounded-none animate-spin ml-auto shrink-0"
+        />
+      )}
     </div>
   );
 }
@@ -397,11 +391,10 @@ function ReportWidgetShell({ accent, title = 'Report', children, className = '' 
   return card;
 }
 
-function WidgetDateFilter({ filters, onChange, loading = false, accent, type = 'days' }) {
-  const neon = getReportNeonStyles(accent);
-  const pillClass = 'flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0';
-  const labelClass = 'text-[9px] font-bold text-slate-400 uppercase';
-  const inputClass = 'text-[11px] font-medium text-slate-800 bg-transparent focus:outline-none w-[90px]';
+function WidgetDateFilter({ filters, onChange, loading = false, accent, type = 'days', children }) {
+  const pillClass = 'flex items-center gap-1.5 bg-white border border-slate-200 rounded-none px-2 py-1 shrink-0 shadow-[0_1px_2px_rgba(15,23,42,0.02)]';
+  const labelClass = 'text-[9px] font-bold text-slate-500 uppercase tracking-wider';
+  const inputClass = 'text-[11px] font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer';
 
   const presets = type === 'months' 
     ? [
@@ -418,75 +411,59 @@ function WidgetDateFilter({ filters, onChange, loading = false, accent, type = '
       ];
 
   return (
-    <div
-      className={REPORT.filterBody}
-      style={{ 
-        background: neon.filterBg, 
-        borderColor: neon.divider,
-        flexWrap: 'nowrap',
-        overflow: 'hidden',
-        paddingLeft: '0.5rem',
-        paddingRight: '0.5rem',
-        gap: '0.4rem',
-      }}
-    >
-      <Filter className="w-3 h-3 shrink-0" style={{ color: neon.primary }} />
-      <div className={pillClass} style={{ borderColor: neon.chartBorder }}>
-        <span className={labelClass}>From</span>
-        <input type="date" lang="en-GB"
-          value={filters.fromDate}
-          onChange={(e) => onChange({ ...filters, fromDate: e.target.value })}
-          className={inputClass}
-        />
-      </div>
-      <div className={pillClass} style={{ borderColor: neon.chartBorder }}>
-        <span className={labelClass}>To</span>
-        <input type="date" lang="en-GB"
-          value={filters.toDate}
-          onChange={(e) => onChange({ ...filters, toDate: e.target.value })}
-          className={inputClass}
-        />
-      </div>
-      <div 
-        className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-none border shrink-0" 
-        style={{ borderColor: neon.chartBorder }}
-      >
-        {presets.map(({ label, val }) => {
-          const preset = type === 'months' ? buildMonthChartPreset(val) : buildDatePreset(val);
-          const active = filters.fromDate === preset.fromDate && filters.toDate === preset.toDate;
-          return (
-          <button
-            key={label}
-            type="button"
-            onClick={() => onChange(preset)}
-            className={`px-1.5 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
-              active ? 'bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-            style={active ? { color: neon.primary } : undefined}
-          >
-            {label}
-          </button>
-          );
-        })}
-      </div>
-      {(filters.fromDate || filters.toDate) && (
-        <button
-          type="button"
-          onClick={() => onChange(type === 'months' ? buildMonthChartPreset(6) : buildDatePreset(30))}
-          className="text-[10px] font-bold px-1 py-1 rounded-none transition-colors text-red-500 hover:bg-red-50"
-        >
-          Reset
-        </button>
-      )}
-      <div className="flex items-center gap-1.5 ml-auto shrink-0">
-        {loading && (
-          <div
-            className="w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin"
-            style={{ borderColor: `${neon.primary}33`, borderTopColor: 'transparent', borderRightColor: neon.primary, borderBottomColor: neon.primary, borderLeftColor: neon.primary }}
+    <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-[#fafbfd]">
+      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+        <Filter className="w-3 h-3 text-slate-400 shrink-0" />
+        <div className={pillClass}>
+          <span className={labelClass}>From</span>
+          <input type="date" lang="en-GB"
+            value={filters.fromDate}
+            onChange={(e) => onChange({ ...filters, fromDate: e.target.value })}
+            className={inputClass}
           />
+        </div>
+        <div className={pillClass}>
+          <span className={labelClass}>To</span>
+          <input type="date" lang="en-GB"
+            value={filters.toDate}
+            onChange={(e) => onChange({ ...filters, toDate: e.target.value })}
+            className={inputClass}
+          />
+        </div>
+        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-none border border-slate-200 shrink-0">
+          {presets.map(({ label, val }) => {
+            const preset = type === 'months' ? buildMonthChartPreset(val) : buildDatePreset(val);
+            const active = filters.fromDate === preset.fromDate && filters.toDate === preset.toDate;
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => onChange(preset)}
+                className={`px-2 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
+                  active ? 'bg-white text-[#1A55E3] shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        {(filters.fromDate || filters.toDate) && (
+          <button
+            type="button"
+            onClick={() => onChange(type === 'months' ? buildMonthChartPreset(6) : buildDatePreset(30))}
+            className="text-[10px] font-bold px-1.5 py-1 rounded-none transition-colors whitespace-nowrap text-red-500 hover:bg-red-50"
+          >
+            Reset
+          </button>
         )}
-        <ReportFullscreenExpandButton />
+        {children}
       </div>
+      {loading && (
+        <div
+          className="w-3.5 h-3.5 border-2 border-t-transparent border-blue-600 rounded-none animate-spin ml-auto shrink-0"
+        />
+      )}
     </div>
   );
 }
@@ -495,247 +472,235 @@ function WidgetDateFilter({ filters, onChange, loading = false, accent, type = '
 function WidgetCustomerScopeFilter({
   cusCatId,
   cusTypeId,
-  categories,
-  types,
+  categories = [],
+  types = [],
   onCategoryChange,
   onTypeChange,
   onClearScope,
   accent,
   trailing = null,
 }) {
-  const neon = getReportNeonStyles(accent);
   const hasScope = Boolean(cusCatId || cusTypeId);
   const selectClass =
-    'text-[11px] font-medium text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[90px] truncate py-0.5';
+    'text-[11px] font-semibold text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 cursor-pointer max-w-[100px] truncate py-0.5';
+  const pillClass = 'flex items-center gap-1.5 bg-white border border-slate-200 rounded-none px-2 py-1 shrink-0 shadow-[0_1px_2px_rgba(15,23,42,0.02)]';
 
   return (
-    <div
-      className={REPORT.filterBody}
-      style={{ 
-        background: neon.filterBg, 
-        borderColor: neon.divider,
-        flexWrap: 'nowrap',
-        overflow: 'hidden',
-        paddingLeft: '0.5rem',
-        paddingRight: '0.5rem',
-        gap: '0.4rem',
-      }}
-    >
-      <Users className="w-3 h-3 shrink-0" style={{ color: neon.primary }} />
-      
-      <div className="flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0" style={{ borderColor: neon.chartBorder }}>
-        <span className="text-[9px] font-bold text-slate-400 uppercase">Cat</span>
-        <select
-          value={cusCatId}
-          onChange={(e) => onCategoryChange(e.target.value)}
-          className={selectClass}
-          style={{ color: cusCatId ? neon.primary : undefined }}
-        >
-          <option value="">All</option>
-          {categories.map((c) => (
-            <option key={c.cus_cat_id} value={c.cus_cat_id}>
-              {c.cus_cat_title}
-            </option>
-          ))}
-        </select>
+    <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-[#fafbfd]">
+      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+        <Users className="w-3 h-3 text-slate-400 shrink-0" />
+        
+        <div className={pillClass}>
+          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Cat</span>
+          <select
+            value={cusCatId}
+            onChange={(e) => onCategoryChange(e.target.value)}
+            className={selectClass}
+          >
+            <option value="">All Categories</option>
+            {categories.map((c) => (
+              <option key={c.cus_cat_id} value={c.cus_cat_id}>
+                {c.cus_cat_title}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={pillClass}>
+          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Type</span>
+          <select
+            value={cusTypeId}
+            onChange={(e) => onTypeChange(e.target.value)}
+            className={selectClass}
+          >
+            <option value="">All Types</option>
+            {types.map((t) => (
+              <option key={t.cus_type_id} value={t.cus_type_id}>
+                {t.cus_type_title}
+              </option>
+            ))}
+          </select>
+        </div>
+        {hasScope && (
+          <button
+            type="button"
+            onClick={onClearScope}
+            className="text-[10px] font-bold px-1.5 py-1 rounded-none transition-colors whitespace-nowrap text-red-500 hover:bg-red-50"
+          >
+            Reset
+          </button>
+        )}
       </div>
-      <div className="flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0" style={{ borderColor: neon.chartBorder }}>
-        <span className="text-[9px] font-bold text-slate-400 uppercase">Type</span>
-        <select
-          value={cusTypeId}
-          onChange={(e) => onTypeChange(e.target.value)}
-          className={selectClass}
-          style={{ color: cusTypeId ? neon.primary : undefined }}
-        >
-          <option value="">All</option>
-          {types.map((t) => (
-            <option key={t.cus_type_id} value={t.cus_type_id}>
-              {t.cus_type_title}
-            </option>
-          ))}
-        </select>
-      </div>
-      {hasScope && (
-        <button
-          type="button"
-          onClick={onClearScope}
-          className="text-[10px] font-bold px-1 py-1 rounded-none transition-colors text-red-500 hover:bg-red-50"
-        >
-          Reset
-        </button>
-      )}
       {trailing && <div className="flex items-center gap-1.5 ml-auto shrink-0">{trailing}</div>}
     </div>
   );
 }
 
 function WidgetDayFilter({ days, onChange, loading = false, accent }) {
-  const neon = getReportNeonStyles(accent);
   return (
-    <div
-      className={REPORT.filterBody}
-      style={{ 
-        background: neon.filterBg, 
-        borderColor: neon.divider,
-        flexWrap: 'nowrap',
-        overflow: 'hidden',
-        paddingLeft: '0.5rem',
-        paddingRight: '0.5rem',
-        gap: '0.4rem',
-      }}
-    >
-      <Filter className="w-3 h-3 shrink-0" style={{ color: neon.primary }} />
-      <span className="text-[9px] font-bold text-slate-400 uppercase">Period</span>
-      <div 
-        className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-none border shrink-0" 
-        style={{ borderColor: neon.chartBorder }}
-      >
-        {[7, 14, 30].map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => onChange(d)}
-            className={`px-1.5 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
-              days === d ? 'bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-            style={days === d ? { color: neon.primary } : undefined}
-          >
-            {d}D
-          </button>
-        ))}
+    <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-[#fafbfd]">
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Filter className="w-3 h-3 text-slate-400 shrink-0" />
+        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Period</span>
+        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-none border border-slate-200 shrink-0">
+          {[7, 14, 30].map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => onChange(d)}
+              className={`px-2 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
+                days === d ? 'bg-white text-[#1A55E3] shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {d}D
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 ml-auto shrink-0">
-        {loading && (
-          <div
-            className="w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin"
-            style={{ borderColor: `${neon.primary}33`, borderTopColor: 'transparent', borderRightColor: neon.primary, borderBottomColor: neon.primary, borderLeftColor: neon.primary }}
-          />
-        )}
-        <ReportFullscreenExpandButton />
-      </div>
+      {loading && (
+        <div
+          className="w-3.5 h-3.5 border-2 border-t-transparent border-blue-600 rounded-none animate-spin ml-auto shrink-0"
+        />
+      )}
     </div>
   );
 }
 
 function ReportChartArea({ accent, children }) {
   const ctx = useContext(ReportViewContext);
-  const neon = getReportNeonStyles(accent);
   return (
-    <div
-      className={`${REPORT.chartArea}${ctx?.isFullscreen ? ' flex-1 min-h-[calc(100vh-220px)] !mx-4 md:!mx-6 !mb-4 [&_svg]:!min-h-[min(560px,calc(100vh-280px))]' : ''}`}
-      style={{ background: neon.chartBg, borderColor: neon.chartBorder }}
+    <Box
+      className={`${ctx?.isFullscreen ? 'flex-1 min-h-[calc(100vh-220px)] !mx-4 md:!mx-6 !mb-4 [&_svg]:!min-h-[min(560px,calc(100vh-280px))]' : ''}`}
+      sx={{
+        p: { xs: 1.5, md: 2.5 },
+        bgcolor: '#ffffff',
+        minHeight: 250,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
       {children}
-    </div>
+    </Box>
   );
 }
 
 function ChartEmptyState() {
   return (
     <div className="h-[240px] flex flex-col items-center justify-center text-slate-400">
-      <div className="w-14 h-14 rounded-none bg-slate-100/80 flex items-center justify-center mb-3">
+      <div className="w-14 h-14 rounded-none bg-slate-100/80 flex items-center justify-center mb-3 border border-slate-200">
         <BarChart3 className="w-7 h-7 text-slate-300" strokeWidth={1.75} />
       </div>
-      <p className="text-sm font-medium text-slate-500">No bar data for this range</p>
-      <p className="text-xs text-slate-400 mt-0.5">Try adjusting the date filter</p>
+      <p className="text-sm font-semibold text-slate-600">No chart data for this range</p>
+      <p className="text-xs text-slate-400 mt-0.5">Try adjusting the date filter above</p>
     </div>
   );
 }
 
-function ReportWidgetHeader({ title, subtitle, icon: Icon, tint, primary, accent }) {
+function ReportWidgetHeader({ title, subtitle, icon: Icon, tint, primary, accent, trailing }) {
   const neon = getReportNeonStyles(accent || { primary, tint });
+  const ctx = useContext(ReportViewContext);
   return (
     <Box
       sx={{
         px: { xs: 2.5, md: 3 },
-        py: 2,
+        py: 1.75,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 2,
-        borderBottom: `1px solid ${neon.divider}`,
+        borderBottom: '1px solid #f1f5f9',
         bgcolor: '#ffffff',
       }}
     >
-      <Box sx={{ minWidth: 0 }}>
-        <Typography sx={{ fontSize: '0.725rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: neon.text }}>
-          {title}
-        </Typography>
-        {subtitle && (
-          <Typography sx={{ fontSize: '0.75rem', color: '#64748b', mt: 0.25, fontWeight: 500 }}>
-            {subtitle}
-          </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0 }}>
+        {Icon && (
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              bgcolor: tint || '#f8fafc',
+              border: `1px solid ${tint ? 'transparent' : '#e2e8f0'}`,
+            }}
+          >
+            <Icon className="w-4 h-4" style={{ color: primary }} strokeWidth={2.25} />
+          </Box>
         )}
-      </Box>
-      {Icon && (
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            bgcolor: tint,
-            border: `1px solid ${neon.iconBorder}`,
-            boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
-          }}
-        >
-          <Icon className="w-4 h-4" style={{ color: primary }} strokeWidth={2.25} />
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a' }}>
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography sx={{ fontSize: '0.72rem', color: '#64748b', mt: 0.2, fontWeight: 500 }} noWrap>
+              {subtitle}
+            </Typography>
+          )}
         </Box>
-      )}
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, shrink: 0 }}>
+        {trailing}
+        {ctx && !ctx.isFullscreen && <ReportFullscreenExpandButton />}
+      </Box>
     </Box>
   );
 }
 
-/** Thin footer row: formula (gray) + total (accent neon) */
+/** Thin footer row: formula (gray) + total badge (clean styling) */
 function ReportWidgetFooter({ formula, total, totalLabel = 'Total', accent }) {
   if (total == null && !formula) return null;
   const neon = getReportNeonStyles(accent);
   return (
     <Box
       sx={{
-        mx: 2,
-        mb: 2,
-        px: 2,
+        px: 2.5,
         py: 1.25,
-        borderTop: `1px solid ${neon.divider}`,
+        borderTop: '1px solid #f1f5f9',
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 1,
+        gap: 1.5,
+        bgcolor: '#ffffff',
       }}
     >
       {formula && (
-        <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
+        <Typography sx={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500 }}>
           {formula}
         </Typography>
       )}
       {total != null && (
-        <Chip
-          size="small"
-          label={`${totalLabel}: ${total}`}
+        <Box
           sx={{
             ml: 'auto',
-            fontWeight: 800,
-            fontSize: '0.72rem',
-            fontVariantNumeric: 'tabular-nums',
-            color: neon.totalColor,
-            bgcolor: neon.filterBg || '#f8fafc',
-            border: `1px solid ${neon.badgeBorder || neon.chartBorder}`,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.75,
+            px: 1.5,
+            py: 0.5,
+            borderRadius: 0,
+            border: '1px solid #e2e8f0',
+            bgcolor: '#f8fafc',
           }}
-        />
+        >
+          <Typography component="span" sx={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            {totalLabel}:
+          </Typography>
+          <Typography component="span" sx={{ fontSize: '0.775rem', fontWeight: 800, color: neon.primary, fontVariantNumeric: 'tabular-nums' }}>
+            {total}
+          </Typography>
+        </Box>
       )}
     </Box>
   );
 }
 
 function ReportLegendRow({ accent, children }) {
-  const neon = getReportNeonStyles(accent);
   return (
-    <div className={REPORT.legendRow} style={{ borderColor: neon.divider }}>
+    <div className="px-5 py-2 flex flex-wrap items-center gap-4 border-b border-slate-100 bg-[#fafbfd]">
       {children}
     </div>
   );
@@ -765,7 +730,9 @@ function renderSmoothBarChart({
   const grpW = cW / n;
   const barW = Math.min(grpW * 0.48, 38);
   const values = data.map(getValue);
-  const maxV = Math.max(...values.map((v) => Math.abs(v)), 1);
+  const rawMax = Math.max(...values.map((v) => Math.abs(v || 0)), 0);
+  const isAllZero = rawMax === 0;
+  const maxV = isAllZero ? 100 : getNiceMax(rawMax);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[250px] select-none">
@@ -781,7 +748,7 @@ function renderSmoothBarChart({
       </defs>
 
       {/* Modern translucent chart canvas */}
-      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#fafbfd" stroke="#f1f5f9" strokeWidth="1" />
 
       {/* Grid horizontal guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
@@ -793,32 +760,62 @@ function renderSmoothBarChart({
               y1={y}
               x2={W - pR}
               y2={y}
-              stroke="#e2e8f0"
+              stroke="#f1f5f9"
               strokeWidth="1"
               strokeDasharray="4 4"
-              opacity="0.8"
             />
-            <text x={pL - 10} y={y + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
-              {fmtK(maxV * f)}
-            </text>
+            {!isAllZero && (
+              <text x={pL - 10} y={y + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
+                {fmtK(maxV * f)}
+              </text>
+            )}
           </g>
         );
       })}
 
       {/* Baseline */}
-      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="square" />
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.25" strokeLinecap="square" />
+      <text x={pL - 10} y={pT + cH + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
+        0
+      </text>
+
+      {/* Zero activity indicator watermark */}
+      {isAllZero && (
+        <g>
+          <rect
+            x={pL + (cW - 220) / 2}
+            y={pT + (cH - 30) / 2}
+            width="220"
+            height="30"
+            rx="0"
+            fill="#ffffff"
+            stroke="#e2e8f0"
+            strokeWidth="1"
+          />
+          <text
+            x={pL + cW / 2}
+            y={pT + cH / 2 + 4}
+            fontSize="11"
+            fill="#94a3b8"
+            textAnchor="middle"
+            fontWeight="500"
+          >
+            No activity recorded in period
+          </text>
+        </g>
+      )}
 
       {/* Bars & Labels */}
       {data.map((item, i) => {
         const val = getValue(item);
         const cx = pL + grpW * i + grpW / 2;
         const bx = cx - barW / 2;
-        const bH = Math.max((Math.abs(val) / maxV) * cH, val !== 0 ? 6 : 0);
+        const bH = !isAllZero && val !== 0 ? Math.max((Math.abs(val) / maxV) * cH, 6) : 0;
         const lbl = item.label || formatLabel(item[labelKey]);
         const yTop = pT + cH - bH;
         return (
           <g key={i} className="cursor-pointer group">
-            {val !== 0 ? (
+            {!isAllZero && val !== 0 ? (
               <>
                 {/* Main bar */}
                 <rect
@@ -859,7 +856,7 @@ function renderSmoothBarChart({
                 </text>
               </>
             ) : (
-              <circle cx={cx} cy={pT + cH} r="2.5" fill="#cbd5e1" />
+              <line x1={cx} y1={pT + cH - 3} x2={cx} y2={pT + cH + 3} stroke="#cbd5e1" strokeWidth="1.25" />
             )}
 
             {/* X-axis label */}
@@ -887,7 +884,9 @@ function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) 
   const n = labels.length;
   const grpW = cW / n;
   const barW = Math.min(grpW / (series.length + 1.2), 22);
-  const maxV = Math.max(...series.flatMap((s) => s.values), 1);
+  const rawMax = Math.max(...series.flatMap((s) => s.values.map((v) => Math.abs(v || 0))), 0);
+  const isAllZero = rawMax === 0;
+  const maxV = isAllZero ? 100 : getNiceMax(rawMax);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[250px] select-none">
@@ -901,7 +900,7 @@ function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) 
       </defs>
 
       {/* Modern translucent chart canvas */}
-      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#fafbfd" stroke="#f1f5f9" strokeWidth="1" />
 
       {/* Grid horizontal guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
@@ -913,20 +912,50 @@ function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) 
               y1={y}
               x2={W - pR}
               y2={y}
-              stroke="#e2e8f0"
+              stroke="#f1f5f9"
               strokeWidth="1"
               strokeDasharray="4 4"
-              opacity="0.8"
             />
-            <text x={pL - 10} y={y + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
-              {formatValue(maxV * f)}
-            </text>
+            {!isAllZero && (
+              <text x={pL - 10} y={y + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
+                {formatValue(maxV * f)}
+              </text>
+            )}
           </g>
         );
       })}
 
       {/* Baseline */}
-      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="square" />
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.25" strokeLinecap="square" />
+      <text x={pL - 10} y={pT + cH + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
+        0
+      </text>
+
+      {/* Zero activity indicator watermark */}
+      {isAllZero && (
+        <g>
+          <rect
+            x={pL + (cW - 220) / 2}
+            y={pT + (cH - 30) / 2}
+            width="220"
+            height="30"
+            rx="0"
+            fill="#ffffff"
+            stroke="#e2e8f0"
+            strokeWidth="1"
+          />
+          <text
+            x={pL + cW / 2}
+            y={pT + cH / 2 + 4}
+            fontSize="11"
+            fill="#94a3b8"
+            textAnchor="middle"
+            fontWeight="500"
+          >
+            No activity recorded in period
+          </text>
+        </g>
+      )}
 
       {/* Grouped series bars */}
       {labels.map((lbl, i) => {
@@ -937,30 +966,36 @@ function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) 
           <g key={lbl} className="cursor-pointer">
             {series.map((s) => {
               const val = s.values[i] || 0;
-              const bH = Math.max((val / maxV) * cH, val > 0 ? 5 : 0);
+              const bH = !isAllZero && val > 0 ? Math.max((val / maxV) * cH, 5) : 0;
               const yTop = pT + cH - bH;
               const rect = (
                 <g key={s.key}>
-                  <rect
-                    x={x}
-                    y={yTop}
-                    width={barW}
-                    height={bH}
-                    rx="0"
-                    fill={`url(#${chartId}-${s.key})`}
-                  >
-                    <title>{`${s.name} ${lbl}: ${formatValue(val)}`}</title>
-                  </rect>
-                  {bH > 5 && (
-                    <rect
-                      x={x + 1}
-                      y={yTop}
-                      width={Math.max(barW - 2, 1)}
-                      height="2.5"
-                      rx="0"
-                      fill="#ffffff"
-                      opacity="0.6"
-                    />
+                  {bH > 0 ? (
+                    <>
+                      <rect
+                        x={x}
+                        y={yTop}
+                        width={barW}
+                        height={bH}
+                        rx="0"
+                        fill={`url(#${chartId}-${s.key})`}
+                      >
+                        <title>{`${s.name} ${lbl}: ${formatValue(val)}`}</title>
+                      </rect>
+                      {bH > 5 && (
+                        <rect
+                          x={x + 1}
+                          y={yTop}
+                          width={Math.max(barW - 2, 1)}
+                          height="2.5"
+                          rx="0"
+                          fill="#ffffff"
+                          opacity="0.6"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <line x1={x + barW / 2} y1={pT + cH - 3} x2={x + barW / 2} y2={pT + cH + 3} stroke="#cbd5e1" strokeWidth="1" />
                   )}
                 </g>
               );
@@ -1001,7 +1036,9 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
   const cH = H - pT - pB;
   const grpW = cW / n;
   const barW = Math.min(grpW * 0.52, 52);
-  const maxV = Math.max(...rows.slice(0, n).map((r) => r.balance), 1);
+  const rawMax = Math.max(...rows.slice(0, n).map((r) => Math.abs(r.balance || 0)), 0);
+  const isAllZero = rawMax === 0;
+  const maxV = isAllZero ? 100 : getNiceMax(rawMax);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[270px] select-none">
@@ -1017,7 +1054,7 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
       </defs>
 
       {/* Modern translucent chart canvas */}
-      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#fafbfd" stroke="#f1f5f9" strokeWidth="1" />
 
       {/* Guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
@@ -1029,25 +1066,55 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
               y1={y}
               x2={W - pR}
               y2={y}
-              stroke="#e2e8f0"
+              stroke="#f1f5f9"
               strokeWidth="1"
               strokeDasharray="4 4"
-              opacity="0.8"
             />
-            <text x={pL - 10} y={y + 3.5} fontSize="11" fill="#94a3b8" textAnchor="end" fontWeight="500">
-              {fmtK(maxV * f)}
-            </text>
+            {!isAllZero && (
+              <text x={pL - 10} y={y + 3.5} fontSize="11" fill="#94a3b8" textAnchor="end" fontWeight="500">
+                {fmtK(maxV * f)}
+              </text>
+            )}
           </g>
         );
       })}
 
       {/* Baseline */}
-      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="square" />
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.25" strokeLinecap="square" />
+      <text x={pL - 10} y={pT + cH + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
+        0
+      </text>
+
+      {/* Zero activity indicator watermark */}
+      {isAllZero && (
+        <g>
+          <rect
+            x={pL + (cW - 220) / 2}
+            y={pT + (cH - 30) / 2}
+            width="220"
+            height="30"
+            rx="0"
+            fill="#ffffff"
+            stroke="#e2e8f0"
+            strokeWidth="1"
+          />
+          <text
+            x={pL + cW / 2}
+            y={pT + cH / 2 + 4}
+            fontSize="11"
+            fill="#94a3b8"
+            textAnchor="middle"
+            fontWeight="500"
+          >
+            No activity recorded in period
+          </text>
+        </g>
+      )}
 
       {/* Ranking Bars */}
       {rows.slice(0, n).map((r, i) => {
         const cx = pL + grpW * i + grpW / 2;
-        const bH = Math.max((r.balance / maxV) * cH, 5);
+        const bH = !isAllZero && r.balance > 0 ? Math.max((r.balance / maxV) * cH, 5) : 0;
         const bx = cx - barW / 2;
         const yTop = pT + cH - bH;
         const shortName = r.name.length > 15 ? `${r.name.slice(0, 14)}…` : r.name;
@@ -1055,51 +1122,57 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
 
         return (
           <g key={i} className="cursor-pointer group">
-            <rect
-              x={bx}
-              y={yTop}
-              width={barW}
-              height={bH}
-              rx="0"
-              fill={`url(#${gradId})`}
-              filter={`url(#${gradId}-shadow)`}
-            >
-              <title>{`${r.name}: PKR ${Number(r.balance || 0).toLocaleString()}${r.qty != null ? ` · Qty ${formatQty(r.qty)}` : ''}${r.invoices != null ? ` · ${r.invoices} bills` : ''}`}</title>
-            </rect>
+            {bH > 0 ? (
+              <>
+                <rect
+                  x={bx}
+                  y={yTop}
+                  width={barW}
+                  height={bH}
+                  rx="0"
+                  fill={`url(#${gradId})`}
+                  filter={`url(#${gradId}-shadow)`}
+                >
+                  <title>{`${r.name}: PKR ${Number(r.balance || 0).toLocaleString()}${r.qty != null ? ` · Qty ${formatQty(r.qty)}` : ''}${r.invoices != null ? ` · ${r.invoices} bills` : ''}`}</title>
+                </rect>
 
-            {/* Top illuminated highlight cap */}
-            {bH > 6 && (
-              <rect
-                x={bx + 2}
-                y={yTop}
-                width={Math.max(barW - 4, 1)}
-                height="3"
-                rx="0"
-                fill="#ffffff"
-                opacity="0.65"
-              />
-            )}
+                {/* Top illuminated highlight cap */}
+                {bH > 6 && (
+                  <rect
+                    x={bx + 2}
+                    y={yTop}
+                    width={Math.max(barW - 4, 1)}
+                    height="3"
+                    rx="0"
+                    fill="#ffffff"
+                    opacity="0.65"
+                  />
+                )}
 
-            {/* Value above bar */}
-            <text
-              x={cx}
-              y={yTop - 6}
-              fontSize="10"
-              fill={color}
-              textAnchor="middle"
-              fontWeight="700"
-            >
-              {fmtK(r.balance)}
-            </text>
-
-            {/* Top 3 rank badge marker */}
-            {isTop3 && (
-              <g>
-                <circle cx={cx} cy={yTop + 14} r="8" fill="#ffffff" opacity="0.85" />
-                <text x={cx} y={yTop + 17.5} fontSize="9" fill={color} textAnchor="middle" fontWeight="800">
-                  {i + 1}
+                {/* Value above bar */}
+                <text
+                  x={cx}
+                  y={yTop - 6}
+                  fontSize="10"
+                  fill={color}
+                  textAnchor="middle"
+                  fontWeight="700"
+                >
+                  {fmtK(r.balance)}
                 </text>
-              </g>
+
+                {/* Top 3 rank badge marker */}
+                {isTop3 && (
+                  <g>
+                    <circle cx={cx} cy={yTop + 14} r="8" fill="#ffffff" opacity="0.85" />
+                    <text x={cx} y={yTop + 17.5} fontSize="9" fill={color} textAnchor="middle" fontWeight="800">
+                      {i + 1}
+                    </text>
+                  </g>
+                )}
+              </>
+            ) : (
+              <line x1={cx} y1={pT + cH - 3} x2={cx} y2={pT + cH + 3} stroke="#cbd5e1" strokeWidth="1.25" />
             )}
 
             {/* Angled account label */}
@@ -2200,8 +2273,8 @@ export default function DashboardContent({ activeTab }) {
           const sectionAccent = CHART_COLORS.kpi;
           const sectionNeon = getReportNeonStyles(sectionAccent);
           return (
-        <div className={REPORT.section} style={sectionNeon.card}>
-          <div className={REPORT.sectionHeader} style={{ borderBottom: `1px solid ${sectionNeon.divider}` }}>
+        <div className={REPORT.section}>
+          <div className={REPORT.sectionHeader}>
             <div className={REPORT.sectionIcon}>
               <BarChart3 className="w-5 h-5 text-white" strokeWidth={2.25} />
             </div>
@@ -2310,10 +2383,17 @@ export default function DashboardContent({ activeTab }) {
               key: 'month-end-receive',
               node: (
             <ReportWidgetShell accent={CHART_COLORS.credit} title="To Receive (closing)">
+              <ReportWidgetHeader
+                title="To Receive"
+                subtitle="Month-end closing balance to collect · party accounts (excl. cash/bank)"
+                icon={Banknote}
+                tint={CHART_COLORS.credit.tint}
+                primary={CHART_COLORS.credit.primary}
+                accent={CHART_COLORS.credit}
+              />
               <WidgetMonthRangeFilter filters={monthEndReceiveFilters} onChange={setMonthEndReceiveFilters} loading={monthEndReceiveLoading} accent={CHART_COLORS.credit}>
                 <div 
-                  className="flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0" 
-                  style={{ borderColor: getReportNeonStyles(CHART_COLORS.credit).chartBorder }}
+                  className="flex items-center gap-1 bg-white border border-slate-200 rounded-none px-1.5 py-1 shrink-0" 
                 >
                   <span className="text-[9px] font-bold text-slate-400 uppercase">Type</span>
                   <select
@@ -2328,14 +2408,6 @@ export default function DashboardContent({ activeTab }) {
                   </select>
                 </div>
               </WidgetMonthRangeFilter>
-              <ReportWidgetHeader
-                title="To Receive"
-                subtitle="Month-end closing balance to collect · party accounts (excl. cash/bank)"
-                icon={Banknote}
-                tint={CHART_COLORS.credit.tint}
-                primary={CHART_COLORS.credit.primary}
-                accent={CHART_COLORS.credit}
-              />
               <ReportChartArea accent={CHART_COLORS.credit}>
                 {renderSmoothBarChart({
                   data: monthEndReceiveRows,
@@ -2361,7 +2433,6 @@ export default function DashboardContent({ activeTab }) {
               key: 'month-end-pay',
               node: (
             <ReportWidgetShell accent={CHART_COLORS.debit} title="To Pay (closing)">
-              <WidgetMonthRangeFilter filters={monthEndPayFilters} onChange={setMonthEndPayFilters} loading={monthEndPayLoading} accent={CHART_COLORS.debit} />
               <ReportWidgetHeader
                 title="To Pay"
                 subtitle="Month-end closing balance to pay · party accounts (excl. cash/bank)"
@@ -2370,6 +2441,7 @@ export default function DashboardContent({ activeTab }) {
                 primary={CHART_COLORS.debit.primary}
                 accent={CHART_COLORS.debit}
               />
+              <WidgetMonthRangeFilter filters={monthEndPayFilters} onChange={setMonthEndPayFilters} loading={monthEndPayLoading} accent={CHART_COLORS.debit} />
               <ReportChartArea accent={CHART_COLORS.debit}>
                 {renderSmoothBarChart({
                   data: monthEndPayRows,
@@ -2395,7 +2467,6 @@ export default function DashboardContent({ activeTab }) {
               key: 'monthly-profit',
               node: (
             <ReportWidgetShell accent={CHART_COLORS.profit} title="Monthly Profit">
-              <WidgetDateFilter filters={monthlyProfitFilters} onChange={setMonthlyProfitFilters} loading={monthlyProfitLoading} accent={CHART_COLORS.profit} type="months" />
               <ReportWidgetHeader
                 title="Monthly Profit"
                 subtitle="Net profit · month by month"
@@ -2404,6 +2475,7 @@ export default function DashboardContent({ activeTab }) {
                 primary={CHART_COLORS.profit.primary}
                 accent={CHART_COLORS.profit}
               />
+              <WidgetDateFilter filters={monthlyProfitFilters} onChange={setMonthlyProfitFilters} loading={monthlyProfitLoading} accent={CHART_COLORS.profit} type="months" />
               <ReportChartArea accent={CHART_COLORS.profit}>
                 {renderSmoothBarChart({
                   data: monthlyProfitList,
@@ -2425,7 +2497,6 @@ export default function DashboardContent({ activeTab }) {
               key: 'monthly-sales',
               node: (
             <ReportWidgetShell accent={CHART_COLORS.sales} title="Monthly Sales">
-              <WidgetDateFilter filters={monthlySalesFilters} onChange={setMonthlySalesFilters} loading={monthlySalesLoading} accent={CHART_COLORS.sales} type="months" />
               <ReportWidgetHeader
                 title="Monthly Sales"
                 subtitle="Total sales volume · month by month"
@@ -2434,6 +2505,7 @@ export default function DashboardContent({ activeTab }) {
                 primary={CHART_COLORS.sales.primary}
                 accent={CHART_COLORS.sales}
               />
+              <WidgetDateFilter filters={monthlySalesFilters} onChange={setMonthlySalesFilters} loading={monthlySalesLoading} accent={CHART_COLORS.sales} type="months" />
               <ReportChartArea accent={CHART_COLORS.sales}>
                 {renderSmoothBarChart({
                   data: monthlySalesList,
@@ -2483,6 +2555,22 @@ export default function DashboardContent({ activeTab }) {
                 .join(' · ');
               return (
                 <ReportWidgetShell accent={CHART_COLORS.bills} title="Top Customers by Sale">
+                  <ReportWidgetHeader
+                    title="Top Customers by Sale"
+                    subtitle="Confirmed bills · each item qty × sale rate · minus returns"
+                    icon={Users}
+                    tint={CHART_COLORS.bills.tint}
+                    primary={CHART_COLORS.bills.primary}
+                    accent={CHART_COLORS.bills}
+                    trailing={
+                      <span
+                        className={REPORT.badge}
+                        style={{ color, background: CHART_COLORS.bills.tint, borderColor: neon.badgeBorder }}
+                      >
+                        Top {n}
+                      </span>
+                    }
+                  />
                   <WidgetDateFilter
                     filters={topCustomersSaleFilters}
                     onChange={(f) => setTopCustomersSaleFilters((prev) => ({ ...prev, ...f }))}
@@ -2504,22 +2592,6 @@ export default function DashboardContent({ activeTab }) {
                     onClearScope={() =>
                       setTopCustomersSaleFilters((f) => ({ ...f, cusCatId: '', cusTypeId: '' }))
                     }
-                    trailing={
-                      <span
-                        className={REPORT.badge}
-                        style={{ color, background: CHART_COLORS.bills.tint, borderColor: neon.badgeBorder }}
-                      >
-                        Top {n}
-                      </span>
-                    }
-                  />
-                  <ReportWidgetHeader
-                    title="Top Customers by Sale"
-                    subtitle="Confirmed bills · each item qty × sale rate · minus returns"
-                    icon={Users}
-                    tint={CHART_COLORS.bills.tint}
-                    primary={CHART_COLORS.bills.primary}
-                    accent={CHART_COLORS.bills}
                   />
                   <ReportChartArea accent={CHART_COLORS.bills}>
                     {renderRankingBarChart({
@@ -2553,21 +2625,25 @@ export default function DashboardContent({ activeTab }) {
               const neon = getReportNeonStyles(CHART_COLORS.sales);
               return (
                 <ReportWidgetShell accent={CHART_COLORS.sales} title="Top Products by Sale">
+                  <ReportWidgetHeader
+                    title="Top Products by Sale"
+                    subtitle="Confirmed bills · each item qty × sale rate · minus returns"
+                    icon={ShoppingCart}
+                    tint={CHART_COLORS.sales.tint}
+                    primary={CHART_COLORS.sales.primary}
+                    accent={CHART_COLORS.sales}
+                    trailing={
+                      <span className={REPORT.badge} style={{ color, background: CHART_COLORS.sales.tint, borderColor: neon.badgeBorder }}>
+                        Top {n}
+                      </span>
+                    }
+                  />
                   <WidgetDateFilter
                     filters={topProductsSaleFilters}
                     onChange={(f) => setTopProductsSaleFilters((prev) => ({ ...prev, ...f }))}
                     loading={topProductsSaleLoading}
                     accent={CHART_COLORS.sales}
                   />
-                  <div className={`${REPORT.cardInner} flex flex-wrap items-center gap-3 border-b`} style={{ borderColor: neon.divider }}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: neon.text }}>Top Products by Sale</p>
-                      <p className="text-xs text-slate-500 mt-1">Confirmed bills · each item qty × sale rate · minus returns</p>
-                    </div>
-                    <span className={REPORT.badge} style={{ color, background: CHART_COLORS.sales.tint, borderColor: neon.badgeBorder }}>
-                      Top {n}
-                    </span>
-                  </div>
                   <ReportChartArea accent={CHART_COLORS.sales}>
                     {renderRankingBarChart({
                       rows,
@@ -2595,7 +2671,6 @@ export default function DashboardContent({ activeTab }) {
             key: 'sales-overview',
             node: (
           <ReportWidgetShell accent={CHART_COLORS.sales} title="Sales Overview">
-            <WidgetDayFilter days={salesOverviewDays} onChange={setSalesOverviewDays} loading={weeklyDataLoading} accent={CHART_COLORS.sales} />
             <ReportWidgetHeader
               title="Sales Overview"
               subtitle={`Bills vs Orders · week by week · last ${salesOverviewDays} days`}
@@ -2604,6 +2679,7 @@ export default function DashboardContent({ activeTab }) {
               primary={CHART_COLORS.sales.primary}
               accent={CHART_COLORS.sales}
             />
+            <WidgetDayFilter days={salesOverviewDays} onChange={setSalesOverviewDays} loading={weeklyDataLoading} accent={CHART_COLORS.sales} />
             <ReportLegendRow accent={CHART_COLORS.sales}>
               <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-none border" style={{ background: CHART_COLORS.bills.primary, borderColor: CHART_COLORS.bills.primary }} /><span className="text-[11px] text-slate-500 font-medium">Bills</span></div>
               <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-none border" style={{ background: CHART_COLORS.orders.primary, borderColor: CHART_COLORS.orders.primary }} /><span className="text-[11px] text-slate-500 font-medium">Orders</span></div>
@@ -2630,7 +2706,6 @@ export default function DashboardContent({ activeTab }) {
             key: 'transactions-overview',
             node: (
           <ReportWidgetShell accent={CHART_COLORS.profit} title="Transactions Overview">
-            <WidgetDayFilter days={transactionsOverviewDays} onChange={setTransactionsOverviewDays} loading={weeklyDataLoading} accent={CHART_COLORS.profit} />
             <ReportWidgetHeader
               title="Transactions Overview"
               subtitle={`All transactions vs Orders · week by week · last ${transactionsOverviewDays} days`}
@@ -2639,6 +2714,7 @@ export default function DashboardContent({ activeTab }) {
               primary={CHART_COLORS.profit.primary}
               accent={CHART_COLORS.profit}
             />
+            <WidgetDayFilter days={transactionsOverviewDays} onChange={setTransactionsOverviewDays} loading={weeklyDataLoading} accent={CHART_COLORS.profit} />
             <ReportLegendRow accent={CHART_COLORS.profit}>
               <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-none border" style={{ background: CHART_COLORS.sales.primary, borderColor: CHART_COLORS.sales.primary }} /><span className="text-[11px] text-slate-500 font-medium">Total</span></div>
               <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-none border" style={{ background: CHART_COLORS.profit.primary, borderColor: CHART_COLORS.profit.primary }} /><span className="text-[11px] text-slate-500 font-medium">Orders</span></div>
@@ -2681,34 +2757,36 @@ export default function DashboardContent({ activeTab }) {
             const custNeon = getReportNeonStyles(CHART_COLORS.customer);
             return (
               <ReportWidgetShell accent={CHART_COLORS.customer} title="Top Customers by Balance">
+                <ReportWidgetHeader
+                  title="Top Customers by Balance"
+                  subtitle={customerBalanceFilters.toDate ? `Outstanding as of ${formatDatePK(customerBalanceFilters.toDate)}` : 'Current outstanding balance'}
+                  icon={Users}
+                  tint={CHART_COLORS.customer.tint}
+                  primary={CHART_COLORS.customer.primary}
+                  accent={CHART_COLORS.customer}
+                  trailing={
+                    <span className={REPORT.badge} style={{ color, background: CHART_COLORS.customer.tint, borderColor: custNeon.badgeBorder }}>
+                      Top {n}
+                    </span>
+                  }
+                />
                 <WidgetDateFilter
                   filters={customerBalanceFilters}
                   onChange={(f) => setCustomerBalanceFilters((prev) => ({ ...prev, ...f }))}
                   loading={customerBalanceLoading}
                   accent={CHART_COLORS.customer}
-                />
-                <div className={`${REPORT.cardInner} flex flex-wrap items-center gap-3 border-b`} style={{ borderColor: custNeon.divider }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: custNeon.text }}>Top Customers by Balance</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {customerBalanceFilters.toDate ? `Outstanding as of ${formatDatePK(customerBalanceFilters.toDate)}` : 'Current outstanding balance'}
-                    </p>
-                  </div>
+                >
                   <select
                     value={customerBalanceFilters.cusCatId}
                     onChange={e => setCustomerBalanceFilters(f => ({ ...f, cusCatId: e.target.value }))}
-                    className={`${REPORT.input} min-w-[180px] py-2`}
-                    style={{ borderColor: custNeon.chartBorder }}
+                    className="text-[11px] font-medium text-slate-700 bg-white border border-slate-200 rounded-none px-2 py-1 focus:outline-none focus:border-[#1A55E3] cursor-pointer"
                   >
                     <option value="">All Customer Categories</option>
                     {custCats.map(c => (
                       <option key={c.cus_cat_id} value={c.cus_cat_id}>{c.cus_cat_title}</option>
                     ))}
                   </select>
-                  <span className={REPORT.badge} style={{ color, background: CHART_COLORS.customer.tint, borderColor: custNeon.badgeBorder }}>
-                    Top {n}
-                  </span>
-                </div>
+                </WidgetDateFilter>
                 <ReportChartArea accent={CHART_COLORS.customer}>
                   {renderRankingBarChart({
                     rows,
@@ -2741,34 +2819,36 @@ export default function DashboardContent({ activeTab }) {
             const suppNeon = getReportNeonStyles(CHART_COLORS.supplier);
             return (
               <ReportWidgetShell accent={CHART_COLORS.supplier} title="Top Suppliers by Balance">
+                <ReportWidgetHeader
+                  title="Top Suppliers by Balance"
+                  subtitle={supplierBalanceFilters.toDate ? `Outstanding as of ${formatDatePK(supplierBalanceFilters.toDate)}` : 'Current outstanding balance'}
+                  icon={Warehouse}
+                  tint={CHART_COLORS.supplier.tint}
+                  primary={CHART_COLORS.supplier.primary}
+                  accent={CHART_COLORS.supplier}
+                  trailing={
+                    <span className={REPORT.badge} style={{ color, background: CHART_COLORS.supplier.tint, borderColor: suppNeon.badgeBorder }}>
+                      Top {n}
+                    </span>
+                  }
+                />
                 <WidgetDateFilter
                   filters={supplierBalanceFilters}
                   onChange={(f) => setSupplierBalanceFilters((prev) => ({ ...prev, ...f }))}
                   loading={supplierBalanceLoading}
                   accent={CHART_COLORS.supplier}
-                />
-                <div className={`${REPORT.cardInner} flex flex-wrap items-center gap-3 border-b`} style={{ borderColor: suppNeon.divider }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: suppNeon.text }}>Top Suppliers by Balance</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {supplierBalanceFilters.toDate ? `Outstanding as of ${formatDatePK(supplierBalanceFilters.toDate)}` : 'Current outstanding balance'}
-                    </p>
-                  </div>
+                >
                   <select
                     value={supplierBalanceFilters.supCatId}
                     onChange={e => setSupplierBalanceFilters(f => ({ ...f, supCatId: e.target.value }))}
-                    className={`${REPORT.input} min-w-[180px] py-2`}
-                    style={{ borderColor: suppNeon.chartBorder }}
+                    className="text-[11px] font-medium text-slate-700 bg-white border border-slate-200 rounded-none px-2 py-1 focus:outline-none focus:border-[#1A55E3] cursor-pointer"
                   >
                     <option value="">All Supplier Categories</option>
                     {supCats.map(c => (
                       <option key={c.cus_cat_id} value={c.cus_cat_id}>{c.cus_cat_title}</option>
                     ))}
                   </select>
-                  <span className={REPORT.badge} style={{ color, background: CHART_COLORS.supplier.tint, borderColor: suppNeon.badgeBorder }}>
-                    Top {n}
-                  </span>
-                </div>
+                </WidgetDateFilter>
                 <ReportChartArea accent={CHART_COLORS.supplier}>
                   {renderRankingBarChart({
                     rows,

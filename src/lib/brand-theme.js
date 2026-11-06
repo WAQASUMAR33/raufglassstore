@@ -188,7 +188,7 @@ export const KPI_NEON = {
   pink: CHART_COLORS.debit,
 };
 
-/** Solid accent borders per report (no glow / transparency) */
+/** Modern SaaS card styles per report — sleek top accent line, crisp borders */
 export function getReportNeonStyles(accent) {
   const primary = accent?.primary || BRAND.primary.blue;
   const tint = accent?.tint || BRAND.tint.blue;
@@ -197,16 +197,18 @@ export function getReportNeonStyles(accent) {
     primary,
     text,
     card: {
-      border: `1px solid ${primary}`,
-      boxShadow: 'none',
+      border: '1px solid #e2e8f0',
+      borderTop: `3px solid ${primary}`,
+      boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.03)',
+      backgroundColor: '#ffffff',
     },
-    divider: primary,
-    filterBg: tint,
+    divider: '#f1f5f9',
+    filterBg: '#f8fafc',
     chartBg: '#ffffff',
-    chartBorder: primary,
-    iconBorder: primary,
-    badgeBorder: primary,
-    totalColor: text,
+    chartBorder: '#f1f5f9',
+    iconBorder: '#e2e8f0',
+    badgeBorder: '#e2e8f0',
+    totalColor: primary,
   };
 }
 
@@ -342,44 +344,44 @@ export const HQ_REPORT = {
   filterHeader: 'px-5 md:px-6 py-4 bg-gradient-to-r from-[#4338ca] to-[#6366f1] flex flex-wrap items-center justify-between gap-3',
 };
 
-/** Dashboard analytics / report widgets — thin neon borders, smooth Plusadmin-style */
+/** Dashboard analytics / report widgets — clean SaaS styling */
 export const REPORT = {
   section:
-    'rounded-none bg-white p-5 md:p-6 space-y-6',
+    'rounded-none space-y-6',
   sectionHeader:
-    'flex items-center gap-3 pb-5 mb-1',
+    'flex items-center gap-3 pb-3 border-b border-slate-200',
   sectionIcon:
-    'w-10 h-10 rounded-none bg-gradient-to-br from-[#1A55E3] to-[#5E6EED] flex items-center justify-center shrink-0 border border-[#1A55E3]',
+    'w-10 h-10 rounded-none bg-gradient-to-br from-[#1A55E3] to-[#5E6EED] flex items-center justify-center shrink-0 shadow-sm',
   cardBase:
-    'bg-white rounded-none overflow-hidden transition-all duration-300',
+    'bg-white rounded-none overflow-hidden transition-all duration-200 hover:shadow-md',
   cardInner: 'px-5 py-4 md:px-5 md:py-4',
   kpiWrap: 'overflow-hidden rounded-none',
   kpiGrid: 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 p-4 md:p-5',
   kpiCardBase:
     'bg-white rounded-none p-4 md:p-5 transition-all duration-300',
   filterBar:
-    'bg-white rounded-none border border-[#e5e7eb] shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden',
+    'bg-white rounded-none border border-slate-200 shadow-sm overflow-hidden',
   filterHeader:
     'px-5 md:px-6 py-3.5 bg-gradient-to-r from-[#1A55E3] to-[#5E6EED] flex flex-wrap items-center justify-between gap-3',
   filterBody:
-    'px-4 py-2.5 flex flex-wrap items-center gap-2 border-b',
+    'px-4 py-2 flex flex-wrap items-center gap-2 border-b border-slate-100 bg-[#f8fafc]',
   input:
-    'text-xs font-medium text-slate-700 bg-white border border-[#e5e7eb] rounded-none px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A55E3]/12 focus:border-[#1A55E3]/35 transition-all',
+    'text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-none px-2.5 py-1.5 focus:outline-none focus:border-[#1A55E3] transition-all',
   datePill:
-    'flex items-center gap-1.5 bg-white border border-[#e5e7eb] rounded-none px-2.5 py-1.5',
+    'flex items-center gap-1.5 bg-white border border-slate-200 rounded-none px-2 py-1',
   presetWrap:
-    'flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-none border border-[#e5e7eb]',
+    'flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-none border border-slate-200',
   presetBtn:
-    'px-2.5 py-1.5 text-[11px] font-semibold rounded-none text-slate-600 hover:bg-white hover:text-[#1A55E3] transition-all duration-150',
-  presetBtnActive: 'bg-white text-[#1A55E3] shadow-[0_1px_2px_rgba(15,23,42,0.06)] rounded-none',
+    'px-2 py-1 text-[11px] font-semibold rounded-none text-slate-600 hover:bg-white hover:text-[#1A55E3] transition-all duration-150',
+  presetBtnActive: 'bg-white text-[#1A55E3] shadow-sm rounded-none font-bold',
   chartArea:
-    'mx-4 mb-3 rounded-none border p-3 min-h-[260px]',
+    'p-3 min-h-[260px]',
   legendRow:
-    'px-5 pb-3 flex flex-wrap items-center gap-4 border-b',
+    'px-5 py-2.5 flex flex-wrap items-center gap-4 border-b border-slate-100 bg-[#fafbfd]',
   footer:
-    'mx-4 mb-4 px-3 py-2 border-t flex flex-wrap items-center justify-between gap-x-3 gap-y-1',
+    'px-4 py-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-white',
   badge:
-    'text-[10px] font-semibold px-2.5 py-1 rounded-none border bg-white/80 text-slate-600',
+    'text-[10px] font-semibold px-2.5 py-1 rounded-none border border-slate-200 bg-white text-slate-700',
   trendUp: 'text-[10px] font-semibold text-[#00a868] tabular-nums',
   trendDown: 'text-[10px] font-semibold text-[#FF0854] tabular-nums',
   trendMuted: 'text-[10px] text-slate-400',
