@@ -17,6 +17,7 @@
     "app:start": "npm --prefix laravel-pos run app:start",
     "app:dist": "npm --prefix laravel-pos run app:dist",
     "lint": "next lint",
+    "db:create:admins": "node scripts/create-admin-accounts.js",
     "db:reset": "prisma db push --force-reset && node prisma/seed-admin.js",
     "db:wipe-transactions": "node scripts/reset-financial-transactions.js",
     "generate": "prisma generate",
