@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { Building2, MapPin, Phone, Store } from 'lucide-react';
 import { LoginFormFields } from './login-shell';
 import { useAuthLogin, useSessionGuard } from './use-login';
-import { HqAuthModeSwitch, HqFingerprintLogin } from './hq-biometric-login';
 import { COMPANY, POWERED_BY } from '@/lib/brand-theme';
 
 const BRAND = {
@@ -38,7 +37,6 @@ export default function LandingLogin() {
 
   const branchAuth = useAuthLogin('branch');
   const hqAuth = useAuthLogin('hq');
-  const [hqAuthMode, setHqAuthMode] = useState('password');
 
   const [branches, setBranches] = useState([]);
   const [branchesLoading, setBranchesLoading] = useState(true);
@@ -72,7 +70,6 @@ export default function LandingLogin() {
   const switchTab = (next) => {
     if (next === tab) return;
     setTab(next);
-    setHqAuthMode('password');
     setAnimKey((k) => k + 1);
     if (typeof window !== 'undefined') {
       const url = next === 'hq' ? '/?tab=hq' : '/';
@@ -162,8 +159,8 @@ export default function LandingLogin() {
             </div>
 
             <div className="form-header">
-              <h2>{isBranch ? 'Branch Sign In' : hqAuthMode === 'fingerprint' ? 'Biometric Login' : 'HQ Sign In'}</h2>
-              <p>{isBranch ? 'Your store POS system' : hqAuthMode === 'fingerprint' ? 'Scan your enrolled finger' : 'Administrator access'}</p>
+              <h2>{isBranch ? 'Branch Sign In' : 'HQ Sign In'}</h2>
+              <p>{isBranch ? 'Your store POS system' : 'Administrator access'}</p>
             </div>
 
             <div className="form-body" key={animKey}>
@@ -188,36 +185,22 @@ export default function LandingLogin() {
                 onSubmit={branchAuth.handleSubmit}
               />
             ) : (
-              <>
-                <HqAuthModeSwitch
-                  mode={hqAuthMode}
-                  onChange={(mode) => {
-                    setHqAuthMode(mode);
-                    hqAuth.setError('');
-                  }}
+              <div className="hq-form-slot">
+                <LoginFormFields
+                  email={hqAuth.email}
+                  setEmail={hqAuth.setEmail}
+                  password={hqAuth.password}
+                  setPassword={hqAuth.setPassword}
+                  showPassword={hqAuth.showPassword}
+                  setShowPassword={hqAuth.setShowPassword}
+                  error={hqAuth.error}
+                  loading={hqAuth.loading}
+                  submitLabel={brand.submitLabel}
                   accent={brand.accent}
+                  accentDark={brand.accentDark}
+                  onSubmit={hqAuth.handleSubmit}
                 />
-                <div className="hq-form-slot">
-                {hqAuthMode === 'password' ? (
-                  <LoginFormFields
-                    email={hqAuth.email}
-                    setEmail={hqAuth.setEmail}
-                    password={hqAuth.password}
-                    setPassword={hqAuth.setPassword}
-                    showPassword={hqAuth.showPassword}
-                    setShowPassword={hqAuth.setShowPassword}
-                    error={hqAuth.error}
-                    loading={hqAuth.loading}
-                    submitLabel={brand.submitLabel}
-                    accent={brand.accent}
-                    accentDark={brand.accentDark}
-                    onSubmit={hqAuth.handleSubmit}
-                  />
-                ) : (
-                  <HqFingerprintLogin accent={brand.accent} />
-                )}
-                </div>
-              </>
+              </div>
             )}
           </div>
           </div>

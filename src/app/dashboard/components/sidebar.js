@@ -265,7 +265,7 @@ export default function Sidebar({
     { id: 'stores', name: 'Store Management', icon: StoreIcon, category: 'system', parent: 'System' },
     { id: 'store-stock', name: 'Store Stock', icon: InventoryIcon, category: 'system', parent: 'System' },
     { id: 'stock-transfer', name: 'Stock Transfer', icon: SwapHorizIcon, category: 'system', parent: 'System' },
-    { id: 'settings', name: 'Biometric Settings', icon: PersonIcon, category: 'system', parent: 'System', adminOnly: true },
+    { id: 'settings', name: 'Security & PIN Settings', icon: LockIcon, category: 'system', parent: 'System', adminOnly: true },
     { id: 'import', name: 'Excel Data Import', icon: TableChartIcon, category: 'system', parent: 'System', adminOnly: true },
     { id: 'activity-logs', name: 'User Activity Logs', icon: ListAltIcon, category: 'system', parent: 'System', adminOnly: true },
   ];
