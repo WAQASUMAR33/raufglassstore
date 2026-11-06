@@ -1882,7 +1882,7 @@ export default function DashboardContent({ activeTab }) {
     const topProductsSaleTotal = topProductsSaleData.slice(0, 15).reduce((s, r) => s + Number(r.amount || r.balance || 0), 0);
 
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 1400, mx: 'auto' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, width: '100%' }}>
         {/* Welcome Hero Banner */}
         <Paper
           elevation={0}
@@ -2016,7 +2016,7 @@ export default function DashboardContent({ activeTab }) {
                   <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', mt: 0.5 }}>Contact your administrator for access.</Typography>
                 </Box>
               ) : (
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)', lg: 'repeat(5, 1fr)' }, gap: 1.5 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)', lg: 'repeat(5, 1fr)', xl: 'repeat(6, 1fr)', '2xl': 'repeat(7, 1fr)' }, gap: 1.5 }}>
                   {quickActions.map((action, index) => {
                     const p = SHORTCUT_PALETTE[action.palette] || SHORTCUT_PALETTE.blue;
                     return (
@@ -2959,7 +2959,7 @@ export default function DashboardContent({ activeTab }) {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 w-full">
       <div className="bg-white rounded-none shadow-lg border border-gray-100/50 p-12 text-center">
         <div className="max-w-md mx-auto">
           <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
