@@ -3,6 +3,31 @@
 import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  Box,
+  Card,
+  CardContent,
+  CardHeader,
+  Typography,
+  Button,
+  IconButton,
+  Chip,
+  Tooltip,
+  Divider,
+  Paper,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  Skeleton,
+} from '@mui/material';
+import {
+  TrendingUp as TrendingUpMui,
+  TrendingDown as TrendingDownMui,
+  ArrowForward as ArrowForwardIcon,
+} from '@mui/icons-material';
+import {
   hasDashboardWidgetAccess,
   canViewAnyDashboardAnalytics,
   filterDashboardShortcuts,
@@ -115,16 +140,24 @@ function ReportFullscreenExpandButton() {
   if (!ctx || ctx.isFullscreen) return null;
   const neon = getReportNeonStyles(ctx.accent);
   return (
-    <button
-      type="button"
-      onClick={ctx.expand}
-      title="Full screen"
-      aria-label="Open full screen"
-      className="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors hover:bg-white shrink-0"
-      style={{ borderColor: neon.chartBorder, color: neon.primary }}
-    >
-      <Maximize2 className="w-4 h-4" strokeWidth={2.25} />
-    </button>
+    <Tooltip title="Full screen view" arrow>
+      <IconButton
+        size="small"
+        onClick={ctx.expand}
+        aria-label="Open full screen"
+        sx={{
+          width: 30,
+          height: 30,
+          borderRadius: '8px',
+          border: `1px solid ${neon.chartBorder}`,
+          color: neon.primary,
+          bgcolor: '#ffffff',
+          '&:hover': { bgcolor: '#f8fafc' },
+        }}
+      >
+        <Maximize2 className="w-3.5 h-3.5" strokeWidth={2.25} />
+      </IconButton>
+    </Tooltip>
   );
 }
 
@@ -612,25 +645,47 @@ function ChartEmptyState() {
 function ReportWidgetHeader({ title, subtitle, icon: Icon, tint, primary, accent }) {
   const neon = getReportNeonStyles(accent || { primary, tint });
   return (
-    <div
-      className={`${REPORT.cardInner} flex items-start justify-between gap-4 border-b`}
-      style={{ borderColor: neon.divider }}
+    <Box
+      sx={{
+        px: { xs: 2.5, md: 3 },
+        py: 2,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 2,
+        borderBottom: `1px solid ${neon.divider}`,
+        bgcolor: '#ffffff',
+      }}
     >
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: neon.text }}>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography sx={{ fontSize: '0.725rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: neon.text }}>
           {title}
-        </p>
-        {subtitle && <p className="text-xs text-slate-500 mt-1 leading-relaxed">{subtitle}</p>}
-      </div>
+        </Typography>
+        {subtitle && (
+          <Typography sx={{ fontSize: '0.75rem', color: '#64748b', mt: 0.25, fontWeight: 500 }}>
+            {subtitle}
+          </Typography>
+        )}
+      </Box>
       {Icon && (
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border"
-          style={{ background: tint, borderColor: neon.iconBorder }}
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            bgcolor: tint,
+            border: `1px solid ${neon.iconBorder}`,
+            boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+          }}
         >
-          <Icon className="w-[18px] h-[18px]" style={{ color: primary }} strokeWidth={2.25} />
-        </div>
+          <Icon className="w-4 h-4" style={{ color: primary }} strokeWidth={2.25} />
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -639,16 +694,41 @@ function ReportWidgetFooter({ formula, total, totalLabel = 'Total', accent }) {
   if (total == null && !formula) return null;
   const neon = getReportNeonStyles(accent);
   return (
-    <div className={REPORT.footer} style={{ borderColor: neon.divider }}>
+    <Box
+      sx={{
+        mx: 2,
+        mb: 2,
+        px: 2,
+        py: 1.25,
+        borderTop: `1px solid ${neon.divider}`,
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1,
+      }}
+    >
       {formula && (
-        <span className={`${REPORT.trendMuted} leading-snug`}>{formula}</span>
+        <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
+          {formula}
+        </Typography>
       )}
       {total != null && (
-        <span className="text-[10px] font-bold tabular-nums whitespace-nowrap ml-auto" style={{ color: neon.totalColor }}>
-          {totalLabel}: {total}
-        </span>
+        <Chip
+          size="small"
+          label={`${totalLabel}: ${total}`}
+          sx={{
+            ml: 'auto',
+            fontWeight: 800,
+            fontSize: '0.72rem',
+            fontVariantNumeric: 'tabular-nums',
+            color: neon.totalColor,
+            bgcolor: neon.filterBg || '#f8fafc',
+            border: `1px solid ${neon.badgeBorder || neon.chartBorder}`,
+          }}
+        />
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -673,69 +753,117 @@ function renderSmoothBarChart({
 }) {
   if (!data?.length) return <ChartEmptyState />;
 
-  const pL = 54;
-  const pR = 16;
-  const pT = 28;
-  const pB = 42;
+  const pL = 58;
+  const pR = 20;
+  const pT = 32;
+  const pB = 46;
   const W = 640;
-  const H = 240;
+  const H = 250;
   const cW = W - pL - pR;
   const cH = H - pT - pB;
   const n = data.length;
   const grpW = cW / n;
-  const barW = Math.min(grpW * 0.52, 40);
+  const barW = Math.min(grpW * 0.48, 38);
   const values = data.map(getValue);
   const maxV = Math.max(...values.map((v) => Math.abs(v)), 1);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[240px]">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[250px] select-none">
       <defs>
         <linearGradient id={barId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={colorPrimary} />
-          <stop offset="100%" stopColor={colorGradientStop} stopOpacity="0.55" />
+          <stop offset="0%" stopColor={colorPrimary} stopOpacity="1" />
+          <stop offset="65%" stopColor={colorGradientStop || colorPrimary} stopOpacity="0.85" />
+          <stop offset="100%" stopColor={colorGradientStop || colorPrimary} stopOpacity="0.45" />
         </linearGradient>
-        <filter id={`${barId}-shadow`} x="-20%" y="-10%" width="140%" height="130%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor={colorPrimary} floodOpacity="0.18" />
+        <filter id={`${barId}-shadow`} x="-30%" y="-20%" width="160%" height="150%">
+          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor={colorPrimary} floodOpacity="0.22" />
         </filter>
       </defs>
-      <rect x={pL} y={pT} width={cW} height={cH} rx="8" fill="#f3f4f6" opacity="0.5" />
+
+      {/* Modern translucent chart canvas */}
+      <rect x={pL} y={pT} width={cW} height={cH} rx="12" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+
+      {/* Grid horizontal guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
         const y = pT + cH * (1 - f);
         return (
           <g key={f}>
-            <line x1={pL} y1={y} x2={W - pR} y2={y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 6" opacity="0.85" />
-            <text x={pL - 8} y={y + 4} fontSize="10" fill="#94a3b8" textAnchor="end">
+            <line
+              x1={pL}
+              y1={y}
+              x2={W - pR}
+              y2={y}
+              stroke="#e2e8f0"
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              opacity="0.8"
+            />
+            <text x={pL - 10} y={y + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
               {fmtK(maxV * f)}
             </text>
           </g>
         );
       })}
-      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1" />
+
+      {/* Baseline */}
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Bars & Labels */}
       {data.map((item, i) => {
         const val = getValue(item);
         const cx = pL + grpW * i + grpW / 2;
         const bx = cx - barW / 2;
-        const bH = Math.max((Math.abs(val) / maxV) * cH, val !== 0 ? 4 : 0);
+        const bH = Math.max((Math.abs(val) / maxV) * cH, val !== 0 ? 6 : 0);
         const lbl = item.label || formatLabel(item[labelKey]);
+        const yTop = pT + cH - bH;
         return (
-          <g key={i} className="cursor-pointer">
-            <rect
-              x={bx}
-              y={pT + cH - bH}
-              width={barW}
-              height={bH}
-              rx="8"
-              fill={`url(#${barId})`}
-              filter={`url(#${barId}-shadow)`}
-            >
-              <title>{`${lbl}: ${hoverUnit} ${val.toLocaleString()}`}</title>
-            </rect>
-            {val !== 0 && (
-              <text x={cx} y={pT + cH - bH - 6} fontSize="10" fill={colorPrimary} textAnchor="middle" fontWeight="700">
-                {fmtK(val)}
-              </text>
+          <g key={i} className="cursor-pointer group">
+            {val !== 0 ? (
+              <>
+                {/* Main bar */}
+                <rect
+                  x={bx}
+                  y={yTop}
+                  width={barW}
+                  height={bH}
+                  rx="8"
+                  fill={`url(#${barId})`}
+                  filter={`url(#${barId}-shadow)`}
+                >
+                  <title>{`${lbl}: ${hoverUnit} ${val.toLocaleString()}`}</title>
+                </rect>
+
+                {/* Top illuminated highlight cap */}
+                {bH > 6 && (
+                  <rect
+                    x={bx + 2}
+                    y={yTop}
+                    width={Math.max(barW - 4, 1)}
+                    height="3"
+                    rx="1.5"
+                    fill="#ffffff"
+                    opacity="0.65"
+                  />
+                )}
+
+                {/* Value text badge */}
+                <text
+                  x={cx}
+                  y={yTop - 6}
+                  fontSize="10"
+                  fill={colorPrimary}
+                  textAnchor="middle"
+                  fontWeight="700"
+                >
+                  {fmtK(val)}
+                </text>
+              </>
+            ) : (
+              <circle cx={cx} cy={pT + cH} r="2.5" fill="#cbd5e1" />
             )}
-            <text x={cx} y={H - 10} fontSize="10" fill="#64748b" textAnchor="middle" fontWeight="500">
+
+            {/* X-axis label */}
+            <text x={cx} y={H - 12} fontSize="10.5" fill="#64748b" textAnchor="middle" fontWeight="600">
               {lbl}
             </text>
           </g>
@@ -748,68 +876,98 @@ function renderSmoothBarChart({
 function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) {
   if (!labels?.length) return <ChartEmptyState />;
 
-  const pL = 54;
-  const pR = 12;
-  const pT = 28;
-  const pB = 40;
+  const pL = 58;
+  const pR = 16;
+  const pT = 32;
+  const pB = 46;
   const W = 640;
-  const H = 240;
+  const H = 250;
   const cW = W - pL - pR;
   const cH = H - pT - pB;
   const n = labels.length;
   const grpW = cW / n;
-  const barW = Math.min(grpW / (series.length + 1), 22);
+  const barW = Math.min(grpW / (series.length + 1.2), 22);
   const maxV = Math.max(...series.flatMap((s) => s.values), 1);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[240px]">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[250px] select-none">
       <defs>
         {series.map((s) => (
           <linearGradient key={s.key} id={`${chartId}-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={s.primary} />
-            <stop offset="100%" stopColor={s.gradient} stopOpacity="0.5" />
+            <stop offset="0%" stopColor={s.primary} stopOpacity="1" />
+            <stop offset="100%" stopColor={s.gradient || s.primary} stopOpacity="0.5" />
           </linearGradient>
         ))}
       </defs>
-      <rect x={pL} y={pT} width={cW} height={cH} rx="8" fill="#f3f4f6" opacity="0.5" />
+
+      {/* Modern translucent chart canvas */}
+      <rect x={pL} y={pT} width={cW} height={cH} rx="12" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+
+      {/* Grid horizontal guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
         const y = pT + cH * (1 - f);
         return (
           <g key={f}>
-            <line x1={pL} y1={y} x2={W - pR} y2={y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 6" />
-            <text x={pL - 8} y={y + 4} fontSize="10" fill="#94a3b8" textAnchor="end">
+            <line
+              x1={pL}
+              y1={y}
+              x2={W - pR}
+              y2={y}
+              stroke="#e2e8f0"
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              opacity="0.8"
+            />
+            <text x={pL - 10} y={y + 3.5} fontSize="10.5" fill="#94a3b8" textAnchor="end" fontWeight="500">
               {formatValue(maxV * f)}
             </text>
           </g>
         );
       })}
-      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1" />
+
+      {/* Baseline */}
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Grouped series bars */}
       {labels.map((lbl, i) => {
         const cx = pL + grpW * i + grpW / 2;
         const groupW = series.length * barW + (series.length - 1) * 4;
         let x = cx - groupW / 2;
         return (
-          <g key={lbl}>
+          <g key={lbl} className="cursor-pointer">
             {series.map((s) => {
               const val = s.values[i] || 0;
-              const bH = Math.max((val / maxV) * cH, val > 0 ? 4 : 0);
+              const bH = Math.max((val / maxV) * cH, val > 0 ? 5 : 0);
+              const yTop = pT + cH - bH;
               const rect = (
-                <rect
-                  key={s.key}
-                  x={x}
-                  y={pT + cH - bH}
-                  width={barW}
-                  height={bH}
-                  rx="6"
-                  fill={`url(#${chartId}-${s.key})`}
-                >
-                  <title>{`${s.name} ${lbl}: ${formatValue(val)}`}</title>
-                </rect>
+                <g key={s.key}>
+                  <rect
+                    x={x}
+                    y={yTop}
+                    width={barW}
+                    height={bH}
+                    rx="6"
+                    fill={`url(#${chartId}-${s.key})`}
+                  >
+                    <title>{`${s.name} ${lbl}: ${formatValue(val)}`}</title>
+                  </rect>
+                  {bH > 5 && (
+                    <rect
+                      x={x + 1}
+                      y={yTop}
+                      width={Math.max(barW - 2, 1)}
+                      height="2.5"
+                      rx="1"
+                      fill="#ffffff"
+                      opacity="0.6"
+                    />
+                  )}
+                </g>
               );
               x += barW + 4;
               return rect;
             })}
-            <text x={cx} y={H - 10} fontSize="10" fill="#64748b" textAnchor="middle" fontWeight="500">
+            <text x={cx} y={H - 12} fontSize="10.5" fill="#64748b" textAnchor="middle" fontWeight="600">
               {lbl}
             </text>
           </g>
@@ -823,7 +981,7 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
   const n = Math.min(rows.length, 15);
   if (n === 0) {
     return (
-      <div className="h-[260px] flex items-center justify-center text-slate-400 text-sm">
+      <div className="h-[270px] flex items-center justify-center text-slate-400 text-sm">
         {loading ? (
           <div className="w-8 h-8 border-2 border-[#1A55E3] border-t-transparent rounded-full animate-spin" />
         ) : (
@@ -833,51 +991,73 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
     );
   }
 
-  const pL = 52;
-  const pR = 16;
-  const pT = 24;
-  const pB = 90;
+  const pL = 58;
+  const pR = 20;
+  const pT = 28;
+  const pB = 96;
   const W = 1200;
-  const H = 280;
+  const H = 290;
   const cW = W - pL - pR;
   const cH = H - pT - pB;
   const grpW = cW / n;
-  const barW = Math.min(grpW * 0.55, 56);
+  const barW = Math.min(grpW * 0.52, 52);
   const maxV = Math.max(...rows.slice(0, n).map((r) => r.balance), 1);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[260px]">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" className="min-h-[270px] select-none">
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} />
-          <stop offset="100%" stopColor={gradient} stopOpacity="0.35" />
+          <stop offset="0%" stopColor={color} stopOpacity="1" />
+          <stop offset="70%" stopColor={gradient || color} stopOpacity="0.8" />
+          <stop offset="100%" stopColor={gradient || color} stopOpacity="0.4" />
         </linearGradient>
-        <filter id={`${gradId}-shadow`} x="-15%" y="-10%" width="130%" height="130%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor={color} floodOpacity="0.15" />
+        <filter id={`${gradId}-shadow`} x="-20%" y="-15%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor={color} floodOpacity="0.22" />
         </filter>
       </defs>
-      <rect x={pL} y={pT} width={cW} height={cH} rx="8" fill="#f3f4f6" opacity="0.5" />
+
+      {/* Modern translucent chart canvas */}
+      <rect x={pL} y={pT} width={cW} height={cH} rx="12" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+
+      {/* Guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
         const y = pT + cH * (1 - f);
         return (
           <g key={f}>
-            <line x1={pL} y1={y} x2={W - pR} y2={y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 6" />
-            <text x={pL - 8} y={y + 4} fontSize="11" fill="#94a3b8" textAnchor="end">
+            <line
+              x1={pL}
+              y1={y}
+              x2={W - pR}
+              y2={y}
+              stroke="#e2e8f0"
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              opacity="0.8"
+            />
+            <text x={pL - 10} y={y + 3.5} fontSize="11" fill="#94a3b8" textAnchor="end" fontWeight="500">
               {fmtK(maxV * f)}
             </text>
           </g>
         );
       })}
+
+      {/* Baseline */}
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Ranking Bars */}
       {rows.slice(0, n).map((r, i) => {
         const cx = pL + grpW * i + grpW / 2;
-        const bH = Math.max((r.balance / maxV) * cH, 2);
+        const bH = Math.max((r.balance / maxV) * cH, 5);
         const bx = cx - barW / 2;
-        const shortName = r.name.length > 14 ? `${r.name.slice(0, 13)}…` : r.name;
+        const yTop = pT + cH - bH;
+        const shortName = r.name.length > 15 ? `${r.name.slice(0, 14)}…` : r.name;
+        const isTop3 = i < 3;
+
         return (
-          <g key={i}>
+          <g key={i} className="cursor-pointer group">
             <rect
               x={bx}
-              y={pT + cH - bH}
+              y={yTop}
               width={barW}
               height={bH}
               rx="8"
@@ -886,16 +1066,51 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
             >
               <title>{`${r.name}: PKR ${Number(r.balance || 0).toLocaleString()}${r.qty != null ? ` · Qty ${formatQty(r.qty)}` : ''}${r.invoices != null ? ` · ${r.invoices} bills` : ''}`}</title>
             </rect>
-            <text x={bx + barW / 2} y={pT + cH - bH - 6} fontSize="10" fill={color} textAnchor="middle" fontWeight="700">
-              {fmtK(r.balance)}
-            </text>
+
+            {/* Top illuminated highlight cap */}
+            {bH > 6 && (
+              <rect
+                x={bx + 2}
+                y={yTop}
+                width={Math.max(barW - 4, 1)}
+                height="3"
+                rx="1.5"
+                fill="#ffffff"
+                opacity="0.65"
+              />
+            )}
+
+            {/* Value above bar */}
             <text
               x={cx}
-              y={pT + cH + 12}
+              y={yTop - 6}
+              fontSize="10"
+              fill={color}
+              textAnchor="middle"
+              fontWeight="700"
+            >
+              {fmtK(r.balance)}
+            </text>
+
+            {/* Top 3 rank badge marker */}
+            {isTop3 && (
+              <g>
+                <circle cx={cx} cy={yTop + 14} r="8" fill="#ffffff" opacity="0.85" />
+                <text x={cx} y={yTop + 17.5} fontSize="9" fill={color} textAnchor="middle" fontWeight="800">
+                  {i + 1}
+                </text>
+              </g>
+            )}
+
+            {/* Angled account label */}
+            <text
+              x={cx}
+              y={pT + cH + 14}
               fontSize="11"
-              fill="#64748b"
+              fill="#475569"
+              fontWeight="600"
               textAnchor="end"
-              transform={`rotate(-38,${cx},${pT + cH + 12})`}
+              transform={`rotate(-36,${cx},${pT + cH + 14})`}
             >
               {shortName}
             </text>
@@ -1594,46 +1809,102 @@ export default function DashboardContent({ activeTab }) {
     const topProductsSaleTotal = topProductsSaleData.slice(0, 15).reduce((s, r) => s + Number(r.amount || r.balance || 0), 0);
 
     return (
-      <div className="space-y-6 max-w-[1400px] mx-auto">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 1400, mx: 'auto' }}>
         {/* Welcome Hero Banner */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white p-5 md:p-6 shadow-xl shadow-slate-950/15 border border-slate-800/60">
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
+        <Paper
+          elevation={0}
+          sx={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, #090d16 0%, #0f172a 45%, #1e3a8a 100%)',
+            color: '#ffffff',
+            p: { xs: 2.5, md: 3.5 },
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 12px 32px rgba(15, 23, 42, 0.15)',
+          }}
+        >
+          <Box sx={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', bgcolor: 'rgba(26, 85, 227, 0.22)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+          <Box sx={{ position: 'absolute', bottom: -60, left: -60, width: 240, height: 240, borderRadius: '50%', bgcolor: 'rgba(13, 202, 240, 0.16)', filter: 'blur(60px)', pointerEvents: 'none' }} />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-blue-200 mb-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Zain Traders · Glass, Mirror & Aluminium Solutions</span>
-              </div>
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
-                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-cyan-200 to-white">{dashboardUser?.full_name || 'Administrator'}</span> 👋
-              </h1>
-              <p className="text-xs md:text-sm text-slate-300 mt-1 max-w-xl">
-                Real-time dashboard for inventory, store sales, customer ledgers & financial performance.
-              </p>
-            </div>
+          <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, justifyContent: 'space-between', gap: 2.5 }}>
+            <Box>
+              <Chip
+                icon={<Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#34d399', boxShadow: '0 0 8px #34d399', mr: -0.5 }} />}
+                label="Zain Traders · Glass, Mirror & Aluminium Solutions"
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.08)',
+                  color: '#bfdbfe',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
+                  backdropFilter: 'blur(8px)',
+                  fontWeight: 600,
+                  fontSize: '0.72rem',
+                  mb: 1.5,
+                }}
+              />
+              <Typography variant="h4" sx={{ fontWeight: 800, fontSize: { xs: '1.4rem', md: '1.85rem' }, letterSpacing: '-0.02em', color: '#ffffff' }}>
+                Welcome back,{' '}
+                <Box component="span" sx={{ background: 'linear-gradient(90deg, #93c5fd, #67e8f9, #ffffff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {dashboardUser?.full_name || 'Administrator'}
+                </Box>{' '}👋
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#94a3b8', mt: 0.5, maxWidth: 620, fontSize: '0.85rem', lineHeight: 1.5 }}>
+                Real-time operations, inventory control, accounts & financial performance for Main Branch.
+              </Typography>
+            </Box>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <button
-                type="button"
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                startIcon={<ShoppingCart className="w-4 h-4" />}
                 onClick={() => handleQuickActionClick('/dashboard/sales')}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#1A55E3] to-[#2563EB] hover:from-[#1347c4] hover:to-[#1d4ed8] text-white text-xs font-bold shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                sx={{
+                  background: 'linear-gradient(135deg, #1A55E3 0%, #2563EB 100%)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.8125rem',
+                  textTransform: 'none',
+                  borderRadius: '12px',
+                  px: 2.5,
+                  py: 1.1,
+                  boxShadow: '0 4px 14px rgba(26, 85, 227, 0.35)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #1347c4 0%, #1d4ed8 100%)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 6px 18px rgba(26, 85, 227, 0.45)',
+                  },
+                }}
               >
-                <ShoppingCart className="w-4 h-4" />
-                <span>New POS Sale</span>
-              </button>
-              <button
-                type="button"
+                New POS Sale
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<BookOpen className="w-4 h-4" />}
                 onClick={() => handleQuickActionClick('/dashboard/finance')}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-bold transition-all duration-200 hover:-translate-y-0.5"
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.08)',
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.8125rem',
+                  textTransform: 'none',
+                  borderRadius: '12px',
+                  px: 2.2,
+                  py: 1.1,
+                  backdropFilter: 'blur(8px)',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.14)',
+                    borderColor: 'rgba(255, 255, 255, 0.35)',
+                    transform: 'translateY(-1px)',
+                  },
+                }}
               >
-                <BookOpen className="w-4 h-4 text-cyan-300" />
-                <span>Ledger & Accounts</span>
-              </button>
-            </div>
-          </div>
-        </div>
+                Ledger & Accounts
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
 
         {!analyticsWidgets.any && !analyticsWidgets.kpi && (
           <div className={`${CARD} p-5 md:p-6`}>
@@ -1645,224 +1916,281 @@ export default function DashboardContent({ activeTab }) {
         )}
 
         {/* Modules + Quick Entry */}
-        <div className={`grid grid-cols-1 gap-5 ${quickEntryActions.length > 0 ? 'xl:grid-cols-[1fr_300px]' : ''}`}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: quickEntryActions.length > 0 ? { xs: '1fr', xl: '1fr 300px' } : '1fr', gap: 2.5 }}>
           {/* Business Modules */}
-          <div className={`${CARD} overflow-hidden`}>
-            <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-white">
-              <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Business Modules</h3>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">Shortcuts allowed for your role</p>
-            </div>
-            <div className="p-4 md:p-5 bg-[#f9fafb]">
+          <Card
+            elevation={0}
+            sx={{
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 20px rgba(15, 23, 42, 0.04)',
+            }}
+          >
+            <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #f1f5f9', bgcolor: '#fafbfd' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
+                Business Modules
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#64748b', mt: 0.25, fontWeight: 500 }}>
+                Shortcuts allowed for your role
+              </Typography>
+            </Box>
+            <Box sx={{ p: { xs: 2, md: 2.5 }, bgcolor: '#ffffff' }}>
               {quickActions.length === 0 ? (
-                <div className="py-10 text-center">
-                  <p className="text-sm text-slate-500">No modules assigned to your account.</p>
-                  <p className="text-xs text-slate-400 mt-1">Contact your administrator for access.</p>
-                </div>
+                <Box sx={{ py: 6, textAlign: 'center' }}>
+                  <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>No modules assigned to your account.</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', mt: 0.5 }}>Contact your administrator for access.</Typography>
+                </Box>
               ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 md:gap-3">
-                {quickActions.map((action, index) => {
-                  const p = SHORTCUT_PALETTE[action.palette] || SHORTCUT_PALETTE.blue;
-                  return (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => handleQuickActionClick(action.path)}
-                      className="group relative flex flex-col items-center justify-center gap-2.5 py-4 px-2 min-h-[104px] rounded-2xl bg-white border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)] hover:border-blue-300 hover:-translate-y-1 active:scale-[0.98] transition-all duration-200 cursor-pointer overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className={`w-11 h-11 rounded-xl ${p.iconBg} flex items-center justify-center transition-transform duration-200 group-hover:scale-110 shadow-sm relative z-10`}>
-                        <action.icon className={`w-5 h-5 ${p.icon}`} strokeWidth={2} />
-                      </div>
-                      <p className="text-[11px] md:text-xs font-bold text-slate-700 group-hover:text-[#1A55E3] text-center leading-snug px-1 relative z-10 transition-colors">
-                        {action.title}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)', lg: 'repeat(5, 1fr)' }, gap: 1.5 }}>
+                  {quickActions.map((action, index) => {
+                    const p = SHORTCUT_PALETTE[action.palette] || SHORTCUT_PALETTE.blue;
+                    return (
+                      <Box
+                        key={index}
+                        onClick={() => handleQuickActionClick(action.path)}
+                        sx={{
+                          p: 2,
+                          borderRadius: '14px',
+                          border: '1px solid #e2e8f0',
+                          bgcolor: '#ffffff',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 1.25,
+                          minHeight: 104,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                          '&:hover': {
+                            borderColor: '#93c5fd',
+                            boxShadow: '0 8px 22px rgba(26, 85, 227, 0.08)',
+                            transform: 'translateY(-3px)',
+                            bgcolor: '#f8fafc',
+                          },
+                          '&:active': {
+                            transform: 'scale(0.98)',
+                          },
+                        }}
+                      >
+                        <Box
+                          className={p.iconBg}
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'transform 0.2s ease',
+                            boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                          }}
+                        >
+                          <action.icon className={`w-5 h-5 ${p.icon}`} strokeWidth={2.25} />
+                        </Box>
+                        <Typography sx={{ fontSize: '0.775rem', fontWeight: 700, color: '#334155', textAlign: 'center', lineHeight: 1.3 }}>
+                          {action.title}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
               )}
-            </div>
-          </div>
+            </Box>
+          </Card>
 
           {/* Quick Entry Panel */}
           {quickEntryActions.length > 0 && (
-          <div className={`${CARD} overflow-hidden`}>
-            <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-white">
-              <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Quick Entry</h3>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">High-priority actions</p>
-            </div>
-            <div className="p-4 space-y-3 bg-gradient-to-b from-white to-slate-50/50">
-              {quickEntryActions.map((action, index) => {
-                const isPrimary = action.tone === 'blue' || action.tone === 'green';
-                const toneStyle = QUICK_ENTRY_TONES[action.tone] || QUICK_ENTRY_TONES.neutral;
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleQuickActionClick(action.path)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-200 ${toneStyle.className}`}
-                  >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isPrimary ? 'bg-white/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]' : 'bg-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]'}`}>
-                      <action.icon className={`w-4 h-4 ${isPrimary ? 'text-white' : 'text-slate-600'}`} strokeWidth={2.25} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-sm font-bold leading-tight ${isPrimary ? 'text-white' : 'text-slate-900'}`}>{action.title}</p>
-                      <p className={`text-[11px] mt-0.5 truncate ${isPrimary ? 'text-white/85' : 'text-slate-500'}`}>{action.subtitle}</p>
-                    </div>
-                    {!isPrimary && (
-                      <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+            <Card
+              elevation={0}
+              sx={{
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                overflow: 'hidden',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 20px rgba(15, 23, 42, 0.04)',
+              }}
+            >
+              <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid #f1f5f9', bgcolor: '#fafbfd' }}>
+                <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
+                  Quick Entry
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#64748b', mt: 0.25, fontWeight: 500 }}>
+                  High-priority actions
+                </Typography>
+              </Box>
+              <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: '#ffffff' }}>
+                {quickEntryActions.map((action, index) => {
+                  const isPrimary = action.tone === 'blue' || action.tone === 'green';
+                  const toneStyle = QUICK_ENTRY_TONES[action.tone] || QUICK_ENTRY_TONES.neutral;
+                  return (
+                    <Box
+                      key={index}
+                      onClick={() => handleQuickActionClick(action.path)}
+                      className={toneStyle.className}
+                      sx={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.75,
+                        px: 2,
+                        py: 1.6,
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          bgcolor: isPrimary ? 'rgba(255, 255, 255, 0.25)' : '#f1f5f9',
+                        }}
+                      >
+                        <action.icon className={`w-4 h-4 ${isPrimary ? 'text-white' : 'text-slate-600'}`} strokeWidth={2.25} />
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, lineHeight: 1.2, color: isPrimary ? '#ffffff' : '#0f172a' }}>
+                          {action.title}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.72rem', mt: 0.25, color: isPrimary ? 'rgba(255, 255, 255, 0.85)' : '#64748b', noWrap: true }}>
+                          {action.subtitle}
+                        </Typography>
+                      </Box>
+                      {!isPrimary && (
+                        <ArrowForwardIcon sx={{ fontSize: 16, color: '#94a3b8', flexShrink: 0 }} />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Card>
           )}
-        </div>
+        </Box>
 
         {/* Low stock alert — below shortcuts */}
         {showLowStockSection && lowStockLoading ? (
-          <div className={`${CARD} overflow-hidden border-l-2 border-l-amber-400`}>
-            <div className="px-4 py-3 border-b border-slate-100">
-              <div className="h-4 w-36 bg-slate-100 rounded animate-pulse" />
-            </div>
-            <div className="p-3 space-y-2 animate-pulse">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-8 bg-slate-50 border border-slate-100 rounded" />
-              ))}
-            </div>
-          </div>
+          <Card elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e2e8f0', borderLeft: '4px solid #f59e0b', p: 2 }}>
+            <Skeleton variant="text" width={180} height={24} />
+            <Skeleton variant="rounded" height={60} sx={{ mt: 1 }} />
+          </Card>
         ) : showLowStockSection && lowStockData.count > 0 ? (
-          <div className={`${CARD} overflow-hidden border-l-2 border-l-amber-400`}>
-            <div className="px-4 py-3 border-b border-slate-100">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" strokeWidth={2.25} />
-                  <div>
-                    <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Low Stock Items</h3>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {lowStockData.count} item{lowStockData.count !== 1 ? 's' : ''} need attention
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {lowStockData.low_stock > 0 && (
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-700 px-2 py-1 rounded border border-amber-200/80 bg-amber-50/50">
-                      Low <strong className="tabular-nums">{lowStockData.low_stock}</strong>
-                    </span>
-                  )}
-                  {lowStockData.out_of_stock > 0 && (
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-red-700 px-2 py-1 rounded border border-red-200/80 bg-red-50/50">
-                      Out <strong className="tabular-nums">{lowStockData.out_of_stock}</strong>
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleQuickActionClick('/dashboard/reports/stock-report')}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1A55E3] hover:text-[#1347c4] px-2 py-1 rounded border border-[#1A55E3]/25 hover:bg-[#1A55E3]/5 transition-colors"
-                  >
-                    <Package className="w-3 h-3" strokeWidth={2.25} />
-                    Stock Report
-                  </button>
-                </div>
-              </div>
-            </div>
+          <Card
+            elevation={0}
+            sx={{
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              borderLeft: '4px solid #f59e0b',
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+            }}
+          >
+            <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #f1f5f9', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle className="w-4 h-4 text-amber-600" strokeWidth={2.25} />
+                </Box>
+                <Box>
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                    Low Stock Items
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    {lowStockData.count} item{lowStockData.count !== 1 ? 's' : ''} require attention
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {lowStockData.low_stock > 0 && (
+                  <Chip size="small" label={`Low: ${lowStockData.low_stock}`} sx={{ bgcolor: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: '0.72rem' }} />
+                )}
+                {lowStockData.out_of_stock > 0 && (
+                  <Chip size="small" label={`Out: ${lowStockData.out_of_stock}`} sx={{ bgcolor: '#fee2e2', color: '#b91c1c', fontWeight: 700, fontSize: '0.72rem' }} />
+                )}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<Package className="w-3.5 h-3.5" />}
+                  onClick={() => handleQuickActionClick('/dashboard/reports/stock-report')}
+                  sx={{
+                    borderColor: '#1A55E3',
+                    color: '#1A55E3',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    '&:hover': { bgcolor: 'rgba(26, 85, 227, 0.06)', borderColor: '#1347c4' },
+                  }}
+                >
+                  Stock Report
+                </Button>
+              </Box>
+            </Box>
 
-            <div className="p-3">
-              <div className="border border-slate-200 rounded-md overflow-hidden">
-                <div className="max-h-[8rem] overflow-auto">
-                  <table className="w-full min-w-[720px] text-xs border-collapse table-fixed">
-                    <colgroup>
-                      <col style={{ width: '40px' }} />
-                      <col style={{ width: '120px' }} />
-                      <col style={{ width: '28%' }} />
-                      <col style={{ width: '56px' }} />
-                      <col style={{ width: '88px' }} />
-                      <col style={{ width: '88px' }} />
-                      <col style={{ width: '100px' }} />
-                      <col />
-                    </colgroup>
-                    <thead className="sticky top-0 z-10">
-                      <tr className="bg-[#eef2f7] text-slate-700">
-                        <th className="border-b border-r border-slate-200 px-1.5 py-1 text-center font-semibold">S#</th>
-                        <th className="border-b border-r border-slate-200 px-1.5 py-1 text-left font-semibold">Category</th>
-                        <th className="border-b border-r border-slate-200 px-1.5 py-1 text-left font-semibold">Item Name</th>
-                        <th className="border-b border-r border-slate-200 px-1.5 py-1 text-center font-semibold">Unit</th>
-                        <th className="border-b border-r border-slate-200 px-1.5 py-1 text-right font-semibold">Current Qty</th>
-                        <th className="border-b border-r border-slate-200 px-1.5 py-1 text-right font-semibold">Threshold</th>
-                        <th className="border-b border-r border-slate-200 px-1.5 py-1 text-center font-semibold">Status</th>
-                        <th className="border-b border-slate-200 px-1.5 py-1 text-left font-semibold">Store Breakdown</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {lowStockData.items.map((item, index) => (
-                        <tr
-                          key={item.pro_id}
-                          className={index % 2 === 0 ? 'bg-white hover:bg-slate-50/80' : 'bg-slate-50/40 hover:bg-slate-50/80'}
-                        >
-                          <td className="border-b border-r border-slate-200 px-1.5 py-1 text-center text-slate-500 tabular-nums">
-                            {index + 1}
-                          </td>
-                          <td className="border-b border-r border-slate-200 px-1.5 py-1 text-slate-600 truncate" title={item.category}>
-                            {item.category || '—'}
-                          </td>
-                          <td className="border-b border-r border-slate-200 px-1.5 py-1 font-medium text-slate-900 truncate" title={item.pro_title}>
-                            {item.pro_title}
-                          </td>
-                          <td className="border-b border-r border-slate-200 px-1.5 py-1 text-center text-slate-600">
-                            {item.pro_unit}
-                          </td>
-                          <td
-                            className={`border-b border-r border-slate-200 px-1.5 py-1 text-right tabular-nums ${
-                              item.status === 'OUT'
-                                ? 'text-red-600 font-semibold'
-                                : 'text-amber-700 font-semibold'
-                            }`}
-                          >
-                            {formatQty(item.total_qty)}
-                          </td>
-                          <td className="border-b border-r border-slate-200 px-1.5 py-1 text-right text-slate-600 tabular-nums">
-                            {formatQty(item.threshold)}
-                          </td>
-                          <td className="border-b border-r border-slate-200 px-1.5 py-1 text-center">
-                            <span
-                              className={`inline-block px-1 py-0.5 rounded-sm text-[10px] font-semibold leading-none whitespace-nowrap ${
-                                item.status === 'OUT'
-                                  ? 'text-red-700 bg-red-50'
-                                  : 'text-amber-800 bg-amber-50'
-                              }`}
-                            >
-                              {stockStatusLabel(item.status)}
-                            </span>
-                          </td>
-                          <td className="border-b border-slate-200 px-1.5 py-1 text-slate-600 truncate" title={item.store_breakdown}>
-                            {item.store_breakdown || '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+            <TableContainer sx={{ maxHeight: 220 }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow sx={{ '& th': { bgcolor: '#f8fafc', fontWeight: 700, fontSize: '0.75rem', color: '#475569', borderBottom: '1px solid #e2e8f0' } }}>
+                    <TableCell align="center" sx={{ width: 50 }}>S#</TableCell>
+                    <TableCell sx={{ width: 140 }}>Category</TableCell>
+                    <TableCell>Item Name</TableCell>
+                    <TableCell align="center" sx={{ width: 70 }}>Unit</TableCell>
+                    <TableCell align="right" sx={{ width: 100 }}>Current Qty</TableCell>
+                    <TableCell align="right" sx={{ width: 90 }}>Threshold</TableCell>
+                    <TableCell align="center" sx={{ width: 100 }}>Status</TableCell>
+                    <TableCell sx={{ width: 180 }}>Store Breakdown</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {lowStockData.items.map((item, index) => (
+                    <TableRow key={item.pro_id} hover sx={{ '& td': { fontSize: '0.775rem', borderBottom: '1px solid #f1f5f9' } }}>
+                      <TableCell align="center" sx={{ color: '#94a3b8' }}>{index + 1}</TableCell>
+                      <TableCell sx={{ color: '#475569' }}>{item.category || '—'}</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>{item.pro_title}</TableCell>
+                      <TableCell align="center" sx={{ color: '#64748b' }}>{item.pro_unit}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, color: item.status === 'OUT' ? '#dc2626' : '#d97706' }}>
+                        {formatQty(item.total_qty)}
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: '#64748b' }}>{formatQty(item.threshold)}</TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          size="small"
+                          label={stockStatusLabel(item.status)}
+                          sx={{
+                            height: 20,
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            bgcolor: item.status === 'OUT' ? '#fee2e2' : '#fef3c7',
+                            color: item.status === 'OUT' ? '#b91c1c' : '#b45309',
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ color: '#64748b' }}>{item.store_breakdown || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
             {lowStockData.count > 3 && (
-              <div className="px-4 py-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[11px] text-slate-500">
-                  Showing 3 of {lowStockData.count} · scroll for more
-                </span>
-                <button
-                  type="button"
+              <Box sx={{ px: 3, py: 1.5, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  Showing 3 of {lowStockData.count} · scroll table for more
+                </Typography>
+                <Button
+                  size="small"
                   onClick={() => handleQuickActionClick('/dashboard/reports/stock-report')}
-                  className="text-[11px] font-semibold text-[#1A55E3] hover:underline"
+                  sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.75rem', color: '#1A55E3' }}
                 >
                   Full report →
-                </button>
-              </div>
+                </Button>
+              </Box>
             )}
-          </div>
+          </Card>
         ) : null}
 
         {/* Monthly Analytics & Financial Performance — per-widget access */}
@@ -1888,47 +2216,87 @@ export default function DashboardContent({ activeTab }) {
           <ReportWidgetShell accent={sectionAccent} title="KPI Summary" className={REPORT.kpiWrap}>
             <WidgetDateFilter filters={kpiFilters} onChange={setKpiFilters} loading={loading} accent={sectionAccent} />
           {loading ? (
-            <div className={REPORT.kpiGrid}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }, gap: 2, p: { xs: 2, md: 2.5 } }}>
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={`${REPORT.kpiCardBase} animate-pulse`} style={sectionNeon.card}>
-                  <div className="h-[72px] bg-slate-100/80 rounded-lg" />
-                </div>
+                <Card key={i} elevation={0} sx={{ p: 2.5, borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                  <Skeleton variant="text" width="40%" height={16} />
+                  <Skeleton variant="text" width="70%" height={38} sx={{ my: 0.5 }} />
+                  <Skeleton variant="rounded" width="50%" height={20} />
+                </Card>
               ))}
-            </div>
+            </Box>
           ) : (
-            <div className={REPORT.kpiGrid}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }, gap: 2, p: { xs: 2, md: 2.5 } }}>
               {kpiData.map((kpi, index) => {
                 const p = KPI_PALETTE[kpi.theme] || KPI_PALETTE.blue;
                 const accent = KPI_NEON[kpi.theme] || CHART_COLORS.sales;
                 const kpiNeon = getReportNeonStyles(accent);
+                const isPositive = kpi.changeType === 'positive';
                 return (
-                  <div key={index} className={REPORT.kpiCardBase} style={kpiNeon.card}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: kpiNeon.text }}>
+                  <Card
+                    key={index}
+                    elevation={0}
+                    sx={{
+                      borderRadius: '16px',
+                      border: `1px solid ${kpiNeon.iconBorder || '#e2e8f0'}`,
+                      bgcolor: '#ffffff',
+                      p: 2.5,
+                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                      '&:hover': {
+                        boxShadow: '0 10px 28px rgba(15, 23, 42, 0.08)',
+                        transform: 'translateY(-3px)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.6875rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: kpiNeon.text, mb: 0.75 }}>
                           {kpi.title}
-                        </p>
-                        <p className="text-[1.55rem] font-extrabold text-slate-900 tracking-tight leading-none tabular-nums">
+                        </Typography>
+                        <Typography sx={{ fontSize: '1.65rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>
                           {kpi.value}
-                        </p>
-                        <div className="flex items-center mt-2 gap-1">
-                          <span className={kpi.changeType === 'positive' ? REPORT.trendUp : REPORT.trendDown}>
-                            {kpi.change}
-                          </span>
-                          <span className={REPORT.trendMuted}>vs prior period</span>
-                        </div>
-                      </div>
-                      <div
-                        className={`w-11 h-11 rounded-lg ${p.iconBg} flex items-center justify-center flex-shrink-0 border`}
-                        style={{ borderColor: kpiNeon.iconBorder }}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.25 }}>
+                          <Chip
+                            size="small"
+                            icon={isPositive ? <TrendingUpMui sx={{ fontSize: '13px !important', color: '#059669 !important' }} /> : <TrendingDownMui sx={{ fontSize: '13px !important', color: '#dc2626 !important' }} />}
+                            label={kpi.change}
+                            sx={{
+                              height: 22,
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              bgcolor: isPositive ? '#ecfdf5' : '#fef2f2',
+                              color: isPositive ? '#059669' : '#dc2626',
+                              '& .MuiChip-label': { px: 0.75 },
+                            }}
+                          />
+                          <Typography sx={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 500 }}>
+                            vs prior period
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box
+                        className={p.iconBg}
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          border: `1px solid ${kpiNeon.iconBorder}`,
+                          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+                        }}
                       >
-                        <kpi.icon className={`w-[18px] h-[18px] ${p.icon}`} strokeWidth={2.25} />
-                      </div>
-                    </div>
-                  </div>
+                        <kpi.icon className={`w-5 h-5 ${p.icon}`} strokeWidth={2.25} />
+                      </Box>
+                    </Box>
+                  </Card>
                 );
               })}
-            </div>
+            </Box>
           )}
           </ReportWidgetShell>
           )}
@@ -2503,7 +2871,7 @@ export default function DashboardContent({ activeTab }) {
         </div>
           );
         })()}
-      </div>
+      </Box>
     );
   }
 
