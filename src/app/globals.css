@@ -236,7 +236,7 @@ body {
 
 .sidebar-header-ornament span {
   display: block;
-  border-radius: 999px;
+  border-radius: 0;
   background: linear-gradient(90deg, #1A55E3, #0DCAF0);
   opacity: 0.6;
 }
@@ -271,7 +271,7 @@ body {
   top: 3px;
   bottom: 3px;
   width: 3.5px;
-  border-radius: 999px;
+  border-radius: 0;
   background: linear-gradient(180deg, #0DCAF0 0%, #1A55E3 60%, #2563EB 100%);
   box-shadow: 0 0 10px rgba(26, 85, 227, 0.4);
 }
@@ -303,7 +303,7 @@ body {
   margin-top: 6px;
   height: 2px;
   width: 65%;
-  border-radius: 999px;
+  border-radius: 0;
   background: linear-gradient(90deg, rgba(26, 85, 227, 0.75) 0%, rgba(13, 202, 240, 0.1) 100%);
   box-shadow: 0 0 6px rgba(26, 85, 227, 0.2);
 }
@@ -330,7 +330,7 @@ body {
   justify-content: center;
   gap: 3px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 0;
   border: 1px solid #e2e8f0;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
@@ -371,7 +371,7 @@ body {
 
 .sidebar-search-wrap {
   position: relative;
-  border-radius: 10px;
+  border-radius: 0;
   border: 1px solid #e2e8f0;
   background: #ffffff;
   transition: all 0.2s ease;
@@ -391,7 +391,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
-  border-radius: 9px;
+  border-radius: 0;
   background: #ffffff;
 }
 
@@ -473,7 +473,7 @@ body {
 
 .hq-sidebar-header-ornament span {
   display: block;
-  border-radius: 999px;
+  border-radius: 0;
   background: linear-gradient(90deg, #4338ca, #f59e0b);
   opacity: 0.55;
 }
@@ -495,7 +495,7 @@ body {
   top: 4px;
   bottom: 4px;
   width: 3px;
-  border-radius: 999px;
+  border-radius: 0;
   background: linear-gradient(180deg, #f59e0b 0%, #6366f1 45%, #4338ca 100%);
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
 }
@@ -530,7 +530,7 @@ body {
   margin-top: 6px;
   height: 2px;
   width: 65%;
-  border-radius: 999px;
+  border-radius: 0;
   background: linear-gradient(90deg, rgba(99, 102, 241, 0.75) 0%, rgba(99, 102, 241, 0.08) 100%);
   box-shadow: 0 0 6px rgba(99, 102, 241, 0.35);
 }
@@ -557,7 +557,7 @@ body {
 .hq-sidebar-powered-collapsed {
   width: 36px;
   height: 36px;
-  border-radius: 6px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -582,7 +582,7 @@ body {
 
 .hq-sidebar-search-wrap {
   position: relative;
-  border-radius: 12px;
+  border-radius: 0;
   padding: 2px;
   background: linear-gradient(90deg, #312e81, #4338ca, #f59e0b, #6366f1, #4338ca);
   background-size: 300% 100%;
@@ -599,7 +599,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: 0;
   background: #ffffff;
 }
 

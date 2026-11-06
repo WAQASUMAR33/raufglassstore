@@ -459,7 +459,7 @@ export default function Sidebar({
               py: 0.65,
               ml: indent ? 0.75 : 0,
               mr: indent ? 0.5 : 0,
-              borderRadius: '10px',
+              borderRadius: 0,
               cursor: 'pointer',
               position: 'relative',
               color: isActive ? '#ffffff' : '#334155',
@@ -482,7 +482,7 @@ export default function Sidebar({
               sx={{
                 width: indent ? 26 : 30,
                 height: indent ? 26 : 30,
-                borderRadius: indent ? '6px' : '8px',
+                borderRadius: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -533,7 +533,7 @@ export default function Sidebar({
               fontWeight: 600,
               px: 1.25,
               py: 0.75,
-              borderRadius: 1.5,
+              borderRadius: 0,
               boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
             },
           },
@@ -547,7 +547,7 @@ export default function Sidebar({
               }
             }}
             sx={{
-              borderRadius: '10px',
+              borderRadius: 0,
               mb: 0.5,
               minHeight: 42,
               justifyContent: 'center',
@@ -611,7 +611,7 @@ export default function Sidebar({
           mb: 0.25,
           px: 1.25,
           py: 0.85,
-          borderRadius: 2,
+          borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           gap: 1,
@@ -732,7 +732,7 @@ export default function Sidebar({
                 sx={{
                   width: 38,
                   height: 38,
-                  borderRadius: '10px',
+                  borderRadius: 0,
                   background: 'linear-gradient(135deg, #1A55E3 0%, #0DCAF0 100%)',
                   display: 'flex',
                   alignItems: 'center',
@@ -758,7 +758,7 @@ export default function Sidebar({
                 color: '#475569',
                 width: 28,
                 height: 28,
-                borderRadius: '8px',
+                borderRadius: 0,
                 border: '1px solid #e2e8f0',
                 zIndex: 20,
                 flexShrink: 0,
@@ -853,12 +853,12 @@ export default function Sidebar({
           '&::-webkit-scrollbar': { width: 7 },
           '&::-webkit-scrollbar-track': {
             background: 'rgba(26, 85, 227, 0.08)',
-            borderRadius: 10,
+            borderRadius: 0,
             margin: '4px 0',
           },
           '&::-webkit-scrollbar-thumb': {
             background: 'rgba(26, 85, 227, 0.45)',
-            borderRadius: 10,
+            borderRadius: 0,
             border: '1px solid rgba(255, 255, 255, 0.35)',
             '&:hover': { background: 'rgba(26, 85, 227, 0.65)' },
           },
@@ -967,7 +967,7 @@ export default function Sidebar({
               sx={{
                 width: 36,
                 height: 36,
-                borderRadius: 1.5,
+                borderRadius: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

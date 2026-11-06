@@ -282,7 +282,7 @@ export default function DashboardLayout({ children }) {
                   border: '1px solid rgba(255,255,255,0.4)',
                   bgcolor: 'rgba(255,255,255,0.12)',
                   color: 'white',
-                  borderRadius: 1,
+                  borderRadius: 0,
                   px: 1.5,
                   py: 0.5,
                   cursor: 'pointer',

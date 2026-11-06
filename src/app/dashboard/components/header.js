@@ -1,8 +1,17 @@
 'use client';
 
-import { Menu, Bell, Home, LogOut, BookOpen, LayoutGrid, ShoppingCart, ShoppingBag, ClipboardList, Calendar } from 'lucide-react';
+import { Menu, Home, LogOut, BookOpen, LayoutGrid, ShoppingCart, ShoppingBag, ClipboardList, Calendar } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import {
+  Box,
+  Button,
+  IconButton,
+  Typography,
+  Chip,
+  Avatar,
+  Tooltip,
+} from '@mui/material';
 import { getStaffRoleName, canStaffAccessPath, getRoleDisplayName } from '@/lib/staff-access';
 
 function getUserDisplayName(user) {
@@ -72,178 +81,341 @@ export default function Header({ sidebarOpen, setSidebarOpen, activeTab, user, b
   const hasHeaderActions = canNewSale || canNewPurchase || canOrders || canLedger || canAccounts;
 
   return (
-    <header className="sticky top-0 z-30 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+    <Box
+      component="header"
+      sx={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 30,
+        boxShadow: '0 2px 12px rgba(15, 23, 42, 0.04)',
+      }}
+    >
       {/* Top micro accent bar */}
-      <div className="h-1 bg-gradient-to-r from-[#1A55E3] via-[#0DCAF0] to-[#00D284]" />
+      <Box sx={{ height: 4, background: 'linear-gradient(90deg, #1A55E3 0%, #0DCAF0 50%, #00D284 100%)' }} />
 
       {/* Main Bar */}
-      <div className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-6 py-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <Box
+        sx={{
+          bgcolor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid #e2e8f0',
+          px: { xs: 2, md: 3 },
+          py: 1.25,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
           {/* Left section: mobile toggle + brand breadcrumb + quick action buttons */}
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+            <IconButton
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-slate-600 hover:text-slate-900 p-2 rounded-xl hover:bg-slate-100 transition-colors"
               aria-label="Open sidebar"
+              size="small"
+              sx={{
+                display: { lg: 'none' },
+                color: '#475569',
+                borderRadius: 0,
+                '&:hover': { bgcolor: '#f1f5f9' },
+              }}
             >
               <Menu className="w-5 h-5" />
-            </button>
+            </IconButton>
 
             {/* Live Branch Indicator */}
-            <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200/80 text-xs font-semibold text-slate-700">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              <span>{branchCode}</span>
-            </div>
+            <Chip
+              icon={
+                <Box sx={{ position: 'relative', width: 8, height: 8, ml: 0.5 }}>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: 0,
+                      bgcolor: '#34d399',
+                      opacity: 0.75,
+                      animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
+                      '@keyframes ping': {
+                        '75%, 100%': { transform: 'scale(2)', opacity: 0 },
+                      },
+                    }}
+                  />
+                  <Box sx={{ position: 'relative', width: 8, height: 8, borderRadius: 0, bgcolor: '#10b981' }} />
+                </Box>
+              }
+              label={branchCode}
+              size="small"
+              sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
+                bgcolor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 0,
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                color: '#334155',
+                height: 28,
+              }}
+            />
 
             {/* Breadcrumb title */}
-            <div className="hidden md:flex items-center gap-1.5 text-xs font-medium text-slate-400">
-              <span className="text-slate-500 font-semibold hover:text-slate-800 transition-colors cursor-pointer" onClick={() => router.push('/dashboard')}>
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.75 }}>
+              <Typography
+                onClick={() => router.push('/dashboard')}
+                sx={{
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  '&:hover': { color: '#0f172a' },
+                  transition: 'color 0.15s ease',
+                }}
+              >
                 Zain Traders
-              </span>
-              <span>/</span>
-              <span className="text-[#1A55E3] font-bold">{pageTitle}</span>
-            </div>
+              </Typography>
+              <Typography sx={{ color: '#cbd5e1', fontSize: '0.8125rem' }}>/</Typography>
+              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: '#1A55E3' }}>
+                {pageTitle}
+              </Typography>
+            </Box>
 
             {/* Quick Action Buttons */}
             {hasHeaderActions && (
-              <div className="flex items-center gap-2 ml-1">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 0.5 }}>
                 {canNewSale && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<ShoppingCart className="w-3.5 h-3.5" />}
                     onClick={() => router.push('/dashboard/sales')}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 shadow-sm ${
-                      isNewSaleActive
-                        ? 'bg-[#1347c4] text-white shadow-blue-500/25 ring-2 ring-[#1A55E3]/30'
-                        : 'bg-gradient-to-r from-[#1A55E3] to-[#2563EB] hover:from-[#1347c4] hover:to-[#1d4ed8] text-white shadow-blue-500/20 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0'
-                    }`}
+                    sx={{
+                      background: isNewSaleActive
+                        ? '#1347c4'
+                        : 'linear-gradient(135deg, #1A55E3 0%, #2563EB 100%)',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '0.75rem',
+                      textTransform: 'none',
+                      borderRadius: 0,
+                      px: 2,
+                      py: 0.6,
+                      boxShadow: '0 2px 8px rgba(26, 85, 227, 0.25)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #1347c4 0%, #1d4ed8 100%)',
+                        boxShadow: '0 4px 12px rgba(26, 85, 227, 0.35)',
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
                   >
-                    <ShoppingCart className="w-3.5 h-3.5" strokeWidth={2.25} />
-                    <span>New Sale</span>
-                  </button>
+                    New Sale
+                  </Button>
                 )}
                 {canNewPurchase && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ShoppingBag className="w-3.5 h-3.5 text-[#1A55E3]" />}
                     onClick={() => router.push('/dashboard/purchases?view=create')}
-                    className={`hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
-                      isNewPurchaseActive
-                        ? 'border-[#1A55E3] bg-[#e8effd] text-[#1347c4] ring-2 ring-[#1A55E3]/20'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50/50 hover:text-[#1A55E3]'
-                    }`}
+                    sx={{
+                      display: { xs: 'none', sm: 'inline-flex' },
+                      borderColor: isNewPurchaseActive ? '#1A55E3' : '#e2e8f0',
+                      bgcolor: isNewPurchaseActive ? '#eff6ff' : '#ffffff',
+                      color: isNewPurchaseActive ? '#1347c4' : '#334155',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      textTransform: 'none',
+                      borderRadius: 0,
+                      px: 1.75,
+                      py: 0.6,
+                      '&:hover': {
+                        borderColor: '#93c5fd',
+                        bgcolor: '#f0f7ff',
+                        color: '#1A55E3',
+                      },
+                    }}
                   >
-                    <ShoppingBag className="w-3.5 h-3.5 text-[#1A55E3]" strokeWidth={2.25} />
-                    <span>New Purchase</span>
-                  </button>
+                    New Purchase
+                  </Button>
                 )}
                 {canOrders && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ClipboardList className="w-3.5 h-3.5 text-[#0DCAF0]" />}
                     onClick={() => router.push('/dashboard/orders?view=create&type=ORDER')}
-                    className={`hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
-                      isOrdersActive
-                        ? 'border-[#0DCAF0] bg-[#e6faff] text-[#0aa3bd] ring-2 ring-[#0DCAF0]/25'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50/50 hover:text-[#0aa3bd]'
-                    }`}
+                    sx={{
+                      display: { xs: 'none', sm: 'inline-flex' },
+                      borderColor: isOrdersActive ? '#0DCAF0' : '#e2e8f0',
+                      bgcolor: isOrdersActive ? '#ecfeff' : '#ffffff',
+                      color: isOrdersActive ? '#0e7490' : '#334155',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      textTransform: 'none',
+                      borderRadius: 0,
+                      px: 1.75,
+                      py: 0.6,
+                      '&:hover': {
+                        borderColor: '#67e8f9',
+                        bgcolor: '#f0fdff',
+                        color: '#0891b2',
+                      },
+                    }}
                   >
-                    <ClipboardList className="w-3.5 h-3.5 text-[#0DCAF0]" strokeWidth={2.25} />
-                    <span>Orders</span>
-                  </button>
+                    Orders
+                  </Button>
                 )}
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
 
           {/* Right section: date, modules, user info, logout */}
-          <div className="flex items-center gap-2 ml-auto">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, ml: 'auto' }}>
             {canLedger && (
-              <button
-                type="button"
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<BookOpen className="w-3.5 h-3.5" />}
                 onClick={() => router.push('/dashboard/finance')}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                  isLedgerActive
-                    ? 'text-white bg-[#4a57d4] border border-[#5E6EED]/40 shadow-sm ring-2 ring-[#5E6EED]/25'
-                    : 'text-indigo-700 bg-indigo-50 border border-indigo-200/60 hover:bg-indigo-100/70 hover:shadow-sm'
-                }`}
+                sx={{
+                  bgcolor: isLedgerActive ? '#4f46e5' : '#eef2ff',
+                  borderColor: isLedgerActive ? '#4338ca' : '#e0e7ff',
+                  color: isLedgerActive ? '#ffffff' : '#4338ca',
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  borderRadius: 0,
+                  px: 1.5,
+                  py: 0.6,
+                  '&:hover': {
+                    bgcolor: isLedgerActive ? '#4338ca' : '#e0e7ff',
+                    borderColor: '#c7d2fe',
+                  },
+                }}
               >
-                <BookOpen className="w-3.5 h-3.5" strokeWidth={2.25} />
-                <span className="hidden sm:inline">Ledger</span>
-              </button>
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Ledger</Box>
+              </Button>
             )}
 
             {canAccounts && (
-              <button
-                type="button"
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<LayoutGrid className="w-3.5 h-3.5" />}
                 onClick={() => router.push('/dashboard/customers')}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                  isAllAccountsActive
-                    ? 'text-white bg-[#00a868] border border-[#00D284]/40 shadow-sm ring-2 ring-[#00D284]/25'
-                    : 'text-emerald-700 bg-emerald-50 border border-emerald-200/60 hover:bg-emerald-100/70 hover:shadow-sm'
-                }`}
+                sx={{
+                  bgcolor: isAllAccountsActive ? '#059669' : '#ecfdf5',
+                  borderColor: isAllAccountsActive ? '#047857' : '#d1fae5',
+                  color: isAllAccountsActive ? '#ffffff' : '#059669',
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  borderRadius: 0,
+                  px: 1.5,
+                  py: 0.6,
+                  '&:hover': {
+                    bgcolor: isAllAccountsActive ? '#047857' : '#d1fae5',
+                    borderColor: '#a7f3d0',
+                  },
+                }}
               >
-                <LayoutGrid className="w-3.5 h-3.5" strokeWidth={2.25} />
-                <span className="hidden sm:inline">Accounts</span>
-              </button>
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Accounts</Box>
+              </Button>
             )}
 
             {/* Date display pill */}
-            <div className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/70 text-slate-500 text-[11px] font-medium">
-              <Calendar className="w-3 h-3 text-slate-400" />
-              <span>{currentDate}</span>
-            </div>
+            <Chip
+              icon={<Calendar className="w-3 h-3 text-slate-400" />}
+              label={currentDate}
+              size="small"
+              sx={{
+                display: { xs: 'none', lg: 'inline-flex' },
+                bgcolor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 0,
+                color: '#64748b',
+                fontWeight: 500,
+                fontSize: '0.72rem',
+                height: 28,
+              }}
+            />
 
             {/* Home shortcut button */}
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard')}
-              className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-              aria-label="Dashboard Home"
-              title="Dashboard Home"
-            >
-              <Home className="w-4 h-4" />
-            </button>
+            <Tooltip title="Dashboard Home" arrow>
+              <IconButton
+                size="small"
+                onClick={() => router.push('/dashboard')}
+                aria-label="Dashboard Home"
+                sx={{
+                  color: '#64748b',
+                  borderRadius: 0,
+                  '&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
+                }}
+              >
+                <Home className="w-4 h-4" />
+              </IconButton>
+            </Tooltip>
 
-            {/* User chip */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#1A55E3] to-[#0DCAF0] flex items-center justify-center text-white text-xs font-extrabold shadow-sm shrink-0">
+            {/* User Profile Chip */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pl: 1, borderLeft: '1px solid #e2e8f0' }}>
+              <Avatar
+                variant="square"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  fontSize: '0.775rem',
+                  fontWeight: 800,
+                  borderRadius: 0,
+                  background: 'linear-gradient(135deg, #1A55E3 0%, #0DCAF0 100%)',
+                  color: '#ffffff',
+                  boxShadow: '0 2px 6px rgba(26, 85, 227, 0.25)',
+                }}
+              >
                 {userInitial}
-              </div>
-              <div className="hidden md:block text-left min-w-0">
-                <p className="text-xs font-bold text-slate-900 truncate max-w-[120px]" title={userDisplayName}>
+              </Avatar>
+              <Box sx={{ display: { xs: 'none', md: 'block' }, minWidth: 0, textAlign: 'left' }}>
+                <Typography sx={{ fontSize: '0.775rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.2, maxWidth: 120 }} noWrap>
                   {userDisplayName}
-                </p>
-                <p className="text-[10px] font-semibold text-[#1A55E3] uppercase tracking-wide truncate max-w-[120px]" title={userRoleLabel}>
+                </Typography>
+                <Typography sx={{ fontSize: '0.625rem', fontWeight: 700, color: '#1A55E3', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.2, maxWidth: 120 }} noWrap>
                   {userRoleLabel}
-                </p>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+            </Box>
 
             {/* Logout button */}
-            <button
-              type="button"
-              onClick={onLogout}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors ml-0.5"
-              aria-label="Logout"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+            <Tooltip title="Sign Out" arrow>
+              <IconButton
+                size="small"
+                onClick={onLogout}
+                aria-label="Sign Out"
+                sx={{
+                  color: '#94a3b8',
+                  borderRadius: 0,
+                  '&:hover': { bgcolor: '#fee2e2', color: '#dc2626' },
+                }}
+              >
+                <LogOut className="w-4 h-4" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
 
         {/* Mobile secondary breadcrumb row */}
-        <div className="md:hidden mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center gap-1.5 font-medium">
-            <span className="text-slate-600 font-semibold">Zain Traders</span>
-            <span>/</span>
-            <span className="text-[#1A55E3] font-bold">{pageTitle}</span>
-          </div>
-          <span className="text-[11px] font-semibold text-slate-400">{currentDate}</span>
-        </div>
-      </div>
-    </header>
+        <Box
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mt: 1,
+            pt: 1,
+            borderTop: '1px solid #f1f5f9',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Zain Traders</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: '#cbd5e1' }}>/</Typography>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#1A55E3' }}>{pageTitle}</Typography>
+          </Box>
+          <Typography sx={{ fontSize: '0.6875rem', fontWeight: 600, color: '#94a3b8' }}>{currentDate}</Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 }

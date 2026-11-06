@@ -124,7 +124,7 @@ const fmtK = v => {
   return v.toFixed(0);
 };
 
-const CARD = 'relative bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.03),0_6px_20px_rgba(15,23,42,0.04)]';
+const CARD = 'relative bg-white rounded-none border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.03),0_6px_20px_rgba(15,23,42,0.04)]';
 const CARD_HOVER = 'transition-all duration-300 ease-out hover:shadow-[0_4px_12px_rgba(15,23,42,0.06),0_16px_32px_rgba(15,23,42,0.08)] hover:-translate-y-1';
 
 const EMPTY_DATE_FILTER = { fromDate: '', toDate: '' };
@@ -148,7 +148,7 @@ function ReportFullscreenExpandButton() {
         sx={{
           width: 30,
           height: 30,
-          borderRadius: '8px',
+          borderRadius: 0,
           border: `1px solid ${neon.chartBorder}`,
           color: neon.primary,
           bgcolor: '#ffffff',
@@ -192,7 +192,7 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
     if (range) onChange(range);
   };
 
-  const pillClass = 'flex items-center gap-1 bg-white border rounded-lg px-1.5 py-1 shrink-0';
+  const pillClass = 'flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0';
   const labelClass = 'text-[9px] font-bold text-slate-400 uppercase';
   const inputClass = 'text-[11px] font-medium text-slate-800 bg-transparent focus:outline-none w-[80px]';
 
@@ -235,7 +235,7 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
           />
         </div>
         <div 
-          className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-lg border shrink-0" 
+          className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-none border shrink-0" 
           style={{ borderColor: neon.chartBorder }}
         >
           {[
@@ -251,7 +251,7 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
                 key={label}
                 type="button"
                 onClick={() => onChange(preset)}
-                className={`px-1.5 py-1 text-[10px] font-bold rounded-md transition-all duration-150 ${
+                className={`px-1.5 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
                   active ? 'bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
                 style={active ? { color: neon.primary } : undefined}
@@ -265,7 +265,7 @@ function WidgetMonthRangeFilter({ filters, onChange, loading = false, accent, ch
           <button
             type="button"
             onClick={() => onChange(lastNCalendarMonthsFilter(6))}
-            className="text-[10px] font-bold px-1 py-1 rounded-lg transition-colors whitespace-nowrap text-red-500 hover:bg-red-50"
+            className="text-[10px] font-bold px-1 py-1 rounded-none transition-colors whitespace-nowrap text-red-500 hover:bg-red-50"
           >
             Reset
           </button>
@@ -381,7 +381,7 @@ function ReportWidgetShell({ accent, title = 'Report', children, className = '' 
           <button
             type="button"
             onClick={() => setIsFullscreen(false)}
-            className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border transition-colors hover:bg-slate-50 shrink-0"
+            className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-none border transition-colors hover:bg-slate-50 shrink-0"
             style={{ borderColor: neon.primary, color: neon.text }}
           >
             <Minimize2 className="w-4 h-4" strokeWidth={2.25} />
@@ -399,7 +399,7 @@ function ReportWidgetShell({ accent, title = 'Report', children, className = '' 
 
 function WidgetDateFilter({ filters, onChange, loading = false, accent, type = 'days' }) {
   const neon = getReportNeonStyles(accent);
-  const pillClass = 'flex items-center gap-1 bg-white border rounded-lg px-1.5 py-1 shrink-0';
+  const pillClass = 'flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0';
   const labelClass = 'text-[9px] font-bold text-slate-400 uppercase';
   const inputClass = 'text-[11px] font-medium text-slate-800 bg-transparent focus:outline-none w-[90px]';
 
@@ -448,7 +448,7 @@ function WidgetDateFilter({ filters, onChange, loading = false, accent, type = '
         />
       </div>
       <div 
-        className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-lg border shrink-0" 
+        className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-none border shrink-0" 
         style={{ borderColor: neon.chartBorder }}
       >
         {presets.map(({ label, val }) => {
@@ -459,7 +459,7 @@ function WidgetDateFilter({ filters, onChange, loading = false, accent, type = '
             key={label}
             type="button"
             onClick={() => onChange(preset)}
-            className={`px-1.5 py-1 text-[10px] font-bold rounded-md transition-all duration-150 ${
+            className={`px-1.5 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
               active ? 'bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
             style={active ? { color: neon.primary } : undefined}
@@ -473,7 +473,7 @@ function WidgetDateFilter({ filters, onChange, loading = false, accent, type = '
         <button
           type="button"
           onClick={() => onChange(type === 'months' ? buildMonthChartPreset(6) : buildDatePreset(30))}
-          className="text-[10px] font-bold px-1 py-1 rounded-lg transition-colors text-red-500 hover:bg-red-50"
+          className="text-[10px] font-bold px-1 py-1 rounded-none transition-colors text-red-500 hover:bg-red-50"
         >
           Reset
         </button>
@@ -523,7 +523,7 @@ function WidgetCustomerScopeFilter({
     >
       <Users className="w-3 h-3 shrink-0" style={{ color: neon.primary }} />
       
-      <div className="flex items-center gap-1 bg-white border rounded-lg px-1.5 py-1 shrink-0" style={{ borderColor: neon.chartBorder }}>
+      <div className="flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0" style={{ borderColor: neon.chartBorder }}>
         <span className="text-[9px] font-bold text-slate-400 uppercase">Cat</span>
         <select
           value={cusCatId}
@@ -539,7 +539,7 @@ function WidgetCustomerScopeFilter({
           ))}
         </select>
       </div>
-      <div className="flex items-center gap-1 bg-white border rounded-lg px-1.5 py-1 shrink-0" style={{ borderColor: neon.chartBorder }}>
+      <div className="flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0" style={{ borderColor: neon.chartBorder }}>
         <span className="text-[9px] font-bold text-slate-400 uppercase">Type</span>
         <select
           value={cusTypeId}
@@ -559,7 +559,7 @@ function WidgetCustomerScopeFilter({
         <button
           type="button"
           onClick={onClearScope}
-          className="text-[10px] font-bold px-1 py-1 rounded-lg transition-colors text-red-500 hover:bg-red-50"
+          className="text-[10px] font-bold px-1 py-1 rounded-none transition-colors text-red-500 hover:bg-red-50"
         >
           Reset
         </button>
@@ -587,7 +587,7 @@ function WidgetDayFilter({ days, onChange, loading = false, accent }) {
       <Filter className="w-3 h-3 shrink-0" style={{ color: neon.primary }} />
       <span className="text-[9px] font-bold text-slate-400 uppercase">Period</span>
       <div 
-        className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-lg border shrink-0" 
+        className="flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-none border shrink-0" 
         style={{ borderColor: neon.chartBorder }}
       >
         {[7, 14, 30].map((d) => (
@@ -595,7 +595,7 @@ function WidgetDayFilter({ days, onChange, loading = false, accent }) {
             key={d}
             type="button"
             onClick={() => onChange(d)}
-            className={`px-1.5 py-1 text-[10px] font-bold rounded-md transition-all duration-150 ${
+            className={`px-1.5 py-1 text-[10px] font-bold rounded-none transition-all duration-150 ${
               days === d ? 'bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
             style={days === d ? { color: neon.primary } : undefined}
@@ -633,7 +633,7 @@ function ReportChartArea({ accent, children }) {
 function ChartEmptyState() {
   return (
     <div className="h-[240px] flex flex-col items-center justify-center text-slate-400">
-      <div className="w-14 h-14 rounded-2xl bg-slate-100/80 flex items-center justify-center mb-3">
+      <div className="w-14 h-14 rounded-none bg-slate-100/80 flex items-center justify-center mb-3">
         <BarChart3 className="w-7 h-7 text-slate-300" strokeWidth={1.75} />
       </div>
       <p className="text-sm font-medium text-slate-500">No bar data for this range</p>
@@ -672,7 +672,7 @@ function ReportWidgetHeader({ title, subtitle, icon: Icon, tint, primary, accent
           sx={{
             width: 36,
             height: 36,
-            borderRadius: '10px',
+            borderRadius: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -781,7 +781,7 @@ function renderSmoothBarChart({
       </defs>
 
       {/* Modern translucent chart canvas */}
-      <rect x={pL} y={pT} width={cW} height={cH} rx="12" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
 
       {/* Grid horizontal guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
@@ -806,7 +806,7 @@ function renderSmoothBarChart({
       })}
 
       {/* Baseline */}
-      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="square" />
 
       {/* Bars & Labels */}
       {data.map((item, i) => {
@@ -826,7 +826,7 @@ function renderSmoothBarChart({
                   y={yTop}
                   width={barW}
                   height={bH}
-                  rx="8"
+                  rx="0"
                   fill={`url(#${barId})`}
                   filter={`url(#${barId}-shadow)`}
                 >
@@ -840,7 +840,7 @@ function renderSmoothBarChart({
                     y={yTop}
                     width={Math.max(barW - 4, 1)}
                     height="3"
-                    rx="1.5"
+                    rx="0"
                     fill="#ffffff"
                     opacity="0.65"
                   />
@@ -901,7 +901,7 @@ function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) 
       </defs>
 
       {/* Modern translucent chart canvas */}
-      <rect x={pL} y={pT} width={cW} height={cH} rx="12" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
 
       {/* Grid horizontal guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
@@ -926,7 +926,7 @@ function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) 
       })}
 
       {/* Baseline */}
-      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="square" />
 
       {/* Grouped series bars */}
       {labels.map((lbl, i) => {
@@ -946,7 +946,7 @@ function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) 
                     y={yTop}
                     width={barW}
                     height={bH}
-                    rx="6"
+                    rx="0"
                     fill={`url(#${chartId}-${s.key})`}
                   >
                     <title>{`${s.name} ${lbl}: ${formatValue(val)}`}</title>
@@ -957,7 +957,7 @@ function renderGroupedBarChart({ chartId, labels, series, formatValue = fmtK }) 
                       y={yTop}
                       width={Math.max(barW - 2, 1)}
                       height="2.5"
-                      rx="1"
+                      rx="0"
                       fill="#ffffff"
                       opacity="0.6"
                     />
@@ -1017,7 +1017,7 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
       </defs>
 
       {/* Modern translucent chart canvas */}
-      <rect x={pL} y={pT} width={cW} height={cH} rx="12" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
+      <rect x={pL} y={pT} width={cW} height={cH} rx="0" fill="#f8fafc" stroke="#f1f5f9" strokeWidth="1" />
 
       {/* Guidelines */}
       {[0.25, 0.5, 0.75, 1].map((f) => {
@@ -1042,7 +1042,7 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
       })}
 
       {/* Baseline */}
-      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1={pL} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="square" />
 
       {/* Ranking Bars */}
       {rows.slice(0, n).map((r, i) => {
@@ -1060,7 +1060,7 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
               y={yTop}
               width={barW}
               height={bH}
-              rx="8"
+              rx="0"
               fill={`url(#${gradId})`}
               filter={`url(#${gradId}-shadow)`}
             >
@@ -1074,7 +1074,7 @@ function renderRankingBarChart({ rows, color, gradient, gradId, loading, emptyLa
                 y={yTop}
                 width={Math.max(barW - 4, 1)}
                 height="3"
-                rx="1.5"
+                rx="0"
                 fill="#ffffff"
                 opacity="0.65"
               />
@@ -1816,7 +1816,7 @@ export default function DashboardContent({ activeTab }) {
           sx={{
             position: 'relative',
             overflow: 'hidden',
-            borderRadius: '20px',
+            borderRadius: 0,
             background: 'linear-gradient(135deg, #090d16 0%, #0f172a 45%, #1e3a8a 100%)',
             color: '#ffffff',
             p: { xs: 2.5, md: 3.5 },
@@ -1824,19 +1824,20 @@ export default function DashboardContent({ activeTab }) {
             boxShadow: '0 12px 32px rgba(15, 23, 42, 0.15)',
           }}
         >
-          <Box sx={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: '50%', bgcolor: 'rgba(26, 85, 227, 0.22)', filter: 'blur(60px)', pointerEvents: 'none' }} />
-          <Box sx={{ position: 'absolute', bottom: -60, left: -60, width: 240, height: 240, borderRadius: '50%', bgcolor: 'rgba(13, 202, 240, 0.16)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+          <Box sx={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: 0, bgcolor: 'rgba(26, 85, 227, 0.22)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+          <Box sx={{ position: 'absolute', bottom: -60, left: -60, width: 240, height: 240, borderRadius: 0, bgcolor: 'rgba(13, 202, 240, 0.16)', filter: 'blur(60px)', pointerEvents: 'none' }} />
 
           <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, justifyContent: 'space-between', gap: 2.5 }}>
             <Box>
               <Chip
-                icon={<Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#34d399', boxShadow: '0 0 8px #34d399', mr: -0.5 }} />}
+                icon={<Box sx={{ width: 8, height: 8, borderRadius: 0, bgcolor: '#34d399', boxShadow: '0 0 8px #34d399', mr: -0.5 }} />}
                 label="Zain Traders · Glass, Mirror & Aluminium Solutions"
                 size="small"
                 sx={{
                   bgcolor: 'rgba(255, 255, 255, 0.08)',
                   color: '#bfdbfe',
                   border: '1px solid rgba(255, 255, 255, 0.14)',
+                  borderRadius: 0,
                   backdropFilter: 'blur(8px)',
                   fontWeight: 600,
                   fontSize: '0.72rem',
@@ -1865,7 +1866,7 @@ export default function DashboardContent({ activeTab }) {
                   fontWeight: 700,
                   fontSize: '0.8125rem',
                   textTransform: 'none',
-                  borderRadius: '12px',
+                  borderRadius: 0,
                   px: 2.5,
                   py: 1.1,
                   boxShadow: '0 4px 14px rgba(26, 85, 227, 0.35)',
@@ -1889,7 +1890,7 @@ export default function DashboardContent({ activeTab }) {
                   fontWeight: 700,
                   fontSize: '0.8125rem',
                   textTransform: 'none',
-                  borderRadius: '12px',
+                  borderRadius: 0,
                   px: 2.2,
                   py: 1.1,
                   backdropFilter: 'blur(8px)',
@@ -1921,7 +1922,7 @@ export default function DashboardContent({ activeTab }) {
           <Card
             elevation={0}
             sx={{
-              borderRadius: '16px',
+              borderRadius: 0,
               border: '1px solid #e2e8f0',
               overflow: 'hidden',
               boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 20px rgba(15, 23, 42, 0.04)',
@@ -1951,7 +1952,7 @@ export default function DashboardContent({ activeTab }) {
                         onClick={() => handleQuickActionClick(action.path)}
                         sx={{
                           p: 2,
-                          borderRadius: '14px',
+                          borderRadius: 0,
                           border: '1px solid #e2e8f0',
                           bgcolor: '#ffffff',
                           display: 'flex',
@@ -1979,7 +1980,7 @@ export default function DashboardContent({ activeTab }) {
                           sx={{
                             width: 44,
                             height: 44,
-                            borderRadius: '12px',
+                            borderRadius: 0,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -2005,7 +2006,7 @@ export default function DashboardContent({ activeTab }) {
             <Card
               elevation={0}
               sx={{
-                borderRadius: '16px',
+                borderRadius: 0,
                 border: '1px solid #e2e8f0',
                 overflow: 'hidden',
                 boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 20px rgba(15, 23, 42, 0.04)',
@@ -2035,7 +2036,7 @@ export default function DashboardContent({ activeTab }) {
                         gap: 1.75,
                         px: 2,
                         py: 1.6,
-                        borderRadius: '12px',
+                        borderRadius: 0,
                         cursor: 'pointer',
                         textAlign: 'left',
                       }}
@@ -2044,7 +2045,7 @@ export default function DashboardContent({ activeTab }) {
                         sx={{
                           width: 36,
                           height: 36,
-                          borderRadius: '10px',
+                          borderRadius: 0,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -2075,15 +2076,15 @@ export default function DashboardContent({ activeTab }) {
 
         {/* Low stock alert — below shortcuts */}
         {showLowStockSection && lowStockLoading ? (
-          <Card elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e2e8f0', borderLeft: '4px solid #f59e0b', p: 2 }}>
+          <Card elevation={0} sx={{ borderRadius: 0, border: '1px solid #e2e8f0', borderLeft: '4px solid #f59e0b', p: 2 }}>
             <Skeleton variant="text" width={180} height={24} />
-            <Skeleton variant="rounded" height={60} sx={{ mt: 1 }} />
+            <Skeleton variant="rectangular" height={60} sx={{ mt: 1 }} />
           </Card>
         ) : showLowStockSection && lowStockData.count > 0 ? (
           <Card
             elevation={0}
             sx={{
-              borderRadius: '16px',
+              borderRadius: 0,
               border: '1px solid #e2e8f0',
               borderLeft: '4px solid #f59e0b',
               overflow: 'hidden',
@@ -2092,7 +2093,7 @@ export default function DashboardContent({ activeTab }) {
           >
             <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #f1f5f9', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ width: 32, height: 32, borderRadius: 0, bgcolor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <AlertTriangle className="w-4 h-4 text-amber-600" strokeWidth={2.25} />
                 </Box>
                 <Box>
@@ -2106,10 +2107,10 @@ export default function DashboardContent({ activeTab }) {
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 {lowStockData.low_stock > 0 && (
-                  <Chip size="small" label={`Low: ${lowStockData.low_stock}`} sx={{ bgcolor: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: '0.72rem' }} />
+                  <Chip size="small" label={`Low: ${lowStockData.low_stock}`} sx={{ bgcolor: '#fef3c7', color: '#b45309', borderRadius: 0, fontWeight: 700, fontSize: '0.72rem' }} />
                 )}
                 {lowStockData.out_of_stock > 0 && (
-                  <Chip size="small" label={`Out: ${lowStockData.out_of_stock}`} sx={{ bgcolor: '#fee2e2', color: '#b91c1c', fontWeight: 700, fontSize: '0.72rem' }} />
+                  <Chip size="small" label={`Out: ${lowStockData.out_of_stock}`} sx={{ bgcolor: '#fee2e2', color: '#b91c1c', borderRadius: 0, fontWeight: 700, fontSize: '0.72rem' }} />
                 )}
                 <Button
                   size="small"
@@ -2122,7 +2123,7 @@ export default function DashboardContent({ activeTab }) {
                     fontWeight: 700,
                     fontSize: '0.75rem',
                     textTransform: 'none',
-                    borderRadius: '8px',
+                    borderRadius: 0,
                     '&:hover': { bgcolor: 'rgba(26, 85, 227, 0.06)', borderColor: '#1347c4' },
                   }}
                 >
@@ -2131,7 +2132,7 @@ export default function DashboardContent({ activeTab }) {
               </Box>
             </Box>
 
-            <TableContainer sx={{ maxHeight: 220 }}>
+            <TableContainer sx={{ maxHeight: 220, borderRadius: 0 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow sx={{ '& th': { bgcolor: '#f8fafc', fontWeight: 700, fontSize: '0.75rem', color: '#475569', borderBottom: '1px solid #e2e8f0' } }}>
@@ -2162,6 +2163,7 @@ export default function DashboardContent({ activeTab }) {
                           label={stockStatusLabel(item.status)}
                           sx={{
                             height: 20,
+                            borderRadius: 0,
                             fontSize: '0.68rem',
                             fontWeight: 700,
                             bgcolor: item.status === 'OUT' ? '#fee2e2' : '#fef3c7',
@@ -2218,10 +2220,10 @@ export default function DashboardContent({ activeTab }) {
           {loading ? (
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }, gap: 2, p: { xs: 2, md: 2.5 } }}>
               {[1, 2, 3, 4].map((i) => (
-                <Card key={i} elevation={0} sx={{ p: 2.5, borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                <Card key={i} elevation={0} sx={{ p: 2.5, borderRadius: 0, border: '1px solid #e2e8f0' }}>
                   <Skeleton variant="text" width="40%" height={16} />
                   <Skeleton variant="text" width="70%" height={38} sx={{ my: 0.5 }} />
-                  <Skeleton variant="rounded" width="50%" height={20} />
+                  <Skeleton variant="rectangular" width="50%" height={20} />
                 </Card>
               ))}
             </Box>
@@ -2237,7 +2239,7 @@ export default function DashboardContent({ activeTab }) {
                     key={index}
                     elevation={0}
                     sx={{
-                      borderRadius: '16px',
+                      borderRadius: 0,
                       border: `1px solid ${kpiNeon.iconBorder || '#e2e8f0'}`,
                       bgcolor: '#ffffff',
                       p: 2.5,
@@ -2264,6 +2266,7 @@ export default function DashboardContent({ activeTab }) {
                             label={kpi.change}
                             sx={{
                               height: 22,
+                              borderRadius: 0,
                               fontSize: '0.7rem',
                               fontWeight: 700,
                               bgcolor: isPositive ? '#ecfdf5' : '#fef2f2',
@@ -2281,7 +2284,7 @@ export default function DashboardContent({ activeTab }) {
                         sx={{
                           width: 44,
                           height: 44,
-                          borderRadius: '12px',
+                          borderRadius: 0,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -2309,7 +2312,7 @@ export default function DashboardContent({ activeTab }) {
             <ReportWidgetShell accent={CHART_COLORS.credit} title="To Receive (closing)">
               <WidgetMonthRangeFilter filters={monthEndReceiveFilters} onChange={setMonthEndReceiveFilters} loading={monthEndReceiveLoading} accent={CHART_COLORS.credit}>
                 <div 
-                  className="flex items-center gap-1 bg-white border rounded-lg px-1.5 py-1 shrink-0" 
+                  className="flex items-center gap-1 bg-white border rounded-none px-1.5 py-1 shrink-0" 
                   style={{ borderColor: getReportNeonStyles(CHART_COLORS.credit).chartBorder }}
                 >
                   <span className="text-[9px] font-bold text-slate-400 uppercase">Type</span>
@@ -2602,8 +2605,8 @@ export default function DashboardContent({ activeTab }) {
               accent={CHART_COLORS.sales}
             />
             <ReportLegendRow accent={CHART_COLORS.sales}>
-              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm border" style={{ background: CHART_COLORS.bills.primary, borderColor: CHART_COLORS.bills.primary }} /><span className="text-[11px] text-slate-500 font-medium">Bills</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm border" style={{ background: CHART_COLORS.orders.primary, borderColor: CHART_COLORS.orders.primary }} /><span className="text-[11px] text-slate-500 font-medium">Orders</span></div>
+              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-none border" style={{ background: CHART_COLORS.bills.primary, borderColor: CHART_COLORS.bills.primary }} /><span className="text-[11px] text-slate-500 font-medium">Bills</span></div>
+              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-none border" style={{ background: CHART_COLORS.orders.primary, borderColor: CHART_COLORS.orders.primary }} /><span className="text-[11px] text-slate-500 font-medium">Orders</span></div>
             </ReportLegendRow>
             <ReportChartArea accent={CHART_COLORS.sales}>
               {renderGroupedBarChart({
@@ -2637,8 +2640,8 @@ export default function DashboardContent({ activeTab }) {
               accent={CHART_COLORS.profit}
             />
             <ReportLegendRow accent={CHART_COLORS.profit}>
-              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm border" style={{ background: CHART_COLORS.sales.primary, borderColor: CHART_COLORS.sales.primary }} /><span className="text-[11px] text-slate-500 font-medium">Total</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm border" style={{ background: CHART_COLORS.profit.primary, borderColor: CHART_COLORS.profit.primary }} /><span className="text-[11px] text-slate-500 font-medium">Orders</span></div>
+              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-none border" style={{ background: CHART_COLORS.sales.primary, borderColor: CHART_COLORS.sales.primary }} /><span className="text-[11px] text-slate-500 font-medium">Total</span></div>
+              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-none border" style={{ background: CHART_COLORS.profit.primary, borderColor: CHART_COLORS.profit.primary }} /><span className="text-[11px] text-slate-500 font-medium">Orders</span></div>
             </ReportLegendRow>
             <ReportChartArea accent={CHART_COLORS.profit}>
               {renderGroupedBarChart({
@@ -2835,11 +2838,11 @@ export default function DashboardContent({ activeTab }) {
                 recentActivityData.map((activity) => (
                   <div
                     key={activity.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-white transition-colors duration-150 border"
+                    className="flex items-center gap-3 p-3 rounded-none hover:bg-white transition-colors duration-150 border"
                     style={{ borderColor: actNeon.chartBorder }}
                   >
                     <div
-                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      className="w-2 h-2 rounded-none flex-shrink-0"
                       style={{
                         background: activity.status === 'success' ? CHART_COLORS.credit.primary
                           : activity.status === 'warning' ? CHART_COLORS.orders.primary
@@ -2877,7 +2880,7 @@ export default function DashboardContent({ activeTab }) {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100/50 p-12 text-center">
+      <div className="bg-white rounded-none shadow-lg border border-gray-100/50 p-12 text-center">
         <div className="max-w-md mx-auto">
           <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <Package className="w-12 h-12 text-white" />

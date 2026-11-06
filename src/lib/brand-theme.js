@@ -245,7 +245,7 @@ export const HQ_GRADIENTS = {
 
 export const HQ_UI = {
   pageWrap: 'space-y-6 max-w-[1400px] mx-auto',
-  card: 'relative bg-white rounded-[1.25rem] border border-slate-200/60 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_28px_rgba(15,23,42,0.08)]',
+  card: 'relative bg-white rounded-none border border-slate-200/60 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_28px_rgba(15,23,42,0.08)]',
   cardHover: 'transition-all duration-300 ease-out hover:shadow-[0_4px_8px_rgba(15,23,42,0.05),0_16px_40px_rgba(49,46,129,0.12)] hover:-translate-y-1',
   sectionHeader: 'px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-[#eef2ff]/90 via-white to-[#fffbeb]/40',
   moduleGrid: 'p-4 md:p-5 bg-[#f9fafb]',
@@ -255,7 +255,7 @@ export const HQ_MUI = {
   spinner: { color: HQ_BRAND.primary },
   tabs: {
     '& .Mui-selected': { color: HQ_BRAND.primary, fontWeight: 700 },
-    '& .MuiTabs-indicator': { bgcolor: HQ_BRAND.primary, height: 3, borderRadius: '3px 3px 0 0' },
+    '& .MuiTabs-indicator': { bgcolor: HQ_BRAND.primary, height: 3, borderRadius: 0 },
   },
   btnPrimary: {
     bgcolor: HQ_BRAND.primary,
@@ -337,49 +337,49 @@ export const HQ_QUICK_ENTRY_TONES = {
 };
 
 export const HQ_REPORT = {
-  section: 'rounded-[1.35rem] bg-[#f4f6f9] border border-[#e8ecf3] p-4 md:p-5 space-y-5',
-  card: 'bg-white rounded-2xl border border-[#eef1f6] shadow-[0_2px_20px_rgba(67,56,202,0.05)] overflow-hidden',
+  section: 'rounded-none bg-[#f4f6f9] border border-[#e8ecf3] p-4 md:p-5 space-y-5',
+  card: 'bg-white rounded-none border border-[#eef1f6] shadow-[0_2px_20px_rgba(67,56,202,0.05)] overflow-hidden',
   filterHeader: 'px-5 md:px-6 py-4 bg-gradient-to-r from-[#4338ca] to-[#6366f1] flex flex-wrap items-center justify-between gap-3',
 };
 
 /** Dashboard analytics / report widgets — thin neon borders, smooth Plusadmin-style */
 export const REPORT = {
   section:
-    'rounded-2xl bg-white p-5 md:p-6 space-y-6',
+    'rounded-none bg-white p-5 md:p-6 space-y-6',
   sectionHeader:
     'flex items-center gap-3 pb-5 mb-1',
   sectionIcon:
-    'w-10 h-10 rounded-xl bg-gradient-to-br from-[#1A55E3] to-[#5E6EED] flex items-center justify-center shrink-0 border border-[#1A55E3]',
+    'w-10 h-10 rounded-none bg-gradient-to-br from-[#1A55E3] to-[#5E6EED] flex items-center justify-center shrink-0 border border-[#1A55E3]',
   cardBase:
-    'bg-white rounded-xl overflow-hidden transition-all duration-300',
+    'bg-white rounded-none overflow-hidden transition-all duration-300',
   cardInner: 'px-5 py-4 md:px-5 md:py-4',
-  kpiWrap: 'overflow-hidden',
+  kpiWrap: 'overflow-hidden rounded-none',
   kpiGrid: 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 p-4 md:p-5',
   kpiCardBase:
-    'bg-white rounded-xl p-4 md:p-5 transition-all duration-300',
+    'bg-white rounded-none p-4 md:p-5 transition-all duration-300',
   filterBar:
-    'bg-white rounded-xl border border-[#e5e7eb] shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden',
+    'bg-white rounded-none border border-[#e5e7eb] shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden',
   filterHeader:
     'px-5 md:px-6 py-3.5 bg-gradient-to-r from-[#1A55E3] to-[#5E6EED] flex flex-wrap items-center justify-between gap-3',
   filterBody:
     'px-4 py-2.5 flex flex-wrap items-center gap-2 border-b',
   input:
-    'text-xs font-medium text-slate-700 bg-white border border-[#e5e7eb] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A55E3]/12 focus:border-[#1A55E3]/35 transition-all',
+    'text-xs font-medium text-slate-700 bg-white border border-[#e5e7eb] rounded-none px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A55E3]/12 focus:border-[#1A55E3]/35 transition-all',
   datePill:
-    'flex items-center gap-1.5 bg-white border border-[#e5e7eb] rounded-lg px-2.5 py-1.5',
+    'flex items-center gap-1.5 bg-white border border-[#e5e7eb] rounded-none px-2.5 py-1.5',
   presetWrap:
-    'flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-lg border border-[#e5e7eb]',
+    'flex items-center gap-0.5 bg-[#f3f4f6] p-0.5 rounded-none border border-[#e5e7eb]',
   presetBtn:
-    'px-2.5 py-1.5 text-[11px] font-semibold rounded-md text-slate-600 hover:bg-white hover:text-[#1A55E3] transition-all duration-150',
-  presetBtnActive: 'bg-white text-[#1A55E3] shadow-[0_1px_2px_rgba(15,23,42,0.06)]',
+    'px-2.5 py-1.5 text-[11px] font-semibold rounded-none text-slate-600 hover:bg-white hover:text-[#1A55E3] transition-all duration-150',
+  presetBtnActive: 'bg-white text-[#1A55E3] shadow-[0_1px_2px_rgba(15,23,42,0.06)] rounded-none',
   chartArea:
-    'mx-4 mb-3 rounded-lg border p-3 min-h-[260px]',
+    'mx-4 mb-3 rounded-none border p-3 min-h-[260px]',
   legendRow:
     'px-5 pb-3 flex flex-wrap items-center gap-4 border-b',
   footer:
     'mx-4 mb-4 px-3 py-2 border-t flex flex-wrap items-center justify-between gap-x-3 gap-y-1',
   badge:
-    'text-[10px] font-semibold px-2.5 py-1 rounded-md border bg-white/80 text-slate-600',
+    'text-[10px] font-semibold px-2.5 py-1 rounded-none border bg-white/80 text-slate-600',
   trendUp: 'text-[10px] font-semibold text-[#00a868] tabular-nums',
   trendDown: 'text-[10px] font-semibold text-[#FF0854] tabular-nums',
   trendMuted: 'text-[10px] text-slate-400',
