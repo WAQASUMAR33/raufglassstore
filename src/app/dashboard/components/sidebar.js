@@ -454,48 +454,54 @@ export default function Sidebar({
               display: 'flex',
               alignItems: 'center',
               gap: 1.25,
-              pl: indent ? 1.25 : 1,
+              pl: indent ? 1.5 : 1.25,
               pr: 1.25,
               py: 0.65,
-              px: indent ? 1.5 : 1.25,
               ml: indent ? 0.75 : 0,
               mr: indent ? 0.5 : 0,
-              borderRadius: 2,
+              borderRadius: '10px',
               cursor: 'pointer',
               position: 'relative',
-              color: isActive ? SIDEBAR.textOnActive : SIDEBAR.textActive,
-              bgcolor: isActive ? SIDEBAR.bgActive : 'transparent',
+              color: isActive ? '#ffffff' : '#334155',
+              background: isActive
+                ? 'linear-gradient(135deg, #1A55E3 0%, #2563EB 100%)'
+                : 'transparent',
               border: 'none',
-              boxShadow: isActive ? '0 2px 8px rgba(26, 85, 227, 0.25)' : 'none',
-              transition: 'all 0.2s ease',
+              boxShadow: isActive ? '0 4px 12px rgba(26, 85, 227, 0.28)' : 'none',
+              transition: 'all 0.18s ease-in-out',
               '&:hover': {
-                bgcolor: isActive ? SIDEBAR.bgActive : SIDEBAR.bgHover,
-                color: isActive ? SIDEBAR.textOnActive : SIDEBAR.textActive,
+                background: isActive
+                  ? 'linear-gradient(135deg, #1A55E3 0%, #2563EB 100%)'
+                  : '#f1f5f9',
+                color: isActive ? '#ffffff' : '#0f172a',
+                transform: isActive ? 'none' : 'translateX(2px)',
               },
             }}
           >
             <Box
               sx={{
-                width: indent ? 28 : 32,
-                height: indent ? 28 : 32,
-                borderRadius: 1.5,
+                width: indent ? 26 : 30,
+                height: indent ? 26 : 30,
+                borderRadius: indent ? '6px' : '8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                bgcolor: isActive ? 'rgba(255,255,255,0.2)' : 'transparent',
-                color: isActive ? SIDEBAR.textOnActive : fn.main,
-                transition: 'all 0.2s ease',
+                bgcolor: isActive
+                  ? 'rgba(255,255,255,0.2)'
+                  : (indent ? 'transparent' : fn.bg),
+                color: isActive ? '#ffffff' : fn.main,
+                transition: 'all 0.18s ease',
               }}
             >
-              <item.icon sx={{ fontSize: indent ? 17 : 18 }} />
+              <item.icon sx={{ fontSize: indent ? 15 : 17 }} />
             </Box>
             <Typography
               sx={{
                 flex: 1,
-                fontSize: indent ? '0.8125rem' : '0.8375rem',
+                fontSize: indent ? '0.8rem' : '0.835rem',
                 fontWeight: isActive ? 600 : 500,
-                letterSpacing: 0.02,
+                letterSpacing: 0.01,
                 lineHeight: 1.4,
                 userSelect: 'none',
                 color: 'inherit',
@@ -527,6 +533,8 @@ export default function Sidebar({
               fontWeight: 600,
               px: 1.25,
               py: 0.75,
+              borderRadius: 1.5,
+              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
             },
           },
         }}
@@ -539,17 +547,22 @@ export default function Sidebar({
               }
             }}
             sx={{
-              borderRadius: 2,
-              mb: 0.35,
+              borderRadius: '10px',
+              mb: 0.5,
               minHeight: 42,
               justifyContent: 'center',
               px: 1,
-              bgcolor: isActive ? SIDEBAR.bgActive : 'transparent',
-              color: isActive ? SIDEBAR.textOnActive : fn.main,
+              background: isActive
+                ? 'linear-gradient(135deg, #1A55E3 0%, #2563EB 100%)'
+                : 'transparent',
+              color: isActive ? '#ffffff' : fn.main,
               border: 'none',
-              boxShadow: isActive ? '0 2px 8px rgba(26, 85, 227, 0.25)' : 'none',
-              transition: 'all 0.2s ease',
-              '&:hover': { bgcolor: isActive ? SIDEBAR.bgActive : SIDEBAR.bgHover },
+              boxShadow: isActive ? '0 4px 12px rgba(26, 85, 227, 0.28)' : 'none',
+              transition: 'all 0.18s ease',
+              '&:hover': {
+                bgcolor: isActive ? '#1A55E3' : '#f1f5f9',
+                transform: 'scale(1.04)',
+              },
             }}
           >
             <ListItemIcon sx={{ minWidth: 0, color: 'inherit', justifyContent: 'center' }}>
@@ -715,9 +728,25 @@ export default function Sidebar({
                 <Box className="sidebar-brand-glow" />
               </Box>
             ) : (
-              <Typography className="sidebar-brand-collapsed">
-                II
-              </Typography>
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #1A55E3 0%, #0DCAF0 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.825rem',
+                  letterSpacing: '0.04em',
+                  boxShadow: '0 4px 12px rgba(26, 85, 227, 0.25)',
+                  mb: 0.5,
+                }}
+              >
+                ZT
+              </Box>
             )}
 
             <IconButton
@@ -725,26 +754,29 @@ export default function Sidebar({
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               size="small"
               sx={{
-                bgcolor: SIDEBAR.collapseBtn,
-                color: '#ffffff',
-                width: 30,
-                height: 30,
-                borderRadius: 1.5,
+                bgcolor: '#f1f5f9',
+                color: '#475569',
+                width: 28,
+                height: 28,
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
                 zIndex: 20,
                 flexShrink: 0,
-                mt: isCollapsed ? 0 : 0.15,
-                boxShadow: '0 2px 8px rgba(255, 8, 84, 0.35)',
-                transition: 'transform 0.2s ease, background-color 0.2s ease',
+                mt: isCollapsed ? 0 : 0.25,
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.05)',
+                transition: 'all 0.18s ease',
                 '&:hover': {
-                  bgcolor: '#e0074a',
-                  transform: 'scale(1.05)',
+                  bgcolor: '#e8effd',
+                  color: '#1A55E3',
+                  borderColor: '#bfdbfe',
+                  transform: 'scale(1.06)',
                 },
                 '&:active': {
                   transform: 'scale(0.96)',
                 },
               }}
             >
-              {isCollapsed ? <ChevronRightIcon sx={{ fontSize: 17 }} /> : <ChevronLeftIcon sx={{ fontSize: 17 }} />}
+              {isCollapsed ? <ChevronRightIcon sx={{ fontSize: 16 }} /> : <ChevronLeftIcon sx={{ fontSize: 16 }} />}
             </IconButton>
           </Box>
         )}

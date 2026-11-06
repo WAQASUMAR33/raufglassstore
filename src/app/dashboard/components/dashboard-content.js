@@ -99,8 +99,8 @@ const fmtK = v => {
   return v.toFixed(0);
 };
 
-const CARD = 'relative bg-white rounded-[1.25rem] border border-slate-200/60 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_28px_rgba(15,23,42,0.08)]';
-const CARD_HOVER = 'transition-all duration-300 ease-out hover:shadow-[0_4px_8px_rgba(15,23,42,0.05),0_16px_40px_rgba(15,23,42,0.11)] hover:-translate-y-1';
+const CARD = 'relative bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.03),0_6px_20px_rgba(15,23,42,0.04)]';
+const CARD_HOVER = 'transition-all duration-300 ease-out hover:shadow-[0_4px_12px_rgba(15,23,42,0.06),0_16px_32px_rgba(15,23,42,0.08)] hover:-translate-y-1';
 
 const EMPTY_DATE_FILTER = { fromDate: '', toDate: '' };
 
@@ -1595,11 +1595,51 @@ export default function DashboardContent({ activeTab }) {
 
     return (
       <div className="space-y-6 max-w-[1400px] mx-auto">
+        {/* Welcome Hero Banner */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white p-5 md:p-6 shadow-xl shadow-slate-950/15 border border-slate-800/60">
+          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-blue-200 mb-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Zain Traders · Glass, Mirror & Aluminium Solutions</span>
+              </div>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
+                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-cyan-200 to-white">{dashboardUser?.full_name || 'Administrator'}</span> 👋
+              </h1>
+              <p className="text-xs md:text-sm text-slate-300 mt-1 max-w-xl">
+                Real-time dashboard for inventory, store sales, customer ledgers & financial performance.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleQuickActionClick('/dashboard/sales')}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#1A55E3] to-[#2563EB] hover:from-[#1347c4] hover:to-[#1d4ed8] text-white text-xs font-bold shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span>New POS Sale</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickActionClick('/dashboard/finance')}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-bold transition-all duration-200 hover:-translate-y-0.5"
+              >
+                <BookOpen className="w-4 h-4 text-cyan-300" />
+                <span>Ledger & Accounts</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {!analyticsWidgets.any && !analyticsWidgets.kpi && (
           <div className={`${CARD} p-5 md:p-6`}>
-            <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Welcome</h3>
+            <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Overview</h3>
             <p className="text-sm text-slate-500 mt-1">
-              Use the shortcuts below for your assigned modules. Analytics widgets are assigned in User Management.
+              Use the shortcuts below for your assigned modules. Analytics widgets can be assigned in User Management.
             </p>
           </div>
         )}
@@ -1627,12 +1667,13 @@ export default function DashboardContent({ activeTab }) {
                       key={index}
                       type="button"
                       onClick={() => handleQuickActionClick(action.path)}
-                      className="group flex flex-col items-center justify-center gap-2 py-4 px-2 min-h-[96px] rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+                      className="group relative flex flex-col items-center justify-center gap-2.5 py-4 px-2 min-h-[104px] rounded-2xl bg-white border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)] hover:border-blue-300 hover:-translate-y-1 active:scale-[0.98] transition-all duration-200 cursor-pointer overflow-hidden"
                     >
-                      <div className={`w-10 h-10 rounded-xl ${p.iconBg} flex items-center justify-center transition-transform duration-200 group-hover:scale-105`}>
-                        <action.icon className={`w-[18px] h-[18px] ${p.icon}`} strokeWidth={2} />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className={`w-11 h-11 rounded-xl ${p.iconBg} flex items-center justify-center transition-transform duration-200 group-hover:scale-110 shadow-sm relative z-10`}>
+                        <action.icon className={`w-5 h-5 ${p.icon}`} strokeWidth={2} />
                       </div>
-                      <p className="text-[11px] md:text-xs font-semibold text-gray-700 text-center leading-snug px-0.5">
+                      <p className="text-[11px] md:text-xs font-bold text-slate-700 group-hover:text-[#1A55E3] text-center leading-snug px-1 relative z-10 transition-colors">
                         {action.title}
                       </p>
                     </button>

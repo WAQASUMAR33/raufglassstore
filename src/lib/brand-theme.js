@@ -80,30 +80,30 @@ export const NAV_FN = {
   system:    nav('#64748b', '#475569', '#f8fafc', '#f1f5f9', 0.35),
 };
 
-/** Sidebar shell chrome — Plusadmin-style */
+/** Sidebar shell chrome — modern SaaS Plusadmin-style */
 export const SIDEBAR = {
-  background: '#f8f9fb',
+  background: '#f8fafc',
   bgElevated: '#ffffff',
-  bgHover: '#f1f3f8',
+  bgHover: '#f1f5f9',
   bgActive: '#1A55E3',
-  border: '#e8ecf3',
-  borderStrong: '#dde3ed',
-  text: '#64748b',
+  border: '#e2e8f0',
+  borderStrong: '#cbd5e1',
+  text: '#475569',
   textMuted: '#94a3b8',
-  textActive: '#1e293b',
+  textActive: '#0f172a',
   textOnActive: '#ffffff',
   accent: BRAND.primary.blue,
   accentMuted: BRAND.supporting.periwinkle,
   accentSoft: BRAND.tint.blue,
-  accentGlow: `0 2px 12px ${hexToRgba(BRAND.primary.blue, 0.12)}`,
+  accentGlow: `0 4px 16px ${hexToRgba(BRAND.primary.blue, 0.2)}`,
   searchBg: '#ffffff',
-  searchBorder: '#e8ecf3',
+  searchBorder: '#e2e8f0',
   badgeBg: BRAND.tint.blue,
   badgeText: BRAND.text.blue,
-  drawerShadow: '2px 0 24px rgba(15, 23, 42, 0.04)',
+  drawerShadow: '4px 0 24px rgba(15, 23, 42, 0.04)',
   avatarGradient: `linear-gradient(135deg, ${BRAND.primary.blue} 0%, ${BRAND.supporting.periwinkle} 100%)`,
-  collapseBtn: '#FF0854',
-  sectionLabel: '#94a3b8',
+  collapseBtn: '#f1f5f9',
+  sectionLabel: '#64748b',
 };
 
 /** Static sidebar section titles — Quick Access, Modules, System */
