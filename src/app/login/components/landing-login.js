@@ -1,91 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Building2, MapPin, Phone, Store } from 'lucide-react';
+import { MapPin, Phone, Store } from 'lucide-react';
 import { LoginFormFields } from './login-shell';
 import { useAuthLogin, useSessionGuard } from './use-login';
-import { HqAuthModeSwitch, HqFingerprintLogin } from './hq-biometric-login';
 import { COMPANY, POWERED_BY } from '@/lib/brand-theme';
-
-const BRAND = {
-  branch: {
-    badge: 'Branch Portal',
-    badgeColor: '#0DCAF0',
-    title: 'Sign in to your branch POS — sales, stock, and accounts for your location.',
-    subtitle: 'Select your branch, then use credentials from your manager.',
-    accent: '#1A55E3',
-    accentDark: '#1347c4',
-    submitLabel: 'Sign in to Branch',
-  },
-  hq: {
-    badge: 'Head Office Portal',
-    badgeColor: '#5E6EED',
-    title: 'Manage all branches from one place — create locations and assign admins.',
-    subtitle: 'Use your HQ administrator credentials only.',
-    accent: '#5E6EED',
-    accentDark: '#4a57d4',
-    submitLabel: 'Sign in to Head Office',
-  },
-};
 
 export default function LandingLogin() {
   useSessionGuard();
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'hq' ? 'hq' : 'branch';
-  const [tab, setTab] = useState(initialTab);
-  const [animKey, setAnimKey] = useState(0);
-
   const branchAuth = useAuthLogin('branch');
-  const hqAuth = useAuthLogin('hq');
-  const [hqAuthMode, setHqAuthMode] = useState('password');
-
-  const [branches, setBranches] = useState([]);
-  const [branchesLoading, setBranchesLoading] = useState(true);
 
   useEffect(() => {
-    const t = searchParams.get('tab') === 'hq' ? 'hq' : 'branch';
-    setTab(t);
-  }, [searchParams]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setBranchesLoading(true);
-      try {
-        const res = await fetch('/api/branches/public');
-        const data = await res.json();
-        if (!res.ok || cancelled) return;
-        const list = data.branches || [];
-        setBranches(list);
-        if (list.length === 1) branchAuth.setBranchCode(list[0].branch_code);
-      } catch {
-        /* fallback to manual entry in form */
-      } finally {
-        if (!cancelled) setBranchesLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    branchAuth.setBranchCode('MAIN');
   }, []);
-
-  const switchTab = (next) => {
-    if (next === tab) return;
-    setTab(next);
-    setHqAuthMode('password');
-    setAnimKey((k) => k + 1);
-    if (typeof window !== 'undefined') {
-      const url = next === 'hq' ? '/?tab=hq' : '/';
-      window.history.replaceState(null, '', url);
-    }
-  };
-
-  const brand = BRAND[tab];
-  const isBranch = tab === 'branch';
 
   return (
     <div className="landing-root">
-      {/* Brand panel — real construction photo */}
+      {/* Brand panel — modern glass manufacturer hero */}
       <div className="landing-brand">
         <div className="brand-scene" aria-hidden="true">
           <div className="brand-photo-bg" />
@@ -99,21 +30,21 @@ export default function LandingLogin() {
           </div>
 
           <h1 className="brand-title">
-            {COMPANY.nameShort} &amp;<br />Cement Store
+            {COMPANY.name}
           </h1>
           <p className="brand-title-ur">{COMPANY.nameUr}</p>
           <p className="brand-tagline">{COMPANY.tagline}</p>
           <div className="brand-divider" />
 
-          <span className="brand-badge" key={`badge-${tab}`}>
-            <span className="badge-dot" style={{ background: brand.badgeColor }} />
-            {brand.badge}
+          <span className="brand-badge">
+            <span className="badge-dot" style={{ background: '#0DCAF0' }} />
+            Main Branch
           </span>
 
-          <p className="brand-desc" key={`desc-${tab}`}>
-            {brand.title}
+          <p className="brand-desc">
+            Sign in to Zain Traders POS — sales, stock, and accounts.
           </p>
-          <p className="brand-sub">{brand.subtitle}</p>
+          <p className="brand-sub">Main Branch · POS &amp; ERP</p>
 
           <div className="brand-contact">
             <span><MapPin size={14} /> {COMPANY.address}</span>
@@ -126,99 +57,30 @@ export default function LandingLogin() {
       <div className="landing-form-panel">
         <div className="landing-form-center">
           <div className="form-wrap">
-            <div className="tab-switch" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={isBranch}
-              className={`tab-btn ${isBranch ? 'tab-active tab-branch' : ''}`}
-              onClick={() => switchTab('branch')}
-            >
-              <Store size={16} />
-              Branch
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!isBranch}
-              className={`tab-btn ${!isBranch ? 'tab-active tab-hq' : ''}`}
-              onClick={() => switchTab('hq')}
-            >
-              <Building2 size={16} />
-              Head Office
-            </button>
-            <span
-              className="tab-indicator"
-              style={{
-                transform: isBranch ? 'translateX(0)' : 'translateX(100%)',
-                background: isBranch
-                  ? 'linear-gradient(135deg, #0284c7, #0ea5e9)'
-                  : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                boxShadow: isBranch
-                  ? '0 4px 14px rgba(2, 132, 199, 0.35)'
-                  : '0 4px 14px rgba(79, 70, 229, 0.35)',
-              }}
-            />
-            </div>
-
             <div className="form-header">
-              <h2>{isBranch ? 'Branch Sign In' : hqAuthMode === 'fingerprint' ? 'Biometric Login' : 'HQ Sign In'}</h2>
-              <p>{isBranch ? 'Your store POS system' : hqAuthMode === 'fingerprint' ? 'Scan your enrolled finger' : 'Administrator access'}</p>
+              <h2>Sign In</h2>
+              <p>Your store POS system</p>
             </div>
 
-            <div className="form-body" key={animKey}>
-            {isBranch ? (
+            <div className="form-body">
               <LoginFormFields
                 email={branchAuth.email}
                 setEmail={branchAuth.setEmail}
                 password={branchAuth.password}
                 setPassword={branchAuth.setPassword}
-                branchCode={branchAuth.branchCode}
+                branchCode="MAIN"
                 setBranchCode={branchAuth.setBranchCode}
-                showBranchCode
-                branchOptions={branches.length > 0 ? branches : null}
-                branchesLoading={branchesLoading}
+                showBranchCode={false}
                 showPassword={branchAuth.showPassword}
                 setShowPassword={branchAuth.setShowPassword}
                 error={branchAuth.error}
                 loading={branchAuth.loading}
-                submitLabel={brand.submitLabel}
-                accent={brand.accent}
-                accentDark={brand.accentDark}
+                submitLabel="Sign In"
+                accent="#1A55E3"
+                accentDark="#1347c4"
                 onSubmit={branchAuth.handleSubmit}
               />
-            ) : (
-              <>
-                <HqAuthModeSwitch
-                  mode={hqAuthMode}
-                  onChange={(mode) => {
-                    setHqAuthMode(mode);
-                    hqAuth.setError('');
-                  }}
-                  accent={brand.accent}
-                />
-                <div className="hq-form-slot">
-                {hqAuthMode === 'password' ? (
-                  <LoginFormFields
-                    email={hqAuth.email}
-                    setEmail={hqAuth.setEmail}
-                    password={hqAuth.password}
-                    setPassword={hqAuth.setPassword}
-                    showPassword={hqAuth.showPassword}
-                    setShowPassword={hqAuth.setShowPassword}
-                    error={hqAuth.error}
-                    loading={hqAuth.loading}
-                    submitLabel={brand.submitLabel}
-                    accent={brand.accent}
-                    accentDark={brand.accentDark}
-                    onSubmit={hqAuth.handleSubmit}
-                  />
-                ) : (
-                  <HqFingerprintLogin accent={brand.accent} />
-                )}
-                </div>
-              </>
-            )}
+            </div>
           </div>
           </div>
 

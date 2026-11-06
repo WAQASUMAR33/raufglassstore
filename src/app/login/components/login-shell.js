@@ -51,10 +51,10 @@ export default function LoginShell({
         </div>
 
         <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: 800, textAlign: 'center', marginBottom: '8px', lineHeight: 1.2 }}>
-          Itefaq Iron &amp;<br />Cement Store
+          Zain Traders
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.2rem', fontWeight: 600, textAlign: 'center', marginBottom: '20px', direction: 'rtl' }}>
-          اتفاق آئرن اینڈ سیمنٹ سٹور
+          زین ٹریڈرز
         </p>
         <div style={{ width: '48px', height: '3px', background: 'rgba(255,255,255,0.4)', borderRadius: '2px', marginBottom: '20px' }} />
 

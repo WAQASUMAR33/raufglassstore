@@ -96,17 +96,14 @@ export async function POST(request) {
       return errorResponse('This account is for branch login. Please use Branch Login.', 403);
     }
 
-    if (mode === 'branch') {
-      if (userIsHq) {
-        return errorResponse('Head Office accounts must use HQ Login.', 403);
-      }
+    if (mode === 'branch' && !userIsHq) {
       if (!user.branch_id) {
-        return errorResponse('This account is not assigned to a branch. Contact Head Office.', 403);
+        return errorResponse('This account is not assigned to a branch. Contact Administrator.', 403);
       }
       if (user.branch?.status === 'SUSPENDED') {
-        return errorResponse('This branch is suspended. Contact Head Office.', 403);
+        return errorResponse('This branch is suspended. Contact Administrator.', 403);
       }
-      const code = (branch_code || '').trim().toUpperCase();
+      const code = (branch_code || 'MAIN').trim().toUpperCase();
       if (!code) {
         return errorResponse('Branch code is required.', 400);
       }

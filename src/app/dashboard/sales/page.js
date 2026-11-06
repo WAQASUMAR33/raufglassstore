@@ -4117,7 +4117,7 @@ function SalesPageContent() {
     </table>
 
     <footer class="print-footer">
-      <span>Itefaq Iron &amp; Cement Store</span>
+      <span>Zain Traders</span>
       <span>Generated: ${escapePrintHtml(printedAt)}</span>
     </footer>
   </div>

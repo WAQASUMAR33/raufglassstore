@@ -34,7 +34,7 @@ export function useAuthLogin(loginMode) {
   const redirectAfterLogin = useLoginRedirect();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [branchCode, setBranchCode] = useState('');
+  const [branchCode, setBranchCode] = useState('MAIN');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

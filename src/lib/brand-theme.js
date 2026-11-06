@@ -1,17 +1,17 @@
 /**
- * Itefaq Iron & Cement Store — brand palette
+ * Zain Traders — brand palette
  * Primary: #1A55E3 (blue), #FF0854 (pink)
  * Supporting: #00D284 (green/sales), #0DCAF0 (cyan), #5E6EED (periwinkle)
  */
 
 export const COMPANY = {
-  name: 'Itefaq Iron & Cement Store',
-  nameShort: 'Itefaq Iron',
-  nameSub: '& Cement Store',
-  nameUr: 'اتفاق آئرن اینڈ سیمنٹ سٹور',
-  tagline: 'Iron, Cement & Building Materials',
-  address: 'Gujrat Sargodha Road, Pahrian Wali',
-  addressUr: 'گجرات سرگودھا روڈ، پاہڑیانوالی',
+  name: 'Zain Traders',
+  nameShort: 'Zain Traders',
+  nameSub: 'Glass & Aluminium',
+  nameUr: 'زین ٹریڈرز',
+  tagline: 'Glass, Mirror & Aluminium Solutions',
+  address: 'Main Market, Pakistan',
+  addressUr: 'مین مارکیٹ، پاکستان',
   phones: ['0300-7560306'],
 };
 
