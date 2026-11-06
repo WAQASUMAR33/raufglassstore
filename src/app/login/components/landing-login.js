@@ -82,7 +82,6 @@ export default function LandingLogin() {
               />
             </div>
           </div>
-          </div>
 
           <footer className="landing-form-footer">
             <div className="landing-footer-card">
