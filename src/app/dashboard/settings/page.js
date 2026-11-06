@@ -1,9 +1,25 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../components/dashboard-layout';
 import { canStaffAccessPath } from '@/lib/staff-access';
+
+const FingerprintEnrollmentScanner = dynamic(
+  () => import('@/components/FingerprintEnrollmentScanner'),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ py: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+        <CircularProgress size={28} sx={{ color: '#7c3aed' }} />
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+          Preparing fingerprint scanner…
+        </Typography>
+      </Box>
+    ),
+  }
+);
 
 // Material-UI imports
 import {
@@ -99,6 +115,13 @@ export default function SettingsPage() {
   const [pinError, setPinError] = useState('');
   const [pinSuccess, setPinSuccess] = useState('');
   const [pinLoading, setPinLoading] = useState(false);
+
+  // Fingerprint Setup State
+  const [fpUserId, setFpUserId] = useState(null);
+  const [fpSamples, setFpSamples] = useState([]);
+  const [fpError, setFpError] = useState('');
+  const [fpSuccess, setFpSuccess] = useState('');
+  const [fpLoading, setFpLoading] = useState(false);
 
   // Initial Auth & Data Load
   const fetchUsers = useCallback(async (isSilent = false) => {
@@ -267,12 +290,109 @@ export default function SettingsPage() {
     }
   }
 
+  // Fingerprint Functions
+  function startFingerprintSetup(userId) {
+    setFpUserId(userId);
+    setFpSamples([]);
+    setFpError('');
+    setFpSuccess('');
+  }
+
+  function cancelFingerprintSetup() {
+    setFpUserId(null);
+    setFpSamples([]);
+    setFpError('');
+    setFpSuccess('');
+    setFpLoading(false);
+  }
+
+  async function submitFingerprintEnrollment() {
+    if (fpSamples.length < 2) {
+      setFpError('Need at least 2 good scans. Keep fingers dry/clean and try again.');
+      return;
+    }
+    if (!fpUserId) return;
+
+    setFpLoading(true);
+    setFpError('');
+    setFpSuccess('');
+    try {
+      const res = await fetch('/api/fingerprint/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: fpUserId,
+          finger: 'right-index',
+          format: 'PngImage',
+          templates: fpSamples.map((s) => s.template),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Enrollment failed');
+      setFpSuccess('Fingerprint enrolled successfully!');
+      showSnackbar('Fingerprint enrolled successfully!', 'success');
+      await fetchUsers(true);
+
+      // Keep local user object in sync
+      try {
+        const raw = localStorage.getItem('user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u && u.user_id === fpUserId) {
+            u.fingerprint_enrolled = true;
+            localStorage.setItem('user', JSON.stringify(u));
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      setTimeout(cancelFingerprintSetup, 800);
+    } catch (error) {
+      setFpError(error.message || 'Enrollment failed');
+    } finally {
+      setFpLoading(false);
+    }
+  }
+
+  async function removeFingerprint(userId) {
+    if (!confirm('Are you sure you want to remove fingerprint templates for this user?')) return;
+    try {
+      const res = await fetch('/api/fingerprint/enroll', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to remove fingerprint');
+      showSnackbar('Fingerprint template removed successfully', 'success');
+      await fetchUsers(true);
+
+      try {
+        const raw = localStorage.getItem('user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u && u.user_id === userId) {
+            u.fingerprint_enrolled = false;
+            localStorage.setItem('user', JSON.stringify(u));
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    } catch (error) {
+      showSnackbar(error.message || 'Failed to remove fingerprint', 'error');
+    }
+  }
+
   // Active PIN string helper
   const activePin = pinStep === 'enter' ? pinDigits : pinConfirm;
   const pinUserObj = users.find((u) => u.user_id === pinUserId);
+  const fpUserObj = users.find((u) => u.user_id === fpUserId);
 
   // Security Statistics
   const usersWithPin = users.filter((u) => u.pin_code).length;
+  const usersWithFp = users.filter((u) => u.fingerprint_enrolled).length;
 
   return (
     <DashboardLayout>
@@ -311,7 +431,7 @@ export default function SettingsPage() {
                 Security & Authentication Settings
               </Typography>
               <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                Manage user access credentials and 6-digit authorization PINs.
+                Manage user access credentials, 6-digit authorization PINs, and DigitalPersona biometric fingerprints.
               </Typography>
             </Box>
           </Box>
@@ -350,7 +470,7 @@ export default function SettingsPage() {
 
         {/* Top Metric Cards */}
         <Grid container spacing={2.5} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={4}>
             <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, p: 2.5, bgcolor: '#ffffff' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
@@ -371,7 +491,7 @@ export default function SettingsPage() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={4}>
             <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, p: 2.5, bgcolor: '#ffffff' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
@@ -393,6 +513,29 @@ export default function SettingsPage() {
               />
             </Card>
           </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, p: 2.5, bgcolor: '#ffffff' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Fingerprint Enrolled
+                  </Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5, color: '#0f172a' }}>
+                    {loading ? <Skeleton width={60} /> : `${usersWithFp} / ${users.length}`}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: '#f5f3ff', color: '#7c3aed', width: 48, height: 48 }}>
+                  <FingerprintIcon />
+                </Avatar>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={users.length > 0 ? (usersWithFp / users.length) * 100 : 0}
+                sx={{ mt: 1.5, height: 6, borderRadius: 3, bgcolor: '#e2e8f0', '& .MuiLinearProgress-bar': { bgcolor: '#7c3aed' } }}
+              />
+            </Card>
+          </Grid>
         </Grid>
 
         {/* Section Tabs */}
@@ -408,7 +551,7 @@ export default function SettingsPage() {
               '& .MuiTab-root': { fontWeight: 700, fontSize: '0.95rem', textTransform: 'none' }
             }}
           >
-            <Tab icon={<ShieldIcon />} iconPosition="start" label="User Security & PIN Management" />
+            <Tab icon={<ShieldIcon />} iconPosition="start" label="User Authentication & Biometrics" />
             <Tab icon={<SettingsIcon />} iconPosition="start" label="System Preferences" />
           </Tabs>
 
@@ -421,6 +564,7 @@ export default function SettingsPage() {
                     <TableCell sx={{ fontWeight: 800, color: '#64748b', py: 1.5 }}>User Profile</TableCell>
                     <TableCell sx={{ fontWeight: 800, color: '#64748b', py: 1.5 }}>System Role</TableCell>
                     <TableCell sx={{ fontWeight: 800, color: '#64748b', py: 1.5 }}>PIN Status</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#64748b', py: 1.5 }}>Fingerprint Status</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 800, color: '#64748b', py: 1.5, pr: 3 }}>Security Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -431,12 +575,13 @@ export default function SettingsPage() {
                         <TableCell><Skeleton variant="circular" width={40} height={40} sx={{ display: 'inline-block', mr: 2, verticalAlign: 'middle' }} /><Skeleton variant="text" width={140} sx={{ display: 'inline-block' }} /></TableCell>
                         <TableCell><Skeleton width={80} /></TableCell>
                         <TableCell><Skeleton width={100} /></TableCell>
-                        <TableCell align="right"><Skeleton width={120} sx={{ ml: 'auto' }} /></TableCell>
+                        <TableCell><Skeleton width={100} /></TableCell>
+                        <TableCell align="right"><Skeleton width={200} sx={{ ml: 'auto' }} /></TableCell>
                       </TableRow>
                     ))
                   ) : users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                      <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
                         <Typography variant="body1" color="text.secondary">No users found.</Typography>
                       </TableCell>
                     </TableRow>
@@ -503,6 +648,22 @@ export default function SettingsPage() {
                             />
                           </TableCell>
 
+                          {/* Fingerprint Status */}
+                          <TableCell sx={{ py: 2 }}>
+                            <Chip
+                              icon={u.fingerprint_enrolled ? <FingerprintIcon style={{ color: '#7c3aed' }} /> : <CancelIcon style={{ color: '#94a3b8' }} />}
+                              label={u.fingerprint_enrolled ? 'FP Enrolled' : 'Not Enrolled'}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                fontWeight: 700,
+                                color: u.fingerprint_enrolled ? '#6d28d9' : '#64748b',
+                                borderColor: u.fingerprint_enrolled ? '#ddd6fe' : '#cbd5e1',
+                                bgcolor: u.fingerprint_enrolled ? '#f5f3ff' : '#f8fafc'
+                              }}
+                            />
+                          </TableCell>
+
                           {/* Action Buttons */}
                           <TableCell align="right" sx={{ py: 2, pr: 3 }}>
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
@@ -529,6 +690,36 @@ export default function SettingsPage() {
                                   <IconButton
                                     size="small"
                                     onClick={() => removePin(u.user_id)}
+                                    sx={{ color: '#dc2626', bgcolor: '#fef2f2', border: '1px solid #fecaca', '&:hover': { bgcolor: '#fee2e2' } }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<FingerprintIcon />}
+                                onClick={() => startFingerprintSetup(u.user_id)}
+                                sx={{
+                                  borderRadius: 2,
+                                  fontWeight: 700,
+                                  fontSize: '0.78rem',
+                                  color: '#6d28d9',
+                                  borderColor: '#ddd6fe',
+                                  bgcolor: '#f5f3ff',
+                                  '&:hover': { bgcolor: '#ede9fe', borderColor: '#c4b5fd' }
+                                }}
+                              >
+                                {u.fingerprint_enrolled ? 'Re-enroll FP' : 'Enroll FP'}
+                              </Button>
+
+                              {u.fingerprint_enrolled && (
+                                <Tooltip title="Remove Fingerprint">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => removeFingerprint(u.user_id)}
                                     sx={{ color: '#dc2626', bgcolor: '#fef2f2', border: '1px solid #fecaca', '&:hover': { bgcolor: '#fee2e2' } }}
                                   >
                                     <DeleteIcon fontSize="small" />
@@ -791,6 +982,72 @@ export default function SettingsPage() {
               }}
             >
               {pinLoading ? <CircularProgress size={22} color="inherit" /> : pinStep === 'enter' ? 'Next →' : 'Save PIN Code'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* DIALOG 3: Fingerprint Enrollment Modal */}
+        <Dialog open={!!fpUserId} onClose={cancelFingerprintSetup} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
+          <DialogTitle component="div" sx={{ textAlign: 'center', pt: 3, pb: 0 }}>
+            <Avatar sx={{ bgcolor: '#f5f3ff', color: '#7c3aed', width: 56, height: 56, mx: 'auto', mb: 1 }}>
+              <FingerprintIcon sx={{ fontSize: 36 }} />
+            </Avatar>
+            <Typography variant="h6" component="div" sx={{ fontWeight: 800 }}>
+              Enroll Fingerprint Template
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              User: <strong>{fpUserObj?.full_name}</strong>
+            </Typography>
+          </DialogTitle>
+
+          <DialogContent sx={{ px: 3, py: 2 }}>
+            <Box sx={{ my: 1, textAlign: 'center' }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, mb: 1, color: '#4c1d95' }}>
+                Scan Progress: {fpSamples.length} / 4 (Minimum 2 scans required)
+              </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={(fpSamples.length / 4) * 100}
+                sx={{ height: 8, borderRadius: 4, bgcolor: '#ede9fe', '& .MuiLinearProgress-bar': { bgcolor: '#7c3aed' } }}
+              />
+            </Box>
+
+            <FingerprintEnrollmentScanner
+              onSample={(s) => {
+                setFpSamples((prev) => {
+                  if (prev.length >= 4) return prev;
+                  return [...prev, s];
+                });
+              }}
+              hint={`Captured ${fpSamples.length}/4 scans.`}
+            />
+
+            <Alert severity="info" sx={{ mt: 2, borderRadius: 2.5, fontSize: '0.8rem' }}>
+              <strong>Hardware Requirement:</strong> Fingerprint scanning requires a physical <strong>DigitalPersona U.are.U 4500 USB Reader</strong> connected to this computer, and the <strong>DigitalPersona WebAgent</strong> running on Windows (<code style={{ fontSize: '0.75rem' }}>ws://127.0.0.1:9001</code>).
+              <br />
+              💡 <em>If no USB reader is attached to this PC, use <strong>6-digit PIN Security</strong> instead for instant 100% reliable authorization.</em>
+            </Alert>
+
+            {fpError && <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>{fpError}</Alert>}
+            {fpSuccess && <Alert severity="success" sx={{ mt: 2, borderRadius: 2 }}>{fpSuccess}</Alert>}
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3, pt: 1 }}>
+            <Button onClick={cancelFingerprintSetup} color="inherit" sx={{ fontWeight: 700 }}>Cancel</Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={submitFingerprintEnrollment}
+              disabled={fpLoading || fpSamples.length < 2}
+              sx={{
+                py: 1.2,
+                borderRadius: 2.5,
+                fontWeight: 800,
+                bgcolor: '#7c3aed',
+                '&:hover': { bgcolor: '#6d28d9' }
+              }}
+            >
+              {fpLoading ? <CircularProgress size={22} color="inherit" /> : 'Save Fingerprint Template'}
             </Button>
           </DialogActions>
         </Dialog>

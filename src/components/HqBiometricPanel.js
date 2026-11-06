@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Alert,
   Avatar,
@@ -30,12 +31,25 @@ import {
   Backspace as BackspaceIcon,
   CheckCircle as CheckCircleIcon,
   Delete as DeleteIcon,
+  Fingerprint as FingerprintIcon,
   Lock as LockIcon,
   Refresh as RefreshIcon,
   VpnKey as VpnKeyIcon,
 } from '@mui/icons-material';
-import { Shield } from 'lucide-react';
+import { Fingerprint, Shield } from 'lucide-react';
 import { branchFetch } from '@/lib/branch-client';
+
+const FingerprintEnrollmentScanner = dynamic(
+  () => import('@/components/FingerprintEnrollmentScanner'),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress size={28} sx={{ color: '#4338ca' }} />
+      </Box>
+    ),
+  }
+);
 
 export default function HqBiometricPanel({ user }) {
   const [accounts, setAccounts] = useState([]);
@@ -49,6 +63,11 @@ export default function HqBiometricPanel({ user }) {
   const [pinStep, setPinStep] = useState('enter');
   const [pinError, setPinError] = useState('');
   const [pinLoading, setPinLoading] = useState(false);
+
+  const [fpUserId, setFpUserId] = useState(null);
+  const [fpSamples, setFpSamples] = useState([]);
+  const [fpError, setFpError] = useState('');
+  const [fpLoading, setFpLoading] = useState(false);
 
   const fetchAccounts = useCallback(async (silent = false) => {
     if (!user) return;
@@ -72,6 +91,7 @@ export default function HqBiometricPanel({ user }) {
   }, [fetchAccounts]);
 
   const pinUserObj = accounts.find((u) => u.user_id === pinUserId);
+  const fpUserObj = accounts.find((u) => u.user_id === fpUserId);
   const activePin = pinStep === 'enter' ? pinDigits : pinConfirm;
 
   function cancelPinSetup() {
@@ -156,7 +176,78 @@ export default function HqBiometricPanel({ user }) {
     }
   }
 
+  function cancelFingerprintSetup() {
+    setFpUserId(null);
+    setFpSamples([]);
+    setFpError('');
+    setFpLoading(false);
+  }
+
+  async function submitFingerprintEnrollment() {
+    if (fpSamples.length < 2) {
+      setFpError('Need at least 2 good scans.');
+      return;
+    }
+    if (!fpUserId) return;
+
+    setFpLoading(true);
+    setFpError('');
+    try {
+      const res = await fetch('/api/fingerprint/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: fpUserId,
+          finger: 'right-index',
+          format: 'PngImage',
+          templates: fpSamples.map((s) => s.template),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Enrollment failed');
+
+      if (user?.user_id === fpUserId) {
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        stored.fingerprint_enrolled = true;
+        localStorage.setItem('user', JSON.stringify(stored));
+      }
+
+      setMessage({ text: 'Fingerprint enrolled successfully.', severity: 'success' });
+      await fetchAccounts(true);
+      cancelFingerprintSetup();
+    } catch (err) {
+      setFpError(err.message || 'Enrollment failed');
+    } finally {
+      setFpLoading(false);
+    }
+  }
+
+  async function removeFingerprint(userId) {
+    if (!confirm('Remove fingerprint for this HQ account?')) return;
+    try {
+      const res = await fetch('/api/fingerprint/enroll', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to remove fingerprint');
+      }
+      if (user?.user_id === userId) {
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        stored.fingerprint_enrolled = false;
+        localStorage.setItem('user', JSON.stringify(stored));
+      }
+      setMessage({ text: 'Fingerprint removed.', severity: 'success' });
+      await fetchAccounts(true);
+    } catch (err) {
+      setMessage({ text: err.message || 'Failed to remove fingerprint', severity: 'error' });
+    }
+  }
+
   const withPin = accounts.filter((a) => a.has_pin).length;
+  const withFp = accounts.filter((a) => a.fingerprint_enrolled).length;
 
   return (
     <>
@@ -184,14 +275,14 @@ export default function HqBiometricPanel({ user }) {
                 justifyContent: 'center',
               }}
             >
-              <Shield size={20} />
+              <Fingerprint size={20} />
             </Box>
             <Box>
               <Typography variant="h6" fontWeight={800} sx={{ color: '#0f172a' }}>
-                HQ Security & PIN Management
+                HQ Biometric & PIN Security
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Configure 6-digit authorization PINs for Head Office administrators
+                Enroll fingerprints and 6-digit PINs for Head Office login
               </Typography>
             </Box>
           </Box>
@@ -215,8 +306,14 @@ export default function HqBiometricPanel({ user }) {
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
           <Chip icon={<Shield size={14} />} label={`${accounts.length} HQ account${accounts.length === 1 ? '' : 's'}`} sx={{ fontWeight: 700 }} />
-          <Chip icon={<VpnKeyIcon fontSize="small" />} label={`${withPin} with PIN configured`} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+          <Chip icon={<VpnKeyIcon fontSize="small" />} label={`${withPin} with PIN`} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+          <Chip icon={<FingerprintIcon fontSize="small" />} label={`${withFp} with fingerprint`} color="secondary" variant="outlined" sx={{ fontWeight: 700 }} />
         </Stack>
+
+        <Alert severity="info" sx={{ mb: 2.5, borderRadius: 2 }}>
+          Use a <strong>DigitalPersona U.are.U 4500</strong> reader on this PC with the HID Authentication Device Client running.
+          After enrollment, HQ staff can sign in with <strong>Fingerprint</strong> on the Head Office login tab.
+        </Alert>
 
         <Divider sx={{ mb: 2 }} />
 
@@ -226,20 +323,21 @@ export default function HqBiometricPanel({ user }) {
               <TableRow>
                 <TableCell sx={{ fontWeight: 800, color: '#64748b' }}>HQ Account</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: '#64748b' }}>Role</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#64748b' }}>PIN Status</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#64748b' }}>PIN</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#64748b' }}>Fingerprint</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 800, color: '#64748b', pr: 2 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
                     <CircularProgress size={28} />
                   </TableCell>
                 </TableRow>
               ) : accounts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 5, color: '#64748b' }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 5, color: '#64748b' }}>
                     No HQ accounts found.
                   </TableCell>
                 </TableRow>
@@ -270,6 +368,16 @@ export default function HqBiometricPanel({ user }) {
                         sx={{ fontWeight: 700 }}
                       />
                     </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        icon={u.fingerprint_enrolled ? <FingerprintIcon /> : undefined}
+                        label={u.fingerprint_enrolled ? 'Enrolled' : 'Not enrolled'}
+                        variant="outlined"
+                        color={u.fingerprint_enrolled ? 'secondary' : 'default'}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </TableCell>
                     <TableCell align="right">
                       <Stack direction="row" spacing={0.75} justifyContent="flex-end">
                         <Button size="small" variant="outlined" startIcon={<VpnKeyIcon />} onClick={() => { setPinUserId(u.user_id); setPinStep('enter'); setPinDigits(''); setPinConfirm(''); setPinError(''); }}>
@@ -278,6 +386,16 @@ export default function HqBiometricPanel({ user }) {
                         {u.has_pin && (
                           <Tooltip title="Remove PIN">
                             <IconButton size="small" color="error" onClick={() => removePin(u.user_id)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Button size="small" variant="outlined" startIcon={<FingerprintIcon />} onClick={() => { setFpUserId(u.user_id); setFpSamples([]); setFpError(''); }}>
+                          {u.fingerprint_enrolled ? 'Re-enroll' : 'Enroll FP'}
+                        </Button>
+                        {u.fingerprint_enrolled && (
+                          <Tooltip title="Remove fingerprint">
+                            <IconButton size="small" color="error" onClick={() => removeFingerprint(u.user_id)}>
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -349,6 +467,39 @@ export default function HqBiometricPanel({ user }) {
           <Button onClick={cancelPinSetup}>Cancel</Button>
           <Button variant="contained" onClick={handlePinNext} disabled={pinLoading} sx={{ bgcolor: '#4338ca' }}>
             {pinLoading ? <CircularProgress size={20} color="inherit" /> : pinStep === 'enter' ? 'Next' : 'Save PIN'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Fingerprint dialog */}
+      <Dialog open={!!fpUserId} onClose={cancelFingerprintSetup} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle component="div" sx={{ textAlign: 'center', pt: 3 }}>
+          <Typography variant="h6" component="div" fontWeight={800}>Enroll HQ Fingerprint</Typography>
+          <Typography variant="caption" color="text.secondary">{fpUserObj?.full_name}</Typography>
+        </DialogTitle>
+        <DialogContent>
+          <FingerprintEnrollmentScanner
+            onSample={(sample) => {
+              setFpSamples((prev) => {
+                const next = [...prev, sample];
+                return next.length > 4 ? next.slice(-4) : next;
+              });
+            }}
+          />
+          <Typography variant="body2" align="center" sx={{ mt: 1, fontWeight: 700, color: '#4338ca' }}>
+            {fpSamples.length} / 4 scans (minimum 2)
+          </Typography>
+          {fpError && <Alert severity="error" sx={{ mt: 2 }}>{fpError}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={cancelFingerprintSetup}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={submitFingerprintEnrollment}
+            disabled={fpLoading || fpSamples.length < 2}
+            sx={{ bgcolor: '#4338ca' }}
+          >
+            {fpLoading ? <CircularProgress size={20} color="inherit" /> : 'Save Fingerprint'}
           </Button>
         </DialogActions>
       </Dialog>
