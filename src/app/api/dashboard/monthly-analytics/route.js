@@ -1,0 +1,402 @@
+import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
+import { prisma, sqlTableName, sqlBranchWhere } from '@/lib/prisma';
+import { initBranchScope } from '@/lib/branch-server';
+import {
+  eachPkDate,
+  eachPkMonthInRange,
+  eachPkWeekInRange,
+  lastNPkDaysInclusive,
+  pkDayRange,
+  pkMonthLastDate,
+} from '@/lib/date-helper';
+
+export const dynamic = 'force-dynamic';
+
+function tableIdent(base) {
+  const name = String(sqlTableName(base) || base).replace(/[^a-zA-Z0-9_]/g, '');
+  return Prisma.raw(`\`${name}\``);
+}
+
+function n(val) {
+  if (val == null) return 0;
+  if (typeof val === 'bigint') return Number(val);
+  const num = parseFloat(String(val));
+  return Number.isFinite(num) ? num : 0;
+}
+
+function isPkDate(dateStr) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ''));
+}
+
+function resolveDateRange(fromDate, toDate) {
+  const fromRange = pkDayRange(fromDate);
+  const toRange = pkDayRange(toDate);
+  if (!fromRange?.gte || !toRange?.lte) return null;
+  if (Number.isNaN(fromRange.gte.getTime()) || Number.isNaN(toRange.lte.getTime())) return null;
+  if (fromDate > toDate) return null;
+  return { startDate: fromRange.gte, endDate: toRange.lte };
+}
+
+function isCashOrBankCategoryTitle(title) {
+  const t = String(title || '').toLowerCase();
+  return t.includes('cash') || t.includes('bank');
+}
+
+/** Month-end outstanding from ledger closing balances (same sign as cus_balance report). */
+async function computeMonthEndOutstanding(branchId, asOfDateStr, tables, cusTypeId = null) {
+  const asOfRange = pkDayRange(asOfDateStr);
+  if (!asOfRange?.lte) return { receivable: 0, payable: 0 };
+
+  const { ledger, customers } = tables;
+  const ledgerBranch = Prisma.raw(sqlBranchWhere(branchId));
+  const customerBranch = Prisma.raw(sqlBranchWhere(branchId, 'c'));
+  
+  // Add customer type filter if provided
+  const customerTypeFilter = cusTypeId 
+    ? Prisma.raw(`AND c.cus_type = ${cusTypeId}`) 
+    : Prisma.empty;
+
+  const rows = await prisma.$queryRaw`
+    SELECT l.closing_balance, c.cus_category
+    FROM ${ledger} l
+    INNER JOIN (
+      SELECT cus_id, MAX(l_id) AS max_l_id
+      FROM ${ledger}
+      WHERE ${ledgerBranch}
+        AND created_at <= ${asOfRange.lte}
+      GROUP BY cus_id
+    ) latest ON l.l_id = latest.max_l_id
+    INNER JOIN ${customers} c ON c.cus_id = l.cus_id
+    WHERE ${customerBranch}
+      ${customerTypeFilter}
+  `;
+
+  let receivable = 0;
+  let payable = 0;
+  for (const row of rows) {
+    if (tables.cashBankCategoryIds.has(Number(row.cus_category))) continue;
+    const bal = n(row.closing_balance);
+    if (bal > 0) receivable += bal;
+    else if (bal < 0) payable += Math.abs(bal);
+  }
+
+  return {
+    receivable: Number(receivable.toFixed(2)),
+    payable: Number(payable.toFixed(2)),
+  };
+}
+
+export async function GET(request) {
+  try {
+    const __branchScope = await initBranchScope(request);
+    if (__branchScope.error) return __branchScope.error;
+
+    const branchId = __branchScope.branchId;
+    const { searchParams } = new URL(request.url);
+    const fallback = lastNPkDaysInclusive(30);
+    const fromDate = searchParams.get('fromDate') || fallback.fromDate;
+    const toDate = searchParams.get('toDate') || fallback.toDate;
+    const cusTypeIdRaw = searchParams.get('cusTypeId');
+    const cusTypeId = cusTypeIdRaw && !isNaN(parseInt(cusTypeIdRaw)) ? parseInt(cusTypeIdRaw) : null;
+
+    if (!isPkDate(fromDate) || !isPkDate(toDate)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid date format (use YYYY-MM-DD)' },
+        { status: 400 }
+      );
+    }
+
+    const dateRange = resolveDateRange(fromDate, toDate);
+    if (!dateRange) {
+      return NextResponse.json({ success: false, error: 'Invalid date range' }, { status: 400 });
+    }
+
+    const { startDate, endDate } = dateRange;
+    const dayCount = eachPkDate(fromDate, toDate).length;
+    const chartGrainParam = searchParams.get('chartGrain');
+    const ledgerGrainParam = searchParams.get('ledgerGrain');
+    const ledgerSeries = searchParams.get('ledgerSeries');
+    const useOutstandingLedger = ledgerSeries === 'outstanding';
+    const chartGrainAuto = dayCount > 0 && dayCount <= 90;
+    const useWeeklyCharts =
+      chartGrainParam === 'month' ? false : chartGrainParam === 'week' ? true : chartGrainAuto;
+    const useWeeklyLedger =
+      ledgerGrainParam === 'month'
+        ? false
+        : ledgerGrainParam === 'week'
+          ? true
+          : chartGrainAuto;
+
+    const getChartPeriodExpr = (alias = null) => {
+      const col = alias ? `${alias}.created_at` : 'created_at';
+      return useWeeklyCharts
+        ? Prisma.raw(`DATE_FORMAT(${col} + INTERVAL 5 HOUR, '%Y-%m-%d')`)
+        : Prisma.raw(`DATE_FORMAT(${col} + INTERVAL 5 HOUR, '%Y-%m')`);
+    };
+    const getLedgerPeriodExpr = (alias = null) => {
+      const col = alias ? `${alias}.created_at` : 'created_at';
+      return useWeeklyLedger
+        ? Prisma.raw(`DATE_FORMAT(${col} + INTERVAL 5 HOUR, '%Y-%m-%d')`)
+        : Prisma.raw(`DATE_FORMAT(${col} + INTERVAL 5 HOUR, '%Y-%m')`);
+    };
+
+    const ledger = tableIdent('ledger');
+    const customers = tableIdent('customers');
+    const sales = tableIdent('sales');
+    const saleDetails = tableIdent('sale_details');
+    const saleReturns = tableIdent('sale_returns');
+    const saleReturnDetails = tableIdent('sale_return_details');
+    const products = tableIdent('products');
+    const expenses = tableIdent('expenses');
+
+    const ledgerBranch = Prisma.raw(sqlBranchWhere(branchId));
+    const ledgerBranchL = Prisma.raw(sqlBranchWhere(branchId, 'l'));
+    const salesBranchS = Prisma.raw(sqlBranchWhere(branchId, 's'));
+    const returnsBranch = Prisma.raw(sqlBranchWhere(branchId, 'sr'));
+    const expenseBranch = Prisma.raw(sqlBranchWhere(branchId));
+
+    const customerTypeFilterL = cusTypeId 
+      ? Prisma.raw(`AND c.cus_type = ${cusTypeId}`) 
+      : Prisma.empty;
+    const customerTypeFilterS = cusTypeId 
+      ? Prisma.raw(`AND c.cus_type = ${cusTypeId}`) 
+      : Prisma.empty;
+
+    const allCategories = await prisma.customerCategory.findMany({
+      select: { cus_cat_id: true, cus_cat_title: true },
+    });
+    const cashBankCategoryIds = new Set(
+      allCategories
+        .filter((c) => isCashOrBankCategoryTitle(c.cus_cat_title))
+        .map((c) => c.cus_cat_id)
+    );
+    const outstandingTables = { ledger, customers, cashBankCategoryIds };
+
+    const ledgerFlowQuery = useOutstandingLedger
+      ? Promise.resolve([])
+      : prisma.$queryRaw`
+        SELECT
+          ${getLedgerPeriodExpr('l')} AS period,
+          SUM(l.credit_amount) AS credit_total,
+          SUM(l.debit_amount) AS debit_total
+        FROM ${ledger} l
+        INNER JOIN ${customers} c ON l.cus_id = c.cus_id
+        WHERE ${ledgerBranchL}
+          AND l.created_at >= ${startDate}
+          AND l.created_at <= ${endDate}
+          ${customerTypeFilterL}
+        GROUP BY period
+        ORDER BY period ASC
+      `;
+
+    const [ledgerRows, salesRows, profitRows, expenseRows] = await Promise.all([
+      ledgerFlowQuery,
+      prisma.$queryRaw`
+        SELECT
+          ${getChartPeriodExpr('s')} AS period,
+          SUM(s.total_amount) AS total_sales,
+          COUNT(s.sale_id) AS total_orders
+        FROM ${sales} s
+        INNER JOIN ${customers} c ON s.cus_id = c.cus_id
+        WHERE ${salesBranchS}
+          AND s.bill_type = 'BILL'
+          AND s.created_at >= ${startDate}
+          AND s.created_at <= ${endDate}
+          ${customerTypeFilterS}
+        GROUP BY period
+        ORDER BY period ASC
+      `,
+      prisma.$queryRaw`
+        SELECT
+          period,
+          SUM(revenue) AS revenue,
+          SUM(cost) AS cost
+        FROM (
+          SELECT
+            ${getChartPeriodExpr('s')} AS period,
+            s.sale_id,
+            MAX(CAST(s.total_amount - s.shipping_amount - s.labour_charges AS DECIMAL(18,2))) AS revenue,
+            SUM(CAST(COALESCE(NULLIF(p.pro_cost_price, 0), NULLIF(p.pro_crate, 0), NULLIF(p.pro_baser_price, 0), 0) * sd.qnty AS DECIMAL(18,2))) AS cost
+          FROM ${sales} s
+          JOIN ${saleDetails} sd ON s.sale_id = sd.sale_id
+          JOIN ${products} p ON sd.pro_id = p.pro_id
+          JOIN ${customers} c ON s.cus_id = c.cus_id
+          WHERE ${salesBranchS}
+            AND s.bill_type = 'BILL'
+            AND s.created_at >= ${startDate}
+            AND s.created_at <= ${endDate}
+            ${customerTypeFilterS}
+          GROUP BY s.sale_id, period
+
+          UNION ALL
+
+          SELECT
+            ${getChartPeriodExpr('sr')} AS period,
+            sr.return_id,
+            -MAX(CAST(sr.total_amount - sr.discount - sr.labour_charges - sr.shipping_amount AS DECIMAL(18,2))) AS revenue,
+            -SUM(CAST(COALESCE(NULLIF(p.pro_cost_price, 0), NULLIF(p.pro_crate, 0), NULLIF(p.pro_baser_price, 0), 0) * srd.qnty AS DECIMAL(18,2))) AS cost
+          FROM ${saleReturns} sr
+          JOIN ${saleReturnDetails} srd ON sr.return_id = srd.return_id
+          JOIN ${products} p ON srd.pro_id = p.pro_id
+          JOIN ${customers} c ON sr.cus_id = c.cus_id
+          WHERE ${returnsBranch}
+            AND sr.created_at >= ${startDate}
+            AND sr.created_at <= ${endDate}
+            ${customerTypeFilterS}
+          GROUP BY sr.return_id, period
+        ) combined
+        GROUP BY period
+        ORDER BY period ASC
+      `,
+      prisma.$queryRaw`
+        SELECT
+          ${getChartPeriodExpr()} AS period,
+          SUM(exp_amount) AS total_expense
+        FROM ${expenses}
+        WHERE ${expenseBranch}
+          AND created_at >= ${startDate}
+          AND created_at <= ${endDate}
+        GROUP BY period
+        ORDER BY period ASC
+      `,
+    ]);
+
+    const periodKey = (p) => (p == null ? '' : String(p));
+
+    const ledgerMap = new Map(ledgerRows.map((r) => [periodKey(r.period), r]));
+    const salesMap = new Map(salesRows.map((r) => [periodKey(r.period), r]));
+    const profitMap = new Map(profitRows.map((r) => [periodKey(r.period), r]));
+    const expenseMap = new Map(expenseRows.map((r) => [periodKey(r.period), r]));
+
+    const buildWeekBuckets = () =>
+      eachPkWeekInRange(fromDate, toDate).map((week) => ({
+        period: week.key,
+        label: week.label,
+        days: eachPkDate(week.from, week.to),
+      }));
+
+    const buildMonthBucketsFromPeriods = (periodKeys) =>
+      Array.from(new Set(periodKeys)).filter(Boolean).sort().map((period) => ({
+        period,
+        label: period,
+        days: [period],
+      }));
+
+    const ledgerBuckets = useWeeklyLedger
+      ? buildWeekBuckets()
+      : eachPkMonthInRange(fromDate, toDate).map((month) => ({
+        period: month.key,
+        label: month.label,
+        days: [month.key],
+      }));
+
+    const chartBuckets = useWeeklyCharts
+      ? buildWeekBuckets()
+      : eachPkMonthInRange(fromDate, toDate).map((month) => ({
+        period: month.key,
+        label: month.label,
+        days: [month.key],
+      }));
+
+    const monthlyCredit = [];
+    const monthlyDebit = [];
+
+    if (useOutstandingLedger) {
+      const monthBuckets = eachPkMonthInRange(fromDate, toDate);
+      for (const month of monthBuckets) {
+        const asOf = pkMonthLastDate(month.key, toDate);
+        const { receivable, payable } = await computeMonthEndOutstanding(
+          branchId,
+          asOf,
+          outstandingTables,
+          cusTypeId
+        );
+        const point = {
+          period: month.key,
+          label: month.label,
+          asOfDate: asOf,
+        };
+        monthlyCredit.push({
+          ...point,
+          amount: receivable,
+          toReceive: receivable,
+          metric: 'closing_balance',
+        });
+        monthlyDebit.push({
+          ...point,
+          amount: payable,
+          toPay: payable,
+          metric: 'closing_balance',
+        });
+      }
+    } else {
+      ledgerBuckets.forEach((bucket) => {
+        let credit = 0;
+        let debit = 0;
+        bucket.days.forEach((day) => {
+          const l = ledgerMap.get(day) || {};
+          credit += n(l.credit_total);
+          debit += n(l.debit_total);
+        });
+        monthlyCredit.push({ period: bucket.period, label: bucket.label, amount: credit });
+        monthlyDebit.push({ period: bucket.period, label: bucket.label, amount: debit });
+      });
+    }
+
+    const monthlySales = [];
+    const monthlyProfit = [];
+
+    chartBuckets.forEach((bucket) => {
+      let salesVal = 0;
+      let orders = 0;
+      let revenue = 0;
+      let cost = 0;
+      let expense = 0;
+      bucket.days.forEach((day) => {
+        const s = salesMap.get(day) || {};
+        const p = profitMap.get(day) || {};
+        const e = expenseMap.get(day) || {};
+        salesVal += n(s.total_sales);
+        orders += n(s.total_orders);
+        revenue += n(p.revenue);
+        cost += n(p.cost);
+        expense += n(e.total_expense);
+      });
+      monthlySales.push({ period: bucket.period, label: bucket.label, amount: salesVal, count: orders });
+      monthlyProfit.push({
+        period: bucket.period,
+        label: bucket.label,
+        revenue,
+        cost,
+        expense,
+        profit: revenue - cost - expense,
+      });
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        grain: useWeeklyCharts ? 'week' : 'month',
+        ledgerGrain: useOutstandingLedger ? 'month' : useWeeklyLedger ? 'week' : 'month',
+        ledgerSeries: useOutstandingLedger ? 'outstanding' : 'flow',
+        fromDate,
+        toDate,
+        periods: chartBuckets.map((b) => b.period),
+        ledgerPeriods: ledgerBuckets.map((b) => b.period),
+        monthlyCredit,
+        monthlyDebit,
+        monthEndToReceive: monthlyCredit,
+        monthEndToPay: monthlyDebit,
+        monthlySales,
+        monthlyProfit,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching monthly analytics:', error);
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Failed to fetch monthly analytics' },
+      { status: 500 }
+    );
+  }
+}

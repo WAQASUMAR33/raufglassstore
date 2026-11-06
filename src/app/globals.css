@@ -1,0 +1,882 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Jameel Noori Nastaleeq';
+  src: url('https://cdn.jsdelivr.net/gh/zaheer-khasi/urdu-fonts/JameelNooriNastaleeq.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/zaheer-khasi/urdu-fonts/JameelNooriNastaleeq.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.nastaliq-text,
+.nastaliq-text * {
+  font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif !important;
+}
+
+/* Separate word CSS styles */
+.word-ittefaq {
+  font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif !important;
+  font-weight: 800 !important;
+}
+.word-iron {
+  font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif !important;
+  font-weight: 800 !important;
+}
+.word-and {
+  font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif !important;
+  font-weight: 800 !important;
+}
+.word-cement {
+  font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif !important;
+  font-weight: 800 !important;
+}
+.word-store {
+  font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif !important;
+  font-weight: 800 !important;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --font-poppins: 'Poppins', sans-serif;
+
+  /* Brand palette */
+  --brand-blue: #1A55E3;
+  --brand-pink: #FF0854;
+  --brand-green: #00D284;
+  --brand-cyan: #0DCAF0;
+  --brand-periwinkle: #5E6EED;
+
+  --brand-blue-tint: #e8effd;
+  --brand-pink-tint: #ffe8f0;
+  --brand-green-tint: #e6fff4;
+  --brand-cyan-tint: #e6faff;
+  --brand-periwinkle-tint: #eef0fe;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-green: var(--brand-green);
+  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-periwinkle: var(--brand-periwinkle);
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-poppins);
+}
+
+/* Force white background for all pages */
+body,
+html {
+  background-color: #ffffff !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
+
+  body,
+  html {
+    background-color: #ffffff !important;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-poppins), 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Apply Poppins font to all elements */
+* {
+  font-family: var(--font-poppins), 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
+}
+
+/* Custom animations for login page */
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(26, 85, 227, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(26, 85, 227, 0.6);
+  }
+}
+
+@keyframes gradient-shift {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Sidebar header — accent strip + soft wash */
+.sidebar-header-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-header-shell::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: linear-gradient(
+    180deg,
+    rgba(26, 85, 227, 0.07) 0%,
+    rgba(94, 110, 237, 0.04) 45%,
+    rgba(255, 8, 84, 0.03) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sidebar-header-accent {
+  position: relative;
+  height: 5px;
+  width: 100%;
+  background: linear-gradient(90deg, #1A55E3 0%, #5E6EED 38%, #FF0854 72%, #FF4D6D 100%);
+  overflow: hidden;
+}
+
+.sidebar-header-accent-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  animation: sidebar-accent-shine 4s ease-in-out infinite;
+}
+
+@keyframes sidebar-accent-shine {
+  0%, 100% { transform: translateX(-120%); opacity: 0; }
+  15% { opacity: 1; }
+  50% { transform: translateX(120%); opacity: 1; }
+  85% { opacity: 0; }
+}
+
+.sidebar-header-ornament {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 1.25rem 0.65rem;
+}
+
+.sidebar-header-ornament span {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1A55E3, #FF0854);
+  opacity: 0.55;
+}
+
+.sidebar-header-ornament span:nth-child(1) {
+  width: 4px;
+  height: 4px;
+}
+
+.sidebar-header-ornament span:nth-child(2) {
+  width: 22px;
+  height: 3px;
+  opacity: 0.75;
+}
+
+.sidebar-header-ornament span:nth-child(3) {
+  width: 4px;
+  height: 4px;
+}
+
+/* Sidebar company brand — neon red */
+.sidebar-brand {
+  position: relative;
+  padding: 2px 0 2px 12px;
+  margin-top: 0;
+}
+
+.sidebar-brand::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #FF4D6D 0%, #FF0854 50%, #DC2626 100%);
+  box-shadow: 0 0 10px rgba(255, 8, 84, 0.55);
+}
+
+.sidebar-brand-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #FF6B8A 0%, #FF0854 45%, #E11D48 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(255, 8, 84, 0.28));
+}
+
+.sidebar-brand-sub {
+  display: block;
+  margin-top: 2px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #FF0854 0%, #DC2626 70%, #991B1B 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-brand-glow {
+  margin-top: 6px;
+  height: 2px;
+  width: 65%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 8, 84, 0.75) 0%, rgba(255, 8, 84, 0.08) 100%);
+  box-shadow: 0 0 6px rgba(255, 8, 84, 0.35);
+}
+
+.sidebar-brand-collapsed {
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-align: center;
+  line-height: 1.1;
+  margin-top: 0;
+  background: linear-gradient(135deg, #FF6B8A, #FF0854);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 6px rgba(255, 8, 84, 0.4));
+}
+
+/* Sidebar — Powered By AL-JANNAT SYSTEMS (footer) */
+.sidebar-powered-footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e8ecf3;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.sidebar-powered-footer-label {
+  display: block;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  line-height: 1.2;
+}
+
+.sidebar-powered-footer-name {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.sidebar-powered-name {
+  background: linear-gradient(135deg, #1A55E3 0%, #5E6EED 55%, #1347c4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-powered-collapsed {
+  background: linear-gradient(135deg, #e8effd 0%, #eef0fe 100%);
+  border: 1px solid rgba(26, 85, 227, 0.18);
+  color: #1A55E3;
+  box-shadow: 0 2px 8px rgba(26, 85, 227, 0.1);
+}
+
+@keyframes sidebar-search-border {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+@keyframes sidebar-search-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(26, 85, 227, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(26, 85, 227, 0.08);
+  }
+}
+
+.sidebar-search-wrap {
+  position: relative;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(90deg, #1A55E3, #5E6EED, #0DCAF0, #1A55E3);
+  background-size: 300% 100%;
+  animation: sidebar-search-border 4s linear infinite, sidebar-search-pulse 2.5s ease-in-out infinite;
+  transition: box-shadow 0.25s ease;
+}
+
+.sidebar-search-wrap:focus-within {
+  animation: sidebar-search-border 1.8s linear infinite;
+  box-shadow: 0 0 18px rgba(26, 85, 227, 0.28);
+}
+
+.sidebar-search-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.sidebar-search-inner .sidebar-search-icon {
+  color: #1A55E3;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.sidebar-search-wrap:focus-within .sidebar-search-icon {
+  color: #5E6EED;
+  transform: scale(1.08);
+}
+
+.sidebar-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  min-width: 0;
+}
+
+.sidebar-search-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* HQ sidebar — same shell as branch, indigo/violet palette */
+.hq-sidebar-header-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.hq-sidebar-header-shell::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: linear-gradient(
+    180deg,
+    rgba(67, 56, 202, 0.07) 0%,
+    rgba(99, 102, 241, 0.04) 45%,
+    rgba(124, 58, 237, 0.03) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hq-sidebar-header-accent {
+  position: relative;
+  height: 5px;
+  width: 100%;
+  background: linear-gradient(90deg, #1e1b4b 0%, #4338ca 32%, #6366f1 58%, #f59e0b 82%, #6366f1 100%);
+  overflow: hidden;
+}
+
+.hq-sidebar-header-accent-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+  animation: sidebar-accent-shine 4s ease-in-out infinite;
+}
+
+.hq-sidebar-header-ornament {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 1.25rem 0.65rem;
+}
+
+.hq-sidebar-header-ornament span {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4338ca, #f59e0b);
+  opacity: 0.55;
+}
+
+.hq-sidebar-header-ornament span:nth-child(1) { width: 4px; height: 4px; }
+.hq-sidebar-header-ornament span:nth-child(2) { width: 22px; height: 3px; opacity: 0.75; }
+.hq-sidebar-header-ornament span:nth-child(3) { width: 4px; height: 4px; }
+
+.hq-sidebar-brand {
+  position: relative;
+  padding: 2px 0 2px 12px;
+  margin-top: 0;
+}
+
+.hq-sidebar-brand::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f59e0b 0%, #6366f1 45%, #4338ca 100%);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+}
+
+.hq-sidebar-brand-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 50%, #312e81 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.22));
+}
+
+.hq-sidebar-brand-sub {
+  display: block;
+  margin-top: 2px;
+  font-weight: 700;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #d97706 0%, #4338ca 55%, #312e81 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hq-sidebar-brand-glow {
+  margin-top: 6px;
+  height: 2px;
+  width: 65%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.75) 0%, rgba(99, 102, 241, 0.08) 100%);
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.35);
+}
+
+.hq-sidebar-brand-collapsed {
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-align: center;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #818cf8, #4338ca);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.4));
+}
+
+.hq-sidebar-powered-name {
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 55%, #3730a3 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hq-sidebar-powered-collapsed {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border: 1px solid rgba(67, 56, 202, 0.18);
+  color: #4338ca;
+  box-shadow: 0 2px 8px rgba(67, 56, 202, 0.1);
+  cursor: default;
+}
+
+@keyframes hq-sidebar-search-border {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+@keyframes hq-sidebar-search-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(67, 56, 202, 0.15); }
+  50% { box-shadow: 0 0 0 4px rgba(67, 56, 202, 0.08); }
+}
+
+.hq-sidebar-search-wrap {
+  position: relative;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(90deg, #312e81, #4338ca, #f59e0b, #6366f1, #4338ca);
+  background-size: 300% 100%;
+  animation: hq-sidebar-search-border 4s linear infinite, hq-sidebar-search-pulse 2.5s ease-in-out infinite;
+}
+
+.hq-sidebar-search-wrap:focus-within {
+  animation: hq-sidebar-search-border 1.8s linear infinite;
+  box-shadow: 0 0 18px rgba(67, 56, 202, 0.28);
+}
+
+.hq-sidebar-search-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.hq-sidebar-search-inner .hq-sidebar-search-icon {
+  color: #4338ca;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.hq-sidebar-search-wrap:focus-within .hq-sidebar-search-icon {
+  color: #6366f1;
+  transform: scale(1.08);
+}
+
+.hq-sidebar-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  min-width: 0;
+}
+
+.hq-sidebar-search-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.dashboard-main-scroll {
+  flex: 1 1 0;
+  height: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-layout-root {
+  height: 100vh;
+  max-height: 100dvh;
+}
+
+@media print {
+  .dashboard-main-scroll {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+/* Prevent scrolling on login page */
+.login-page {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Dashboard animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(26, 85, 227, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(26, 85, 227, 0.6);
+  }
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.6s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Staggered animation delays */
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+/* Remove spinner arrows from input type number */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Make all input fields and dropdowns text color bold and black (including disabled ones) */
+.MuiInputBase-input,
+.MuiInputBase-input.Mui-disabled,
+.MuiSelect-select,
+.MuiSelect-select.Mui-disabled,
+input,
+input:disabled,
+select,
+select:disabled,
+textarea,
+textarea:disabled {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important; /* Force black text in webkit browsers for disabled inputs */
+  opacity: 1 !important; /* Override browser transparency for disabled fields */
+  font-weight: bold !important;
+}
+
+/* Ensure placeholder texts are readable but not full black */
+.MuiInputBase-input::placeholder {
+  color: #666666 !important;
+  -webkit-text-fill-color: #666666 !important;
+  font-weight: normal !important;
+}
+
+/* Force numeric placeholders (like 0) to be black and bold */
+input[type="number"]::placeholder,
+.MuiInputBase-input[type="number"]::placeholder {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  font-weight: bold !important;
+  opacity: 1 !important;
+}
+
+/* Keep the transaction type selection input in the header banner white */
+.MuiInputBase-input[placeholder="Select Transaction Type"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: bold !important;
+}
+
+/* Hide native select element in MUI Select components to avoid text overlap */
+.MuiSelect-nativeInput {
+  opacity: 0 !important;
+}
+
+/* Ledger Table Hover Highlights */
+.ledger-row-hover {
+  transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+.ledger-row-hover:hover {
+  background-color: #e0f2fe !important; /* Soft sky blue highlight */
+  box-shadow: inset 4px 0 0 #0284c7 !important; /* Accent bar on left */
+}
+
+.ledger-row-hover-credit {
+  transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+.ledger-row-hover-credit:hover {
+  background-color: #dcfce7 !important; /* Soft green highlight */
+  box-shadow: inset 4px 0 0 #16a34a !important; /* Green accent bar on left */
+}
+
+.ledger-row-hover-debit {
+  transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+.ledger-row-hover-debit:hover {
+  background-color: #fee2e2 !important; /* Soft red highlight */
+  box-shadow: inset 4px 0 0 #dc2626 !important; /* Red accent bar on left */
+}
+
+@media print {
+  .ledger-row-hover:hover,
+  .ledger-row-hover-credit:hover,
+  .ledger-row-hover-debit:hover {
+    box-shadow: none !important;
+  }
+  
+  /* Force thermal printed bill text to be bold and solid black */
+  body.print-thermal,
+  body.print-thermal * {
+    font-weight: 700 !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* Force thermal receipt preview text to be bold and solid black */
+.thermal-receipt,
+.thermal-receipt *,
+#receipt-whatsapp-capture,
+#receipt-whatsapp-capture *,
+#receipt-preview,
+#receipt-preview *,
+#payment-receipt-preview,
+#payment-receipt-preview *:not(.remaining-balance-bar):not(.remaining-balance-bar *) {
+  font-weight: 700;
+  color: #000000;
+}
+
+#payment-receipt-preview .remaining-balance-bar,
+#payment-receipt-preview .remaining-balance-bar * {
+  color: #ffffff !important;
+}
