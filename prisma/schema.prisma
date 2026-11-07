@@ -59,6 +59,7 @@ model Branch {
   employees           Employee[]
   hr_settings         HrSettings[]
   activity_logs       ActivityLog[]
+  addons              Addon[]
 
   @@map("branches")
 }
@@ -111,6 +112,8 @@ model Users {
   vehicles            Vehicle[]
   payments            Payment[]
   stock_adjustments   StockAdjustment[]
+  addons_created      Addon[]            @relation("AddonCreatedBy")
+  addons_updated      Addon[]            @relation("AddonUpdatedBy")
   branch              Branch?            @relation(fields: [branch_id], references: [branch_id])
 
   @@index([branch_id], map: "users_branch_id_fkey")
@@ -312,6 +315,7 @@ model Product {
   stock_transfer_details  StockTransferDetail[]
   store_stocks            StoreStock[]
   stock_adjustments       StockAdjustment[]
+  addons                  ProductAddon[]
 
   @@index([branch_id], map: "products_branch_id_fkey")
   @@index([cat_id], map: "products_cat_id_fkey")
@@ -1428,4 +1432,42 @@ model ActivityLog {
   @@index([module], map: "activity_logs_module_idx")
   @@index([created_at], map: "activity_logs_created_at_idx")
   @@map("activity_logs")
+}
+
+model Addon {
+  id          Int      @id @default(autoincrement())
+  branch_id   Int      @default(1)
+  name        String   @db.VarChar(255)
+  short_code  String?  @db.VarChar(50)
+  cost_price  Decimal  @default(0) @db.Decimal(18, 2)
+  sale_price  Decimal  @default(0) @db.Decimal(18, 2)
+  status      String   @default("ACTIVE") @db.VarChar(20)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+  updated_by  Int?
+  branch      Branch   @relation(fields: [branch_id], references: [branch_id])
+  creator     Users?         @relation("AddonCreatedBy", fields: [created_by], references: [user_id])
+  updater     Users?         @relation("AddonUpdatedBy", fields: [updated_by], references: [user_id])
+  product_addons ProductAddon[]
+
+  @@index([branch_id], map: "addons_branch_id_fkey")
+  @@index([created_by], map: "addons_created_by_fkey")
+  @@index([updated_by], map: "addons_updated_by_fkey")
+  @@map("addons")
+}
+
+model ProductAddon {
+  id         Int      @id @default(autoincrement())
+  product_id Int      @map("pro_id")
+  addon_id   Int
+  created_at DateTime @default(now())
+
+  product    Product  @relation(fields: [product_id], references: [pro_id], onDelete: Cascade)
+  addon      Addon    @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, addon_id], map: "product_addons_product_addon_unique")
+  @@index([product_id], map: "product_addons_pro_id_idx")
+  @@index([addon_id], map: "product_addons_addon_id_idx")
+  @@map("product_addons")
 }

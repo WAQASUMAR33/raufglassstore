@@ -50,7 +50,12 @@ export async function GET(request) {
               email: true,
               role: true
             }
-          }
+          },
+          addons: {
+            include: {
+              addon: true,
+            },
+          },
         },
       });
 
@@ -121,6 +126,11 @@ export async function GET(request) {
               email: true,
               role: true
             }
+          },
+          addons: {
+            include: {
+              addon: true,
+            },
           },
           store_stocks: {
             select: {
@@ -222,6 +232,21 @@ export async function POST(request) {
         updated_by: user.user_id,
       })
     });
+
+    if (Array.isArray(body.addon_ids) && body.addon_ids.length > 0) {
+      const addonInserts = body.addon_ids
+        .map(aid => ({
+          product_id: newProduct.pro_id,
+          addon_id: parseInt(aid, 10),
+        }))
+        .filter(a => a.addon_id > 0);
+      if (addonInserts.length > 0) {
+        await prisma.productAddon.createMany({
+          data: addonInserts,
+          skipDuplicates: true,
+        });
+      }
+    }
 
     if (body.store_id) {
       await updateStoreStock(
@@ -374,6 +399,24 @@ export async function PUT(request) {
       }
     });
 
+    if (Array.isArray(body.addon_ids)) {
+      await prisma.productAddon.deleteMany({
+        where: { product_id: body.id },
+      });
+      const addonInserts = body.addon_ids
+        .map(aid => ({
+          product_id: body.id,
+          addon_id: parseInt(aid, 10),
+        }))
+        .filter(a => a.addon_id > 0);
+      if (addonInserts.length > 0) {
+        await prisma.productAddon.createMany({
+          data: addonInserts,
+          skipDuplicates: true,
+        });
+      }
+    }
+
     if (body.store_id && body.pro_stock_qnty !== undefined) {
       await updateStoreStock(
         parseInt(body.store_id),
@@ -407,6 +450,11 @@ export async function PUT(request) {
               email: true,
               role: true
             }
+          },
+          addons: {
+            include: {
+              addon: true,
+            },
           },
           store_stocks: {
             select: {

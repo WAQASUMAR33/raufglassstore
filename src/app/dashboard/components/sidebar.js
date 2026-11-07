@@ -50,6 +50,7 @@ import {
   Badge as BadgeIcon,
   EventNote as EventNoteIcon,
   Payments as PaymentsIcon,
+  Extension as ExtensionIcon,
 } from '@mui/icons-material';
 import { canAccessMenuItem } from '@/lib/staff-access';
 import { isHqUser } from '@/lib/branch-roles';
@@ -107,6 +108,7 @@ const ROUTE_MAP = {
   'categories': '/dashboard/categories',
   'sub-categories': '/dashboard/subcategories',
   'products': '/dashboard/products',
+  'addons': '/dashboard/addons',
   'purchases': '/dashboard/purchases',
   'new-purchase': '/dashboard/purchases',
   'purchase-list': '/dashboard/purchases',
@@ -215,6 +217,7 @@ export default function Sidebar({
     { id: 'categories', name: 'Category Management', icon: FolderIcon, category: 'product-management', parent: 'Product Management' },
     { id: 'sub-categories', name: 'Sub Category Management', icon: FolderOpenIcon, category: 'product-management', parent: 'Product Management' },
     { id: 'products', name: 'Product List', icon: InventoryIcon, category: 'product-management', parent: 'Product Management' },
+    { id: 'addons', name: "Ad On's Management", icon: ExtensionIcon, category: 'product-management', parent: 'Product Management' },
 
     { id: 'expense-titles', name: 'Expense Titles', icon: LabelIcon, category: 'financial', parent: 'Finance' },
     { id: 'expenses', name: 'Expense Management', icon: AttachMoneyIcon, category: 'financial', parent: 'Finance' },
@@ -313,6 +316,7 @@ export default function Sidebar({
       { path: '/dashboard/categories', id: 'categories', category: 'product-management' },
       { path: '/dashboard/subcategories', id: 'sub-categories', category: 'product-management' },
       { path: '/dashboard/products', id: 'products', category: 'product-management' },
+      { path: '/dashboard/addons', id: 'addons', category: 'product-management' },
       { path: '/dashboard/super-order', id: 'super-order', category: 'purchase-operations' },
       { path: '/dashboard/vehicles', id: 'vehicles', category: 'purchase-operations' },
       { path: '/dashboard/finance', id: 'ledger', category: 'main' },

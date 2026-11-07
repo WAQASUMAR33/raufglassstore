@@ -64,8 +64,10 @@ import {
   Warning as AlertIcon,
   Star as StarIcon,
   Visibility as EyeIcon,
-  BarChart as BarChartIcon
+  BarChart as BarChartIcon,
+  Extension as ExtensionIcon
 } from '@mui/icons-material';
+import { AddonSelector, AddonChipsList, AddonPickerModal } from '@/components/addons';
 
 const fmtAmt = (val) => {
   const n = parseFloat(val || 0);
@@ -114,8 +116,14 @@ export default function ProductsPage() {
     pro_packing: '',
     cat_id: '',
     sub_cat_id: '',
-    store_id: ''
+    store_id: '',
+    addon_ids: []
   });
+
+  // Quick Addon Picker modal states
+  const [pickerProduct, setPickerProduct] = useState(null);
+  const [pickerModalOpen, setPickerModalOpen] = useState(false);
+  const [pickerSaving, setPickerSaving] = useState(false);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -217,7 +225,8 @@ export default function ProductsPage() {
           pro_packing: '',
           cat_id: '',
           sub_cat_id: '',
-          store_id: ''
+          store_id: '',
+          addon_ids: []
         });
         setSnackbar({
           open: true,
@@ -246,6 +255,9 @@ export default function ProductsPage() {
 
   const handleEditProduct = (product) => {
     setEditingProduct(product);
+    const existingAddonIds = product.addons
+      ? product.addons.map(a => a.addon_id || a.addon?.id || a.id).filter(Boolean)
+      : [];
     setFormData({
       pro_title: product.pro_title || '',
       pro_description: product.pro_description || '',
@@ -259,7 +271,8 @@ export default function ProductsPage() {
       pro_packing: product.pro_packing || '',
       cat_id: product.cat_id || '',
       sub_cat_id: product.sub_cat_id || '',
-      store_id: product.store_stocks?.[0]?.store_id || ''
+      store_id: product.store_stocks?.[0]?.store_id || '',
+      addon_ids: existingAddonIds
     });
     // Populate Category and Subcategory input states
     const category = categories.find(c => c.cat_id === product.cat_id);
@@ -305,7 +318,8 @@ export default function ProductsPage() {
           pro_packing: '',
           cat_id: '',
           sub_cat_id: '',
-          store_id: ''
+          store_id: '',
+          addon_ids: []
         });
         setSnackbar({
           open: true,
@@ -504,11 +518,13 @@ export default function ProductsPage() {
       pro_baser_price: '',
       pro_crate: '',
       pro_stock_qnty: '',
+      low_stock_quantity: '',
       pro_unit: '',
       pro_packing: '',
       cat_id: '',
       sub_cat_id: '',
-      store_id: ''
+      store_id: '',
+      addon_ids: []
     });
     // Clear Category and Subcategory input states
     setCategoryInput('');
@@ -517,6 +533,58 @@ export default function ProductsPage() {
     setSubcategoryHighlighted(null);
     setCategoryOpen(false);
     setSubcategoryOpen(false);
+  };
+
+  const handleOpenAddonPicker = (product) => {
+    setPickerProduct(product);
+    setPickerModalOpen(true);
+  };
+
+  const handleSaveAddonPicker = async (selectedIds) => {
+    if (!pickerProduct) return;
+    try {
+      setPickerSaving(true);
+      const res = await fetch(`/api/products/${pickerProduct.pro_id}/addons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addon_ids: selectedIds }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(prev => prev.map(p => {
+          if (p.pro_id === pickerProduct.pro_id) {
+            return {
+              ...p,
+              addons: data.addons || []
+            };
+          }
+          return p;
+        }));
+        setSnackbar({
+          open: true,
+          message: "Product ad on's updated successfully!",
+          severity: 'success'
+        });
+        setPickerModalOpen(false);
+        setPickerProduct(null);
+      } else {
+        const err = await res.json();
+        setSnackbar({
+          open: true,
+          message: err.error || "Failed to update ad on's",
+          severity: 'error'
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      setSnackbar({
+        open: true,
+        message: "Failed to update ad on's",
+        severity: 'error'
+      });
+    } finally {
+      setPickerSaving(false);
+    }
   };
 
   const handleSnackbarClose = () => {
@@ -1114,6 +1182,7 @@ export default function ProductsPage() {
                     <TableCell>Crate (CodeRate)</TableCell>
                     <TableCell>Sale Rate</TableCell>
                     <TableCell>Base Rate</TableCell>
+                    <TableCell>Ad On's</TableCell>
                     <TableCell align="center">Action</TableCell>
                   </TableRow>
                 </TableHead>
@@ -1203,6 +1272,28 @@ export default function ProductsPage() {
                         <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                           {fmtAmt(product.pro_baser_price)}
                         </Typography>
+                      </TableCell>
+
+                      {/* Ad On's */}
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <AddonChipsList addons={product.addons} maxDisplay={2} />
+                          <Tooltip title="Manage Ad On's for this product">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenAddonPicker(product)}
+                              sx={{
+                                color: '#1A55E3',
+                                p: 0.5,
+                                ml: 0.5,
+                                borderRadius: 0,
+                                '&:hover': { bgcolor: 'rgba(26, 85, 227, 0.08)' }
+                              }}
+                            >
+                              <ExtensionIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
@@ -1849,6 +1940,30 @@ export default function ProductsPage() {
                     </Grid>
                   </Grid>
                 </Box>
+
+                {/* SECTION 5: Associated Ad On's */}
+                <Box sx={{ mt: 4 }}>
+                  <Typography variant="subtitle1" sx={{ 
+                    fontWeight: 700, 
+                    color: '#1e293b',
+                    mb: 2,
+                    pb: 1.5,
+                    borderBottom: '2px solid #1A55E3',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#1A55E3' }}></Box>
+                    Associated Ad On&apos;s
+                  </Typography>
+                  <AddonSelector
+                    selectedAddonIds={formData.addon_ids || []}
+                    onChange={(ids) => setFormData(prev => ({ ...prev, addon_ids: ids }))}
+                    label="Associated Ad On's for this Product"
+                    placeholder="Search and link add-ons (beveling, tempering, polishing, etc.)..."
+                    helperText="Selected add-on services will be linked to this product and automatically available when creating Sales, Quotations, and Orders."
+                  />
+                </Box>
               </Box>
             </DialogContent>
 
@@ -2171,6 +2286,20 @@ export default function ProductsPage() {
               </Button>
             </DialogActions>
           </Dialog>
+
+          {/* Quick Addon Picker Modal for Table Row */}
+          <AddonPickerModal
+            open={pickerModalOpen}
+            onClose={() => {
+              setPickerModalOpen(false);
+              setPickerProduct(null);
+            }}
+            title={pickerProduct ? `Ad On's: ${pickerProduct.pro_title}` : "Manage Product Ad On's"}
+            productTitle={pickerProduct?.pro_title}
+            initialSelectedIds={pickerProduct?.addons?.map(a => a.addon_id || a.addon?.id || a.id).filter(Boolean) || []}
+            onSave={handleSaveAddonPicker}
+            saving={pickerSaving}
+          />
 
           {/* Snackbar for notifications */}
           <Snackbar

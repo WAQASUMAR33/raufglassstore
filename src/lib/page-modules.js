@@ -62,6 +62,7 @@ export const SYSTEM_PAGES = [
   { id: 'categories', name: 'Category Management', section: 'Products', path: '/dashboard/categories' },
   { id: 'sub-categories', name: 'Sub Category Management', section: 'Products', path: '/dashboard/subcategories' },
   { id: 'products', name: 'Product List', section: 'Products', path: '/dashboard/products' },
+  { id: 'addons', name: "Ad On's Management", section: 'Products', path: '/dashboard/addons' },
 
   { id: 'expense-titles', name: 'Expense Titles', section: 'Finance', path: '/dashboard/expense-titles' },
   { id: 'expenses', name: 'Expense Management', section: 'Finance', path: '/dashboard/expenses' },
@@ -191,6 +192,7 @@ const PATH_PAGE_RULES = [
   { prefix: '/dashboard/categories', pageIds: ['categories'] },
   { prefix: '/dashboard/subcategories', pageIds: ['sub-categories'] },
   { prefix: '/dashboard/products', pageIds: ['products'] },
+  { prefix: '/dashboard/addons', pageIds: ['addons'] },
   { prefix: '/dashboard/expense-titles', pageIds: ['expense-titles'] },
   { prefix: '/dashboard/expenses', pageIds: ['expenses'] },
   { prefix: '/dashboard/journal', pageIds: ['journal'] },
