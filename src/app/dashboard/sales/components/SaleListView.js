@@ -143,71 +143,53 @@ export default function SaleListView() {
       {listLoading && <LinearProgress sx={{ position: 'sticky', top: 0, zIndex: 10 }} />}
       <Container maxWidth={false} sx={{ py: 4 }}>
         <Stack spacing={4}>
-          {/* Header - Just the Add Button */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', py: 2 }}>
+          {/* Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: { xs: 2, sm: 3 }, flexWrap: 'wrap', py: 1 }}>
+            <Box>
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  letterSpacing: '-0.02em',
+                  fontSize: { xs: '1.4rem', sm: '1.85rem' },
+                  lineHeight: 1.2
+                }}
+              >
+                Sales Management
+              </Typography>
+            </Box>
             <Button
               variant="contained"
-              startIcon={<AddIcon />}
+              startIcon={<AddIcon sx={{ fontSize: '1.25rem !important' }} />}
               onClick={() => {
                 setCurrentView('create');
                 if (!dataLoadedRef.current.form) fetchFormReferenceData(true);
               }}
-              size="large"
               sx={{
-                background: 'linear-gradient(180deg, #43a047 0%, #2e7d32 100%)',
-                boxShadow: '0 8px 24px rgba(46, 125, 50, 0.28)',
-                px: 6,
-                py: 2.5,
-                fontSize: '1.3rem',
-                fontWeight: 'bold',
-                borderRadius: '16px',
-                minWidth: '320px',
-                minHeight: '70px',
-                position: 'relative',
-                overflow: 'hidden',
-                textTransform: 'none',
-                transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, background 0.35s ease',
-                animation: 'saleBtnGlow 3.2s ease-in-out infinite',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: '-60%',
-                  width: '40%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)',
-                  transform: 'skewX(-20deg)',
-                  animation: 'saleBtnSheen 4s ease-in-out infinite',
-                },
+                background: 'linear-gradient(90deg, #10b981 0%, #059669 45%, #047857 100%)',
+                color: '#ffffff',
+                px: { xs: 2.5, sm: 3.5 },
+                py: { xs: 1, sm: 1.25 },
+                borderRadius: '9999px',
+                fontSize: { xs: '0.85rem', sm: '0.925rem' },
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                boxShadow: '0 8px 24px -4px rgba(16, 185, 129, 0.45), 0 4px 14px -2px rgba(5, 150, 105, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35)',
+                transition: 'all 0.25s ease-in-out',
+                border: 'none',
+                whiteSpace: 'nowrap',
                 '&:hover': {
-                  background: 'linear-gradient(180deg, #4caf50 0%, #2e7d32 100%)',
+                  background: 'linear-gradient(90deg, #059669 0%, #047857 45%, #065f46 100%)',
                   transform: 'translateY(-2px)',
-                  boxShadow: '0 12px 28px rgba(46, 125, 50, 0.36)',
-                  animation: 'none',
+                  boxShadow: '0 12px 30px -4px rgba(16, 185, 129, 0.55), 0 6px 18px -2px rgba(5, 150, 105, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45)',
                 },
                 '&:active': {
                   transform: 'translateY(0)',
-                  boxShadow: '0 6px 16px rgba(46, 125, 50, 0.28)',
-                },
-                '& .MuiButton-startIcon': {
-                  marginRight: '10px',
-                  transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
-                },
-                '&:hover .MuiButton-startIcon': {
-                  transform: 'translateX(2px)',
-                },
-                '@keyframes saleBtnGlow': {
-                  '0%, 100%': {
-                    boxShadow: '0 8px 24px rgba(46, 125, 50, 0.24)',
-                  },
-                  '50%': {
-                    boxShadow: '0 10px 28px rgba(46, 125, 50, 0.34)',
-                  },
-                },
-                '@keyframes saleBtnSheen': {
-                  '0%': { left: '-60%' },
-                  '45%, 100%': { left: '130%' },
-                },
+                  boxShadow: '0 4px 12px -2px rgba(16, 185, 129, 0.3), 0 3px 8px -2px rgba(5, 150, 105, 0.3)',
+                }
               }}
             >
               Add New Sale

@@ -734,7 +734,22 @@ export default function ProductsPage() {
       <Container maxWidth={false} sx={{ py: 4 }}>
         <Stack spacing={4}>
           {/* Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 3 }, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: { xs: 2, sm: 3 }, flexWrap: 'wrap' }}>
+            <Box>
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  letterSpacing: '-0.02em',
+                  fontSize: { xs: '1.4rem', sm: '1.85rem' },
+                  lineHeight: 1.2
+                }}
+              >
+                Products Management
+              </Typography>
+            </Box>
             <Button
               startIcon={<Plus size={20} strokeWidth={2.8} />}
               onClick={() => {
@@ -768,21 +783,6 @@ export default function ProductsPage() {
             >
               Add New Product
             </Button>
-            <Box>
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{
-                  fontWeight: 800,
-                  color: '#0f172a',
-                  letterSpacing: '-0.02em',
-                  fontSize: { xs: '1.4rem', sm: '1.85rem' },
-                  lineHeight: 1.2
-                }}
-              >
-                Products Management
-              </Typography>
-            </Box>
           </Box>
 
           {/* Premium Filters Section */}
