@@ -56,6 +56,7 @@ export async function GET(request) {
               addon: true,
             },
           },
+          formula: true,
         },
       });
 
@@ -138,6 +139,7 @@ export async function GET(request) {
               addon: true,
             },
           },
+          formula: true,
           store_stocks: {
             select: {
               store_id: true,
@@ -236,6 +238,7 @@ export async function POST(request) {
         low_stock_quantity: body.low_stock_quantity !== undefined ? parseInt(body.low_stock_quantity) || 10 : 10,
         pro_unit: body.pro_unit?.trim() || 'pcs',
         pro_packing: body.pro_packing?.trim() || null,
+        formula_id: body.formula_id ? parseInt(body.formula_id, 10) : null,
         updated_by: user.user_id,
       })
     });
@@ -348,6 +351,7 @@ export async function PUT(request) {
       low_stock_quantity: body.low_stock_quantity !== undefined && body.low_stock_quantity !== '' ? parseInt(body.low_stock_quantity, 10) || 10 : undefined,
       pro_unit: body.pro_unit !== undefined ? body.pro_unit?.trim() : undefined,
       pro_packing: body.pro_packing !== undefined ? (body.pro_packing ? String(body.pro_packing).trim() : null) : undefined,
+      formula_id: body.formula_id !== undefined ? (body.formula_id ? parseInt(body.formula_id, 10) : null) : undefined,
       updated_by: user.user_id,
     };
 
@@ -409,6 +413,7 @@ export async function PUT(request) {
             addon: true,
           },
         },
+        formula: true,
         store_stocks: {
           select: {
             store_id: true,
@@ -479,6 +484,7 @@ export async function PUT(request) {
             addon: true,
           },
         },
+        formula: true,
         store_stocks: {
           select: {
             store_id: true,

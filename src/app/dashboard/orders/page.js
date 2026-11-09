@@ -5,6 +5,7 @@ import ProductFormModal from '@/components/products/ProductFormModal';
 import { useState, useEffect, useMemo, useCallback, Suspense, useRef, useLayoutEffect } from 'react';
 import { getCreatedByName } from '@/lib/date-helper';
 import { BRAND } from '@/lib/brand-theme';
+import { calculateGlassDimensions } from '@/lib/glass-formula';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../components/dashboard-layout';
 import DateFilterInput from '../components/date-filter-input';
@@ -479,9 +480,9 @@ const ORDER_ENTRY_ROW2_SX = {
   gridTemplateColumns: {
     xs: '1fr 1fr',
     sm: 'repeat(3, minmax(0, 1fr))',
-    md: 'minmax(0, 2.35fr) minmax(0, 1.15fr) minmax(0, 0.7fr) minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 0.7fr) 44px',
+    md: 'minmax(0, 2fr) minmax(0, 0.72fr) minmax(0, 0.72fr) minmax(0, 0.45fr) minmax(0, 0.7fr) minmax(0, 0.85fr) minmax(0, 0.9fr) minmax(0, 0.65fr) 44px',
   },
-  gap: { xs: 1.5, md: 1.75 },
+  gap: { xs: 1.25, md: 1 },
   alignItems: 'end',
   width: '100%',
   mb: 2,
@@ -737,6 +738,11 @@ function OrdersPageContent() {
 
   // Product form state
   const [productFormData, setProductFormData] = useState({
+    width_in: '',
+    height_in: '',
+    calc_width: '',
+    calc_height: '',
+    pieces: 1,
     quantity: '',
     rate: '',
     amount: 0,
@@ -1283,6 +1289,37 @@ function OrdersPageContent() {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
+  // Handle glass dimension change (Width x Height -> Calc W x Calc H -> Sq Ft)
+  const handleDimensionChange = (field, value) => {
+    setProductFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      const wVal = field === 'width_in' ? value : updated.width_in;
+      const hVal = field === 'height_in' ? value : updated.height_in;
+      const pcsVal = field === 'pieces' ? value : updated.pieces;
+
+      const dimResult = calculateGlassDimensions({
+        width: wVal,
+        height: hVal,
+        pieces: pcsVal,
+        formula: formSelectedProduct?.formula || null
+      });
+
+      const calcW = dimResult.calc_width || '';
+      const calcH = dimResult.calc_height || '';
+      const newQty = dimResult.quantity > 0 ? dimResult.quantity : (updated.quantity || 1);
+      const rate = parseFloat(updated.rate) || 0;
+      const amount = Number(((parseFloat(newQty) || 0) * rate).toFixed(0));
+
+      return {
+        ...updated,
+        calc_width: calcW,
+        calc_height: calcH,
+        quantity: newQty,
+        amount: amount,
+      };
+    });
+  };
+
   // Handle product selection
   const handleProductSelect = (selectedProduct) => {
     console.log('🔍 Product selected:', selectedProduct);
@@ -1291,13 +1328,28 @@ function OrdersPageContent() {
     if (selectedProduct) {
       const saleRate = parseFloat(selectedProduct.pro_sale_price) || parseFloat(selectedProduct.pro_baser_price) || 0;
       // Update product form data with selected product details
-      setProductFormData(prev => ({
-        ...prev,
-        quantity: 1, // Default quantity to 1
-        rate: saleRate,
-        stock: 0, // always derive from store-wise stock when available
-        amount: saleRate // Calculate amount (rate * 1)
-      }));
+      setProductFormData(prev => {
+        const dimResult = calculateGlassDimensions({
+          width: prev.width_in,
+          height: prev.height_in,
+          pieces: prev.pieces,
+          formula: selectedProduct?.formula || null
+        });
+        const calcW = dimResult.calc_width || '';
+        const calcH = dimResult.calc_height || '';
+        const qty = dimResult.quantity > 0 ? dimResult.quantity : (prev.quantity || 1);
+        const amount = Number(((parseFloat(qty) || 0) * saleRate).toFixed(0));
+
+        return {
+          ...prev,
+          calc_width: calcW,
+          calc_height: calcH,
+          quantity: qty,
+          rate: saleRate,
+          stock: 0,
+          amount: amount
+        };
+      });
 
       // If a store is selected, fetch store-wise stock
       if (formSelectedStore?.storeid) {
@@ -1306,6 +1358,11 @@ function OrdersPageContent() {
     } else {
       // Reset form data when no product is selected
       setProductFormData({
+        width_in: '',
+        height_in: '',
+        calc_width: '',
+        calc_height: '',
+        pieces: 1,
         quantity: '',
         rate: '',
         amount: 0,
@@ -1407,6 +1464,16 @@ function OrdersPageContent() {
       return;
     }
 
+    const w = productFormData.width_in;
+    const h = productFormData.height_in;
+    const cW = productFormData.calc_width;
+    const cH = productFormData.calc_height;
+    const pcs = parseInt(productFormData.pieces, 10) || 1;
+    let sizeStr = '';
+    if (w && h) {
+      sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]`;
+    }
+
     // Always add as a new line item (don't merge with existing products)
     const newProduct = {
       id: Date.now(), // Temporary ID for table row (unique for each addition)
@@ -1414,6 +1481,12 @@ function OrdersPageContent() {
       pro_title: formSelectedProduct.pro_title,
       storeid: formSelectedStore.storeid,
       store_name: formSelectedStore.store_name,
+      width_in: w || '',
+      height_in: h || '',
+      calc_width: cW || '',
+      calc_height: cH || '',
+      pieces: pcs,
+      size: sizeStr,
       quantity: productFormData.quantity,
       rate: productFormData.rate,
       amount: productFormData.amount,
@@ -3357,7 +3430,27 @@ function OrdersPageContent() {
               <Box sx={ORDER_ENTRY_ROW2_SX}>
                 <Box sx={ORDER_ENTRY_CELL_SX}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography sx={ORDER_ENTRY_LABEL_SX}>PRODUCT</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, overflow: 'hidden' }}>
+                        <Typography sx={ORDER_ENTRY_LABEL_SX}>PRODUCT</Typography>
+                        {formSelectedProduct?.formula && (
+                          <Tooltip title={formSelectedProduct.formula.description || formSelectedProduct.formula.name}>
+                            <Chip
+                              size="small"
+                              label={`📐 ${formSelectedProduct.formula.name}`}
+                              sx={{
+                                height: 18,
+                                fontSize: '0.62rem',
+                                fontWeight: 800,
+                                bgcolor: '#eff6ff',
+                                color: '#1d4ed8',
+                                borderRadius: '3px',
+                                maxWidth: 140,
+                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', px: 0.75 }
+                              }}
+                            />
+                          </Tooltip>
+                        )}
+                      </Box>
                       <Button
                         size="small"
                         variant="text"
@@ -3538,9 +3631,84 @@ function OrdersPageContent() {
                       }}
                     />
                 </Box>
+                {/* WIDTH (IN) */}
+                <Box sx={ORDER_ENTRY_CELL_SX}>
+                  <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                    WIDTH (IN) {productFormData.calc_width ? `→ ${productFormData.calc_width}"` : ''}
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    id="order-width-input"
+                    placeholder="Width"
+                    value={productFormData.width_in ?? ''}
+                    onChange={(e) => handleDimensionChange('width_in', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    inputProps={{ step: 'any', min: 0 }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === 'Tab') {
+                        e.preventDefault();
+                        document.getElementById('order-height-input')?.focus();
+                      }
+                    }}
+                    sx={ORDER_ENTRY_CONTROL_SX}
+                  />
+                </Box>
+
+                {/* HEIGHT (IN) */}
+                <Box sx={ORDER_ENTRY_CELL_SX}>
+                  <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                    HEIGHT (IN) {productFormData.calc_height ? `→ ${productFormData.calc_height}"` : ''}
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    id="order-height-input"
+                    placeholder="Height"
+                    value={productFormData.height_in ?? ''}
+                    onChange={(e) => handleDimensionChange('height_in', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    inputProps={{ step: 'any', min: 0 }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === 'Tab') {
+                        e.preventDefault();
+                        document.getElementById('order-pieces-input')?.focus();
+                      }
+                    }}
+                    sx={ORDER_ENTRY_CONTROL_SX}
+                  />
+                </Box>
+
+                {/* PCS */}
+                <Box sx={ORDER_ENTRY_CELL_SX}>
+                  <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                    PCS
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    id="order-pieces-input"
+                    placeholder="Pcs"
+                    value={productFormData.pieces ?? 1}
+                    onChange={(e) => handleDimensionChange('pieces', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    inputProps={{ step: 1, min: 1 }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === 'Tab') {
+                        e.preventDefault();
+                        document.getElementById('order-qty-input')?.focus();
+                      }
+                    }}
+                    sx={ORDER_ENTRY_CONTROL_SX}
+                  />
+                </Box>
+
                 <Box sx={ORDER_ENTRY_CELL_SX}>
                     <Typography sx={ORDER_ENTRY_LABEL_SX}>
-                      QTY
+                      QTY (SQ FT)
                     </Typography>
                     <TextField
                       fullWidth
@@ -3561,7 +3729,7 @@ function OrdersPageContent() {
                           }
                         } else if (e.key === 'Tab' && e.shiftKey) {
                           e.preventDefault();
-                          document.getElementById('order-store-input')?.focus();
+                          document.getElementById('order-pieces-input')?.focus();
                         } else if (e.key === 'Tab') {
                           e.preventDefault();
                           document.getElementById('product-rate-input')?.focus();

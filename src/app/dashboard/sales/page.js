@@ -99,6 +99,7 @@ import {
 
 import { getOfflineSalesQueue, saveOfflineSale, syncOfflineSalesQueue } from '@/lib/offline-sales-helper';
 import { BRAND, COMPANY } from '@/lib/brand-theme';
+import { calculateGlassDimensions } from '@/lib/glass-formula';
 import ProductFormModal from '@/components/products/ProductFormModal';
 import {
   fetchSalesForReturnInvoicePicker,
@@ -1642,24 +1643,20 @@ function SalesPageContent() {
   const handleDimensionChange = (field, value) => {
     setProductFormData(prev => {
       const updated = { ...prev, [field]: value };
-      const wVal = parseFloat(field === 'width_in' ? value : updated.width_in);
-      const hVal = parseFloat(field === 'height_in' ? value : updated.height_in);
-      const pcsVal = parseInt(field === 'pieces' ? value : updated.pieces, 10) || 1;
+      const wVal = field === 'width_in' ? value : updated.width_in;
+      const hVal = field === 'height_in' ? value : updated.height_in;
+      const pcsVal = field === 'pieces' ? value : updated.pieces;
 
-      let calcW = updated.calc_width;
-      let calcH = updated.calc_height;
-      let newQty = updated.quantity;
+      const dimResult = calculateGlassDimensions({
+        width: wVal,
+        height: hVal,
+        pieces: pcsVal,
+        formula: formSelectedProduct?.formula || null
+      });
 
-      if (Number.isFinite(wVal) && wVal > 0 && Number.isFinite(hVal) && hVal > 0) {
-        // Round up to nearest whole inch
-        calcW = Math.ceil(wVal);
-        calcH = Math.ceil(hVal);
-        // Formula: ((calcW * calcH) / 144) * pcs
-        newQty = Number((((calcW * calcH) / 144) * pcsVal).toFixed(2));
-      } else {
-        calcW = Number.isFinite(wVal) && wVal > 0 ? Math.ceil(wVal) : '';
-        calcH = Number.isFinite(hVal) && hVal > 0 ? Math.ceil(hVal) : '';
-      }
+      const calcW = dimResult.calc_width || '';
+      const calcH = dimResult.calc_height || '';
+      const newQty = dimResult.quantity > 0 ? dimResult.quantity : (updated.quantity || 1);
 
       const addonsTotal = (updated.selected_addons || []).reduce(
         (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
@@ -1774,18 +1771,15 @@ function SalesPageContent() {
         ? wholesaleRate
         : retailRate;
       setProductFormData(prev => {
-        const wVal = parseFloat(prev.width_in);
-        const hVal = parseFloat(prev.height_in);
-        const pcsVal = parseInt(prev.pieces, 10) || 1;
-        let calcW = prev.calc_width;
-        let calcH = prev.calc_height;
-        let qty = prev.quantity || 1;
-
-        if (Number.isFinite(wVal) && wVal > 0 && Number.isFinite(hVal) && hVal > 0) {
-          calcW = Math.ceil(wVal);
-          calcH = Math.ceil(hVal);
-          qty = Number((((calcW * calcH) / 144) * pcsVal).toFixed(2));
-        }
+        const dimResult = calculateGlassDimensions({
+          width: prev.width_in,
+          height: prev.height_in,
+          pieces: prev.pieces,
+          formula: selectedProduct?.formula || null
+        });
+        const calcW = dimResult.calc_width || '';
+        const calcH = dimResult.calc_height || '';
+        const qty = dimResult.quantity > 0 ? dimResult.quantity : (prev.quantity || 1);
 
         const addonsTotal = (prev.selected_addons || []).reduce(
           (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
@@ -1796,6 +1790,8 @@ function SalesPageContent() {
 
         return {
           ...prev,
+          calc_width: calcW,
+          calc_height: calcH,
           quantity: qty,
           rate: defaultRate,
           stock: 0,
@@ -6713,9 +6709,29 @@ function SalesPageContent() {
                 {/* SELECT PRODUCT */}
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography sx={SALE_ENTRY_LABEL_SX}>
-                      SELECT PRODUCT
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, overflow: 'hidden' }}>
+                      <Typography sx={SALE_ENTRY_LABEL_SX}>
+                        SELECT PRODUCT
+                      </Typography>
+                      {formSelectedProduct?.formula && (
+                        <Tooltip title={formSelectedProduct.formula.description || formSelectedProduct.formula.name}>
+                          <Chip
+                            size="small"
+                            label={`📐 ${formSelectedProduct.formula.name}`}
+                            sx={{
+                              height: 18,
+                              fontSize: '0.62rem',
+                              fontWeight: 800,
+                              bgcolor: '#eff6ff',
+                              color: '#1d4ed8',
+                              borderRadius: '3px',
+                              maxWidth: 160,
+                              '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', px: 0.75 }
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
                     <Button
                       size="small"
                       variant="text"

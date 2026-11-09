@@ -60,6 +60,7 @@ model Branch {
   hr_settings         HrSettings[]
   activity_logs       ActivityLog[]
   addons              Addon[]
+  formulas            Formula[]
 
   @@map("branches")
 }
@@ -317,12 +318,38 @@ model Product {
   store_stocks            StoreStock[]
   stock_adjustments       StockAdjustment[]
   addons                  ProductAddon[]
+  formula_id              Int?
+  formula                 Formula?               @relation(fields: [formula_id], references: [id])
 
   @@index([branch_id], map: "products_branch_id_fkey")
   @@index([cat_id], map: "products_cat_id_fkey")
   @@index([sub_cat_id], map: "products_sub_cat_id_fkey")
   @@index([updated_by], map: "products_updated_by_fkey")
+  @@index([formula_id], map: "products_formula_id_idx")
   @@map("products")
+}
+
+model Formula {
+  id            Int       @id @default(autoincrement())
+  branch_id     Int       @default(1)
+  name          String
+  description   String?
+  tolerance     Decimal   @default(0.00) @db.Decimal(5, 2)
+  width_steps   String    @db.Text
+  height_steps  String?   @db.Text
+  min_width     Decimal   @default(6.00) @db.Decimal(10, 2)
+  min_height    Decimal   @default(6.00) @db.Decimal(10, 2)
+  divisor       Decimal   @default(144.00) @db.Decimal(10, 2)
+  rounding_rule String    @default("SLAB_TIERS")
+  is_default    Boolean   @default(false)
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  products      Product[]
+  branch        Branch    @relation(fields: [branch_id], references: [branch_id])
+
+  @@index([branch_id], map: "formulas_branch_id_idx")
+  @@map("formulas")
 }
 
 model Ledger {

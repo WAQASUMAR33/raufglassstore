@@ -51,6 +51,7 @@ import {
   EventNote as EventNoteIcon,
   Payments as PaymentsIcon,
   Extension as ExtensionIcon,
+  Calculate as CalculateIcon,
 } from '@mui/icons-material';
 import { canAccessMenuItem } from '@/lib/staff-access';
 import { isHqUser } from '@/lib/branch-roles';
@@ -75,7 +76,7 @@ const SECTION_META = {
 
 const SALES_IDS = new Set(['orders', 'new-sale', 'sales', 'hold-bills', 'sale-returns', 'quotations', 'sales-analytics', 'loaders']);
 const PURCHASE_IDS = new Set(['purchases', 'new-purchase', 'purchase-list', 'purchase-returns', 'vehicles', 'purchase-details', 'super-order']);
-const INVENTORY_IDS = new Set(['products', 'categories', 'sub-categories', 'store-stock', 'stock-transfer', 'stores', 'cargo']);
+const INVENTORY_IDS = new Set(['products', 'categories', 'sub-categories', 'store-stock', 'stock-transfer', 'stores', 'cargo', 'addons', 'formulas']);
 const OPERATIONS_IDS = new Set(['day-end', 'day-end-history', 'cash-report', 'bank-report', 'bank-accounts']);
 const FINANCE_IDS = new Set(['expenses', 'expense-titles', 'journal', 'internal-transfer', 'adjustment-management']);
 const ACCOUNTS_IDS = new Set(['customercategory', 'customer-types', 'customers']);
@@ -218,6 +219,7 @@ export default function Sidebar({
     { id: 'sub-categories', name: 'Sub Category Management', icon: FolderOpenIcon, category: 'product-management', parent: 'Product Management' },
     { id: 'products', name: 'Product List', icon: InventoryIcon, category: 'product-management', parent: 'Product Management' },
     { id: 'addons', name: "Ad On's Management", icon: ExtensionIcon, category: 'product-management', parent: 'Product Management' },
+    { id: 'formulas', name: 'Formulas Management', icon: CalculateIcon, category: 'product-management', parent: 'Product Management' },
 
     { id: 'expense-titles', name: 'Expense Titles', icon: LabelIcon, category: 'financial', parent: 'Finance' },
     { id: 'expenses', name: 'Expense Management', icon: AttachMoneyIcon, category: 'financial', parent: 'Finance' },
@@ -317,6 +319,7 @@ export default function Sidebar({
       { path: '/dashboard/subcategories', id: 'sub-categories', category: 'product-management' },
       { path: '/dashboard/products', id: 'products', category: 'product-management' },
       { path: '/dashboard/addons', id: 'addons', category: 'product-management' },
+      { path: '/dashboard/formulas', id: 'formulas', category: 'product-management' },
       { path: '/dashboard/super-order', id: 'super-order', category: 'purchase-operations' },
       { path: '/dashboard/vehicles', id: 'vehicles', category: 'purchase-operations' },
       { path: '/dashboard/finance', id: 'ledger', category: 'main' },

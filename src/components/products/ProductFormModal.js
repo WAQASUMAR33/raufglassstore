@@ -28,7 +28,8 @@ import {
   Close as CloseIcon,
   Inventory as ProductIcon,
   Add as AddIcon,
-  Save as SaveIcon
+  Save as SaveIcon,
+  Calculate as CalculateIcon
 } from '@mui/icons-material';
 
 import { AddonSelector } from '@/components/addons';
@@ -48,6 +49,7 @@ const EMPTY_FORM = {
   cat_id: '',
   sub_cat_id: '',
   store_id: '',
+  formula_id: '',
   addon_ids: []
 };
 
@@ -96,6 +98,7 @@ export default function ProductFormModal({
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [stores, setStores] = useState([]);
+  const [formulas, setFormulas] = useState([]);
   const [loadingMeta, setLoadingMeta] = useState(false);
 
   // Autocomplete search inputs
@@ -120,11 +123,17 @@ export default function ProductFormModal({
   const fetchMetadata = useCallback(async () => {
     try {
       setLoadingMeta(true);
-      const [catsRes, subCatsRes, storesRes] = await Promise.all([
+      const [catsRes, subCatsRes, storesRes, formulasRes] = await Promise.all([
         !externalCategories ? fetch('/api/categories') : null,
         !externalSubcategories ? fetch('/api/subcategories') : null,
-        !externalStores ? fetch('/api/stores') : null
+        !externalStores ? fetch('/api/stores') : null,
+        fetch('/api/formulas?active_only=true')
       ]);
+
+      if (formulasRes && formulasRes.ok) {
+        const formList = await formulasRes.json();
+        setFormulas(Array.isArray(formList) ? formList : []);
+      }
 
       if (catsRes && catsRes.ok) {
         const data = await catsRes.json();
@@ -185,6 +194,7 @@ export default function ProductFormModal({
         pro_packing: product.pro_packing || '',
         cat_id: product.cat_id || '',
         sub_cat_id: product.sub_cat_id || '',
+        formula_id: product.formula_id || product.formula?.id || '',
         store_id: product.store_stocks?.[0]?.store_id || product.store_id || '',
         addon_ids: existingAddonIds
       });
@@ -706,6 +716,59 @@ export default function ProductFormModal({
                           <AddIcon fontSize="small" />
                         </Button>
                       </span>
+                    </Tooltip>
+                  </Box>
+                </Grid>
+
+                {/* Size Calculation Formula Dropdown (minWidth 350) */}
+                <Grid item xs={12} md={12}>
+                  <Box sx={{ display: 'flex', gap: 0.75, minWidth: { xs: '100%', sm: 350 } }}>
+                    <FormControl fullWidth size="small" sx={compactFieldSx}>
+                      <InputLabel id="formula-select-label" shrink>Size Calculation Formula (Height & Width Adjustment)</InputLabel>
+                      <Select
+                        labelId="formula-select-label"
+                        label="Size Calculation Formula (Height & Width Adjustment)"
+                        name="formula_id"
+                        value={formData.formula_id || ''}
+                        onChange={handleChange}
+                        displayEmpty
+                      >
+                        <MenuItem value="">
+                          <em>Standard / Default Formula</em>
+                        </MenuItem>
+                        {formulas.map(f => (
+                          <MenuItem key={f.id} value={f.id}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                              <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                                {f.name} {f.is_default ? '(Default)' : ''}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#64748b', ml: 1 }}>
+                                Tol: {f.tolerance}&quot; | /{f.divisor}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Tooltip title="Formulas Management">
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        href="/dashboard/formulas"
+                        target="_blank"
+                        sx={{
+                          borderRadius: 0,
+                          minWidth: 38,
+                          width: 38,
+                          height: 38,
+                          p: 0,
+                          border: '1px solid #cbd5e1',
+                          color: '#2563eb',
+                          '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.08)', borderColor: '#2563eb' }
+                        }}
+                      >
+                        <CalculateIcon fontSize="small" />
+                      </Button>
                     </Tooltip>
                   </Box>
                 </Grid>

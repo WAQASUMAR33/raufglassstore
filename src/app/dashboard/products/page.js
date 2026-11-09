@@ -1116,9 +1116,24 @@ export default function ProductsPage() {
                           <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                             {product.pro_title}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                             {product.pro_description || 'No description'}
                           </Typography>
+                          {product.formula && (
+                            <Chip
+                              size="small"
+                              label={`📐 ${product.formula.name}`}
+                              sx={{
+                                mt: 0.5,
+                                height: 18,
+                                fontSize: '0.65rem',
+                                fontWeight: 700,
+                                bgcolor: '#eff6ff',
+                                color: '#1d4ed8',
+                                borderRadius: '3px'
+                              }}
+                            />
+                          )}
                         </Box>
                       </TableCell>
 
