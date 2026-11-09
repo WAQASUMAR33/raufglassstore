@@ -317,7 +317,8 @@ export async function PUT(request) {
   try {
     const body = await request.json();
     
-    if (!body.id) return errorResponse('Product ID is required');
+    const targetId = parseInt(body.id ?? body.pro_id, 10);
+    if (!targetId || isNaN(targetId)) return errorResponse('Valid product ID is required');
 
     // Get or create user
     let user = await prisma.users.findFirst();
@@ -336,44 +337,49 @@ export async function PUT(request) {
 
     // Prepare update data
     const updateData = {
-      pro_title: body.pro_title?.trim(),
-      pro_description: body.pro_description?.trim(),
-      pro_cost_price: body.pro_cost_price !== undefined ? parseFloat(body.pro_cost_price) || 0 : undefined,
-      pro_sale_price: body.pro_sale_price !== undefined ? parseFloat(body.pro_sale_price) || 0 : undefined,
-      pro_wholesale_price: body.pro_wholesale_price !== undefined ? parseFloat(body.pro_wholesale_price) || 0 : undefined,
-      pro_baser_price: body.pro_baser_price !== undefined ? parseFloat(body.pro_baser_price) || 0 : undefined,
-      pro_crate: body.pro_crate ? parseFloat(body.pro_crate) : undefined,
-      pro_stock_qnty: body.pro_stock_qnty ? parseInt(body.pro_stock_qnty) : undefined,
-      low_stock_quantity: body.low_stock_quantity !== undefined ? parseInt(body.low_stock_quantity) : undefined,
-      pro_unit: body.pro_unit?.trim(),
-      pro_packing: body.pro_packing?.trim(),
+      pro_title: body.pro_title !== undefined ? body.pro_title?.trim() : undefined,
+      pro_description: body.pro_description !== undefined ? body.pro_description?.trim() : undefined,
+      pro_cost_price: body.pro_cost_price !== undefined && body.pro_cost_price !== '' ? parseFloat(body.pro_cost_price) || 0 : undefined,
+      pro_sale_price: body.pro_sale_price !== undefined && body.pro_sale_price !== '' ? parseFloat(body.pro_sale_price) || 0 : undefined,
+      pro_wholesale_price: body.pro_wholesale_price !== undefined && body.pro_wholesale_price !== '' ? parseFloat(body.pro_wholesale_price) || 0 : undefined,
+      pro_baser_price: body.pro_baser_price !== undefined && body.pro_baser_price !== '' ? parseFloat(body.pro_baser_price) || 0 : undefined,
+      pro_crate: body.pro_crate !== undefined && body.pro_crate !== '' ? parseFloat(body.pro_crate) || 0 : undefined,
+      pro_stock_qnty: body.pro_stock_qnty !== undefined && body.pro_stock_qnty !== '' ? parseFloat(body.pro_stock_qnty) || 0 : undefined,
+      low_stock_quantity: body.low_stock_quantity !== undefined && body.low_stock_quantity !== '' ? parseInt(body.low_stock_quantity, 10) || 10 : undefined,
+      pro_unit: body.pro_unit !== undefined ? body.pro_unit?.trim() : undefined,
+      pro_packing: body.pro_packing !== undefined ? (body.pro_packing ? String(body.pro_packing).trim() : null) : undefined,
       updated_by: user.user_id,
     };
 
     // Handle category and subcategory updates if provided
-    if (body.cat_id && body.sub_cat_id) {
-      // Verify category and subcategory exist
-      const category = await prisma.categories.findUnique({
-        where: { cat_id: parseInt(body.cat_id) }
-      });
-      if (!category) return errorResponse('Invalid category selected');
-
-      const subcategory = await prisma.subCategory.findUnique({
-        where: { sub_cat_id: parseInt(body.sub_cat_id) }
-      });
-      if (!subcategory) return errorResponse('Invalid subcategory selected');
-
-      // Verify subcategory belongs to the selected category
-      if (subcategory.cat_id !== parseInt(body.cat_id)) {
-        return errorResponse('Selected subcategory does not belong to the selected category');
+    if (body.cat_id) {
+      const catId = parseInt(body.cat_id, 10);
+      if (!isNaN(catId) && catId > 0) {
+        const category = await prisma.categories.findUnique({
+          where: { cat_id: catId }
+        });
+        if (!category) return errorResponse('Invalid category selected');
+        updateData.cat_id = catId;
       }
+    }
 
-      updateData.cat_id = parseInt(body.cat_id);
-      updateData.sub_cat_id = parseInt(body.sub_cat_id);
+    if (body.sub_cat_id) {
+      const subCatId = parseInt(body.sub_cat_id, 10);
+      if (!isNaN(subCatId) && subCatId > 0) {
+        const subcategory = await prisma.subCategory.findUnique({
+          where: { sub_cat_id: subCatId }
+        });
+        if (!subcategory) return errorResponse('Invalid subcategory selected');
+
+        if (updateData.cat_id && subcategory.cat_id !== updateData.cat_id) {
+          return errorResponse('Selected subcategory does not belong to the selected category');
+        }
+        updateData.sub_cat_id = subCatId;
+      }
     }
 
     const updatedProduct = await prisma.product.update({
-      where: { pro_id: body.id },
+      where: { pro_id: targetId },
       data: updateData,
       include: {
         category: {
@@ -398,6 +404,11 @@ export async function PUT(request) {
             role: true
           }
         },
+        addons: {
+          include: {
+            addon: true,
+          },
+        },
         store_stocks: {
           select: {
             store_id: true,
@@ -409,11 +420,11 @@ export async function PUT(request) {
 
     if (Array.isArray(body.addon_ids)) {
       await prisma.productAddon.deleteMany({
-        where: { product_id: body.id },
+        where: { product_id: targetId },
       });
       const addonInserts = body.addon_ids
         .map(aid => ({
-          product_id: body.id,
+          product_id: targetId,
           addon_id: parseInt(aid, 10),
         }))
         .filter(a => a.addon_id > 0);
@@ -425,60 +436,62 @@ export async function PUT(request) {
       }
     }
 
-    if (body.store_id && body.pro_stock_qnty !== undefined) {
-      await updateStoreStock(
-        parseInt(body.store_id),
-        updatedProduct.pro_id,
-        parseFloat(updatedProduct.pro_stock_qnty) || 0,
-        'set',
-        user.user_id
-      );
-
-      const finalProduct = await prisma.product.findUnique({
-        where: { pro_id: updatedProduct.pro_id },
-        include: {
-          category: {
-            select: {
-              cat_id: true,
-              cat_name: true,
-              cat_code: true
-            }
-          },
-          sub_category: {
-            select: {
-              sub_cat_id: true,
-              sub_cat_name: true,
-              sub_cat_code: true
-            }
-          },
-          updated_by_user: {
-            select: {
-              user_id: true,
-              full_name: true,
-              email: true,
-              role: true
-            }
-          },
-          addons: {
-            include: {
-              addon: true,
-            },
-          },
-          store_stocks: {
-            select: {
-              store_id: true,
-              stock_quantity: true
-            }
-          }
-        }
-      });
-      return NextResponse.json(finalProduct);
+    if (body.store_id && (body.pro_stock_qnty !== undefined || updateData.pro_stock_qnty !== undefined)) {
+      const storeId = parseInt(body.store_id, 10);
+      if (!isNaN(storeId) && storeId > 0) {
+        await updateStoreStock(
+          storeId,
+          targetId,
+          parseFloat(updatedProduct.pro_stock_qnty) || 0,
+          'set',
+          user.user_id
+        );
+      }
     }
 
-    return NextResponse.json(updatedProduct);
+    const finalProduct = await prisma.product.findUnique({
+      where: { pro_id: targetId },
+      include: {
+        category: {
+          select: {
+            cat_id: true,
+            cat_name: true,
+            cat_code: true
+          }
+        },
+        sub_category: {
+          select: {
+            sub_cat_id: true,
+            sub_cat_name: true,
+            sub_cat_code: true
+          }
+        },
+        updated_by_user: {
+          select: {
+            user_id: true,
+            full_name: true,
+            email: true,
+            role: true
+          }
+        },
+        addons: {
+          include: {
+            addon: true,
+          },
+        },
+        store_stocks: {
+          select: {
+            store_id: true,
+            stock_quantity: true
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(finalProduct || updatedProduct);
   } catch (err) {
     console.error('❌ Error updating product:', err);
-    return errorResponse('Failed to update product', 500);
+    return errorResponse(err.message || 'Failed to update product', 500);
   }
 }
 
