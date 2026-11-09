@@ -142,6 +142,7 @@ function buildSaleReceiptBill({
   selectedBankAccount,
   totalShippingAmount,
   billType,
+  billPriceType = 'Retail',
   cartItems,
   createdAt,
   labourChargesValue,
@@ -166,6 +167,7 @@ function buildSaleReceiptBill({
     bank_title: selectedBankAccount?.cus_name || null,
     shipping_amount: totalShippingAmount,
     bill_type: billType || 'BILL',
+    bill_price_type: billPriceType,
     reference: paymentData.notes || null,
     created_at: createdAt || new Date().toISOString(),
     customer: formSelectedCustomer,
@@ -498,7 +500,7 @@ const SALE_ENTRY_ROW1_SX = {
   gridTemplateColumns: {
     xs: '1fr',
     sm: 'repeat(2, minmax(0, 1fr))',
-    md: 'minmax(0, 2.4fr) minmax(0, 1fr) minmax(0, 1.2fr)',
+    md: 'minmax(0, 2.2fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.15fr)',
   },
   gap: { xs: 1.5, md: 1.75 },
   alignItems: 'end',
@@ -1107,6 +1109,9 @@ function SalesPageContent() {
     return params.get('type') === 'return' ? 'SALE_RETURN' : 'BILL';
   });
 
+  // Bill pricing rate selection: "Retail" vs "Whole sale"
+  const [billPriceType, setBillPriceType] = useState('Retail');
+
   // URL shortcuts: sale return or explicit ?view=create only (sidebar opens list)
   useEffect(() => {
     const viewParam = searchParams?.get('view');
@@ -1698,21 +1703,76 @@ function SalesPageContent() {
     });
   };
 
+  // Handle Bill Price Type change ("Retail" vs "Whole sale")
+  const handleBillPriceTypeChange = (newType) => {
+    if (!newType || newType === billPriceType) return;
+    setBillPriceType(newType);
+
+    // 1. If product is currently loaded in entry fields, update its rate & amount
+    if (formSelectedProduct) {
+      const wholesaleRate = parseFloat(formSelectedProduct.pro_wholesale_price);
+      const retailRate = parseFloat(formSelectedProduct.pro_sale_price) || 0;
+      const targetRate = (newType === 'Whole sale' && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
+        ? wholesaleRate
+        : retailRate;
+
+      setProductFormData(prev => {
+        const addonsTotal = (prev.selected_addons || []).reduce(
+          (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+          0
+        );
+        const effectiveRate = targetRate + addonsTotal;
+        const qty = parseFloat(prev.quantity) || 0;
+        const amount = Number((qty * effectiveRate).toFixed(0));
+        return {
+          ...prev,
+          rate: targetRate,
+          amount,
+        };
+      });
+    }
+
+    // 2. If products are already added to table/cart, recalculate their rates to match new bill type
+    setProductTableData(prevItems => {
+      if (!prevItems || prevItems.length === 0) return prevItems;
+      return prevItems.map(item => {
+        const matched = products.find(p => p.pro_id === item.pro_id);
+        if (!matched) return item;
+        const wholesaleRate = parseFloat(matched.pro_wholesale_price);
+        const retailRate = parseFloat(matched.pro_sale_price) || 0;
+        const baseRate = (newType === 'Whole sale' && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
+          ? wholesaleRate
+          : retailRate;
+        const addonsTotal = (item.selected_addons || []).reduce(
+          (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+          0
+        );
+        const effectiveRate = baseRate + addonsTotal;
+        const qty = parseFloat(item.quantity) || 0;
+        const amount = Number((qty * effectiveRate).toFixed(0));
+        return {
+          ...item,
+          rate: baseRate,
+          effective_rate: effectiveRate,
+          amount,
+        };
+      });
+    });
+
+    showSnackbar(`Bill type changed to "${newType}". Product rates updated.`, 'info');
+  };
+
   // Handle product selection
   const handleProductSelect = (selectedProduct) => {
     console.log('🔍 Product selected:', selectedProduct);
     setFormSelectedProduct(selectedProduct);
 
     if (selectedProduct) {
-      const isWholesaleCustomer = formSelectedCustomer && (
-        formSelectedCustomer.cus_type_title?.toLowerCase().includes('wholesale') ||
-        formSelectedCustomer.customer_type?.cus_type_title?.toLowerCase().includes('wholesale') ||
-        String(formSelectedCustomer.cus_type || '').toLowerCase().includes('wholesale')
-      );
       const wholesaleRate = parseFloat(selectedProduct.pro_wholesale_price);
-      const defaultRate = (isWholesaleCustomer && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
+      const retailRate = parseFloat(selectedProduct.pro_sale_price) || 0;
+      const defaultRate = (billPriceType === 'Whole sale' && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
         ? wholesaleRate
-        : (parseFloat(selectedProduct.pro_sale_price) || 0);
+        : retailRate;
       setProductFormData(prev => {
         const wVal = parseFloat(prev.width_in);
         const hVal = parseFloat(prev.height_in);
@@ -2829,7 +2889,10 @@ function SalesPageContent() {
         labour_charges: labourChargesValue, // Include labour charges
         shipping_amount: totalShippingAmount, // Include both transport and delivery charges
         bill_type: billType || 'BILL',
-        reference: paymentData.notes || null,
+        bill_price_type: billPriceType,
+        reference: paymentData.notes
+          ? `${paymentData.notes} [${billPriceType}]`
+          : `[${billPriceType}]`,
         is_loaded_order: paymentData.isLoadedOrder || !!loadedOrderId, // Flag to indicate if this is a loaded order
         order_id: loadedOrderId || null, // Pass order_id to backend for direct conversion
         loaded_order_id: loadedOrderId || null,
@@ -2976,6 +3039,7 @@ function SalesPageContent() {
           selectedBankAccount,
           totalShippingAmount,
           billType,
+          billPriceType,
           cartItems,
           createdAt: result.created_at,
           labourChargesValue,
@@ -3058,6 +3122,7 @@ function SalesPageContent() {
           setPaymentData({ ...EMPTY_PAYMENT_DATA });
           setTransportOptions([]);
           setBillType('BILL');
+          setBillPriceType('Retail');
           setCurrentView('list');
           fetchData({ mode: 'list', silent: true });
           showSnackbar('Sale updated successfully! Ledger adjusted.', 'success');
@@ -5599,6 +5664,7 @@ function SalesPageContent() {
 
       // Bill type
       setBillType(fullSale.bill_type === 'SALE_RETURN' ? 'BILL' : (fullSale.bill_type || 'BILL'));
+      setBillPriceType(fullSale.reference?.toLowerCase().includes('whole') ? 'Whole sale' : 'Retail');
 
       // Product rows
       setProductTableData(getSaleDetailsForCart(fullSale.sale_details || []).map((detail, index) => {
@@ -6291,6 +6357,12 @@ function SalesPageContent() {
                         customerHighlightRef.current || formSelectedCustomer,
                         (val) => {
                           setFormSelectedCustomer(val);
+                          if (val) {
+                            const typeTitle = (val.cus_type_title || val.customer_type?.cus_type_title || String(val.cus_type || '')).toLowerCase();
+                            if (typeTitle.includes('wholesale')) {
+                              handleBillPriceTypeChange('Whole sale');
+                            }
+                          }
                           if (billType === 'SALE_RETURN') {
                             setSaleSearchResults([]);
                             setSelectedSaleForReturnMain(null);
@@ -6333,6 +6405,12 @@ function SalesPageContent() {
                     value={formSelectedCustomer ?? null}
                     onChange={(event, newValue) => {
                       setFormSelectedCustomer(newValue ?? null);
+                      if (newValue) {
+                        const typeTitle = (newValue.cus_type_title || newValue.customer_type?.cus_type_title || String(newValue.cus_type || '')).toLowerCase();
+                        if (typeTitle.includes('wholesale')) {
+                          handleBillPriceTypeChange('Whole sale');
+                        }
+                      }
                       if (billType === 'SALE_RETURN') {
                         setSaleSearchResults([]);
                         setSelectedSaleForReturnMain(null);
@@ -6493,6 +6571,55 @@ function SalesPageContent() {
                   </Box>
                 )}
 
+
+                {/* BILL TYPE (Retail / Whole sale) */}
+                {billType !== 'SALE_RETURN' && (
+                  <Box sx={SALE_ENTRY_CELL_SX}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75, minHeight: 22 }}>
+                      <Typography sx={{ ...SALE_ENTRY_LABEL_SX, mb: 0 }}>
+                        BILL TYPE
+                      </Typography>
+                      <Chip
+                        size="small"
+                        label={billPriceType === 'Whole sale' ? 'Wholesale Rate' : 'Retail Rate'}
+                        sx={{
+                          height: 20,
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#e0f2fe',
+                          color: billPriceType === 'Whole sale' ? '#92400e' : '#0369a1',
+                          border: billPriceType === 'Whole sale' ? '1px solid #fcd34d' : '1px solid #bae6fd',
+                        }}
+                      />
+                    </Box>
+                    <FormControl fullWidth size="small">
+                      <Select
+                        value={billPriceType}
+                        onChange={(e) => handleBillPriceTypeChange(e.target.value)}
+                        sx={{
+                          ...SALE_ENTRY_CONTROL_SX,
+                          height: 40,
+                          bgcolor: '#ffffff',
+                          fontWeight: 800,
+                          color: billPriceType === 'Whole sale' ? '#b45309' : '#1d4ed8',
+                          '& .MuiSelect-select': {
+                            py: '8px !important',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                          },
+                        }}
+                      >
+                        <MenuItem value="Retail" sx={{ fontWeight: 700, fontSize: '0.875rem', py: 1 }}>
+                          🛍️ Retail
+                        </MenuItem>
+                        <MenuItem value="Whole sale" sx={{ fontWeight: 700, fontSize: '0.875rem', py: 1 }}>
+                          📦 Whole sale
+                        </MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                )}
 
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Typography sx={SALE_ENTRY_LABEL_SX}>
@@ -6777,9 +6904,24 @@ function SalesPageContent() {
 
                 {/* SALE RATE */}
                 <Box sx={SALE_ENTRY_CELL_SX}>
-                  <Typography sx={SALE_ENTRY_LABEL_SX}>
-                    SALE RATE
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography sx={SALE_ENTRY_LABEL_SX}>
+                      SALE RATE
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        color: billPriceType === 'Whole sale' ? '#b45309' : '#1d4ed8',
+                        bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#e0f2fe',
+                        px: 0.6,
+                        py: 0.1,
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}
+                    </Typography>
+                  </Box>
                   <TextField
                     fullWidth
                     size="small"
@@ -8896,7 +9038,7 @@ function SalesPageContent() {
                           </TableCell>
                           <TableCell align="center">
                             <Chip
-                              label={sale.bill_type || 'BILL'}
+                              label={`${sale.bill_type || 'BILL'}${sale.reference?.includes('[Whole sale]') ? ' • WHOLESALE' : sale.reference?.includes('[Retail]') ? ' • RETAIL' : ''}`}
                               size="small"
                               sx={{
                                 height: 22,
@@ -9487,7 +9629,9 @@ function SalesPageContent() {
                   {currentBillData?.is_return && currentBillData.sale_id && (
                     <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>Sale ID: {currentBillData.sale_id}</Typography>
                   )}
-                  <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>Type: {currentBillData.bill_type || 'BILL'}</Typography>
+                  <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
+                    Type: {currentBillData.bill_type || 'BILL'}{currentBillData.bill_price_type ? ` (${currentBillData.bill_price_type})` : currentBillData.reference?.includes('[Whole sale]') ? ' (Whole sale)' : currentBillData.reference?.includes('[Retail]') ? ' (Retail)' : ''}
+                  </Typography>
                   <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
                     Date: {formatDatePK(currentBillData?.created_at) || '—'}
                   </Typography>
