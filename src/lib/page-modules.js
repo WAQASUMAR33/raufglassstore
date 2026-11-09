@@ -134,7 +134,7 @@ export const LEGACY_MODULE_TO_PAGES = {
   store_stock: ['store-stock'],
   stock_transfer: ['stock-transfer'],
   customers: ['customercategory', 'customer-types', 'customers'],
-  products: ['categories', 'sub-categories', 'products'],
+  products: ['categories', 'sub-categories', 'products', 'addons'],
   sales: ['orders', 'new-sale', 'sales', 'sales-v2', 'sales-v2-quick', 'hold-bills', 'sales-analytics'],
   sale_returns: ['sale-returns', 'loaders', 'quotations'],
   purchases: ['purchases', 'new-purchase', 'purchase-list', 'purchase-returns', 'vehicles', 'purchase-details', 'super-order'],
