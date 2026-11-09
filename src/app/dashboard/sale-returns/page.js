@@ -1,5 +1,7 @@
 'use client';
 
+import ProductFormModal from '@/components/products/ProductFormModal';
+
 import { useState, useEffect } from 'react';
 import { formatDatePK, formatDatePKWithMonthName, formatTimePK, getCreatedByName } from '@/lib/date-helper';
 import DashboardLayout from '../components/dashboard-layout';
@@ -166,6 +168,7 @@ export default function SaleReturnsPage() {
   const [sales, setSales] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [stores, setStores] = useState([]);
   const [loaders, setLoaders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1800,11 +1803,28 @@ export default function SaleReturnsPage() {
                 {/* Manual Product Add Section */}
                 <Zoom in={true} style={{ transitionDelay: '200ms' }}>
                   <Card sx={{ ...STYLES.glassCard, bgcolor: '#fcfcfc' }}>
-                    <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #f1f5f9', bgcolor: '#f8fafc' }}>
+                    <Box sx={{ px: 3, py: 1.5, borderBottom: '1px solid #f1f5f9', bgcolor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <AddIcon color="secondary" />
                         <Typography variant="body1" sx={{ fontWeight: '700' }}>Quick Add Product</Typography>
                       </Stack>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                        onClick={() => setShowAddProductModal(true)}
+                        sx={{
+                          borderRadius: 0,
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          textTransform: 'none',
+                          borderColor: '#cbd5e1',
+                          color: '#1A55E3',
+                          '&:hover': { borderColor: '#1A55E3', bgcolor: 'rgba(26,85,227,0.04)' }
+                        }}
+                      >
+                        + Add New Product
+                      </Button>
                     </Box>
                     <CardContent sx={{ p: 3 }}>
                       <Grid container spacing={2} alignItems="center">
@@ -2202,6 +2222,19 @@ export default function SaleReturnsPage() {
           {currentView === 'list' ? renderSaleReturnsListView() : renderSaleReturnCreateView()}
         </Box>
       </Fade>
+
+      {/* Reusable Product Form Modal */}
+      <ProductFormModal
+        open={showAddProductModal}
+        onClose={() => setShowAddProductModal(false)}
+        onSuccess={(newProduct) => {
+          if (newProduct) {
+            setProducts(prev => [newProduct, ...prev]);
+            handleManualProductSelect(newProduct);
+            setSnackbar({ open: true, message: 'Product created and selected successfully!', severity: 'success' });
+          }
+        }}
+      />
 
       {/* Modern Snackbar */}
       <Snackbar

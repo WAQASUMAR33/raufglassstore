@@ -1,5 +1,7 @@
 'use client';
 
+import ProductFormModal from '@/components/products/ProductFormModal';
+
 import { useState, useEffect, useMemo, useCallback, Suspense, useRef, useLayoutEffect } from 'react';
 import { getCreatedByName } from '@/lib/date-helper';
 import { BRAND } from '@/lib/brand-theme';
@@ -549,6 +551,7 @@ function OrdersPageContent() {
   const [customers, setCustomers] = useState([]);
   const [customerTypes, setCustomerTypes] = useState([]);
   const [products, setProducts] = useState([]);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [stores, setStores] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const formCatalogLoadedRef = useRef(false);
@@ -3353,9 +3356,18 @@ function OrdersPageContent() {
               {/* Product Selection Row */}
               <Box sx={ORDER_ENTRY_ROW2_SX}>
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Typography sx={ORDER_ENTRY_LABEL_SX}>
-                      PRODUCT
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography sx={ORDER_ENTRY_LABEL_SX}>PRODUCT</Typography>
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                        onClick={() => setShowAddProductModal(true)}
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                      >
+                        + Add Product
+                      </Button>
+                    </Box>
                     <Autocomplete
                       size="small"
                       fullWidth
@@ -5410,6 +5422,19 @@ function OrdersPageContent() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Reusable Product Form Modal */}
+      <ProductFormModal
+        open={showAddProductModal}
+        onClose={() => setShowAddProductModal(false)}
+        onSuccess={(newProduct) => {
+          if (newProduct) {
+            setProducts(prev => [newProduct, ...prev]);
+            handleProductSelect(newProduct);
+            showSnackbar('Product created and selected successfully!', 'success');
+          }
+        }}
+      />
 
       {/* Customer Creation Popup */}
       <Dialog

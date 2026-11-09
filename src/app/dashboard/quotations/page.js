@@ -1,5 +1,7 @@
 'use client';
 
+import ProductFormModal from '@/components/products/ProductFormModal';
+
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { formatDatePK } from '@/lib/date-helper';
@@ -403,6 +405,7 @@ function QuotationsPageContent() {
   const [customers, setCustomers] = useState([]);
   const [customerTypes, setCustomerTypes] = useState([]);
   const [products, setProducts] = useState([]);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [stores, setStores] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [savingQuotation, setSavingQuotation] = useState(false);
@@ -1697,9 +1700,20 @@ function QuotationsPageContent() {
                 }}
               >
                 <Box sx={{ minWidth: { sm: 160 } }}>
-                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
-                    SELECT PRODUCT
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
+                      SELECT PRODUCT
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="text"
+                      startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                      onClick={() => setShowAddProductModal(true)}
+                      sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                    >
+                      + Add Product
+                    </Button>
+                  </Box>
                   <Autocomplete
                     size="small"
                     fullWidth
@@ -2533,6 +2547,20 @@ function QuotationsPageContent() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Reusable Product Form Modal */}
+      <ProductFormModal
+        open={showAddProductModal}
+        onClose={() => setShowAddProductModal(false)}
+        onSuccess={(newProduct) => {
+          if (newProduct) {
+            setProducts(prev => [newProduct, ...prev]);
+            setFormSelectedProduct(newProduct);
+            handleProductSelect(newProduct);
+            showSnackbar('Product created and selected successfully!', 'success');
+          }
+        }}
+      />
 
       {/* Snackbar */}
       <Snackbar
