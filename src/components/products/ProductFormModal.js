@@ -22,21 +22,13 @@ import {
   Alert,
   Snackbar,
   Chip,
-  Divider,
   Tooltip
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Inventory as ProductIcon,
   Add as AddIcon,
-  Save as SaveIcon,
-  AttachMoney as MoneyIcon,
-  Warehouse as StoreIcon,
-  Category as CategoryIcon,
-  Extension as ExtensionIcon,
-  Description as DescriptionIcon,
-  TrendingUp as TrendingUpIcon,
-  Refresh as RefreshIcon
+  Save as SaveIcon
 } from '@mui/icons-material';
 
 import { AddonSelector } from '@/components/addons';
@@ -59,6 +51,28 @@ const EMPTY_FORM = {
 };
 
 const COMMON_UNITS = ['pieces', 'sq ft', 'sheets', 'meters', 'boxes', 'kg', 'sets'];
+
+// Reusable compact input style enforcing minimum width 350px and tight padding
+const compactFieldSx = {
+  minWidth: { xs: '100%', sm: 350 },
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 0,
+    bgcolor: '#ffffff',
+    fontSize: '0.875rem',
+    minHeight: 38,
+    '& fieldset': { borderColor: '#cbd5e1' },
+    '&:hover fieldset': { borderColor: '#94a3b8' },
+    '&.Mui-focused fieldset': { borderColor: '#1A55E3' }
+  },
+  '& .MuiOutlinedInput-input': {
+    py: '7px !important',
+    px: '12px !important',
+    fontSize: '0.875rem'
+  },
+  '& .MuiInputLabel-root': {
+    fontSize: '0.85rem'
+  }
+};
 
 export default function ProductFormModal({
   open,
@@ -389,11 +403,13 @@ export default function ProductFormModal({
       <Dialog
         open={open}
         onClose={isSubmitting ? undefined : onClose}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 0,
+            maxWidth: 1080,
+            width: '96%',
             border: '1px solid #0f172a',
             boxShadow: '0 25px 60px rgba(15, 23, 42, 0.35)',
             bgcolor: '#ffffff',
@@ -401,10 +417,11 @@ export default function ProductFormModal({
           }
         }}
       >
-        {/* EXECUTIVE HEADER */}
+        {/* COMPACT EXECUTIVE HEADER */}
         <DialogTitle
           sx={{
-            p: 2.5,
+            py: 1.25,
+            px: 2.25,
             bgcolor: '#0f172a',
             color: '#ffffff',
             display: 'flex',
@@ -413,11 +430,11 @@ export default function ProductFormModal({
             borderBottom: '2px solid #1A55E3'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box
               sx={{
-                width: 44,
-                height: 44,
+                width: 36,
+                height: 36,
                 bgcolor: 'rgba(26, 85, 227, 0.2)',
                 border: '1px solid #1A55E3',
                 display: 'flex',
@@ -427,11 +444,11 @@ export default function ProductFormModal({
                 borderRadius: 0
               }}
             >
-              <ProductIcon sx={{ fontSize: 26 }} />
+              <ProductIcon sx={{ fontSize: 20 }} />
             </Box>
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Typography sx={{ fontWeight: 800, fontSize: '1.2rem', color: '#ffffff', letterSpacing: '-0.01em' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffffff', letterSpacing: '-0.01em' }}>
                   {isEditing ? 'Edit Product' : 'Add New Product'}
                 </Typography>
                 <Chip
@@ -443,12 +460,12 @@ export default function ProductFormModal({
                     color: isEditing ? '#fef08a' : '#86efac',
                     border: isEditing ? '1px solid #eab308' : '1px solid #22c55e',
                     fontWeight: 700,
-                    fontSize: '0.72rem',
-                    height: 22
+                    fontSize: '0.68rem',
+                    height: 20
                   }}
                 />
               </Box>
-              <Typography sx={{ fontSize: '0.8rem', color: '#94a3b8', mt: 0.25 }}>
+              <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                 {isEditing
                   ? 'Update product pricing, classification, inventory, and associated add-ons'
                   : 'Register a new glass, aluminum, or hardware item into your inventory'}
@@ -459,10 +476,11 @@ export default function ProductFormModal({
           <IconButton
             onClick={onClose}
             disabled={isSubmitting}
+            size="small"
             sx={{
               color: '#94a3b8',
               borderRadius: 0,
-              p: 1,
+              p: 0.75,
               border: '1px solid rgba(255, 255, 255, 0.1)',
               '&:hover': {
                 bgcolor: 'rgba(239, 68, 68, 0.2)',
@@ -471,16 +489,17 @@ export default function ProductFormModal({
               }
             }}
           >
-            <CloseIcon sx={{ fontSize: 20 }} />
+            <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
 
-        {/* DIALOG BODY */}
-        <DialogContent sx={{ p: 3, bgcolor: '#f8fafc', maxHeight: '76vh', overflowY: 'auto' }}>
+        {/* DIALOG BODY - COMPACT PADDING */}
+        <DialogContent sx={{ p: 2, bgcolor: '#f8fafc', maxHeight: '78vh', overflowY: 'auto' }}>
           {errorBanner && (
             <Alert
               severity="error"
-              sx={{ borderRadius: 0, mb: 3, border: '1px solid #ef4444', fontWeight: 600 }}
+              size="small"
+              sx={{ borderRadius: 0, mb: 1.75, border: '1px solid #ef4444', fontWeight: 600, py: 0.5 }}
               onClose={() => setErrorBanner('')}
             >
               {errorBanner}
@@ -495,21 +514,22 @@ export default function ProductFormModal({
                 bgcolor: '#ffffff',
                 border: '1px solid #e2e8f0',
                 borderRadius: 0,
-                p: 2.5,
-                mb: 3
+                p: 1.75,
+                mb: 1.75
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '1px solid #f1f5f9' }}>
-                <Box sx={{ width: 4, height: 18, bgcolor: '#1A55E3' }} />
-                <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25, pb: 0.75, borderBottom: '1px solid #f1f5f9' }}>
+                <Box sx={{ width: 4, height: 16, bgcolor: '#1A55E3' }} />
+                <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   1. Basic Information
                 </Typography>
               </Box>
 
-              <Grid container spacing={2}>
+              <Grid container spacing={1.5}>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
+                    size="small"
                     required
                     label="Product Title"
                     name="pro_title"
@@ -518,19 +538,14 @@ export default function ProductFormModal({
                     placeholder="e.g., 12mm Clear Tempered Glass, Mirror Silver 5mm, Aluminum Profile 3-Track"
                     autoFocus
                     InputLabelProps={{ shrink: true }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 0,
-                        bgcolor: '#ffffff',
-                        fontSize: '0.95rem'
-                      }
-                    }}
+                    sx={compactFieldSx}
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Description & Specifications"
                     name="pro_description"
                     value={formData.pro_description}
@@ -539,13 +554,7 @@ export default function ProductFormModal({
                     multiline
                     rows={2}
                     InputLabelProps={{ shrink: true }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 0,
-                        bgcolor: '#ffffff',
-                        fontSize: '0.9rem'
-                      }
-                    }}
+                    sx={compactFieldSx}
                   />
                 </Grid>
               </Grid>
@@ -557,28 +566,29 @@ export default function ProductFormModal({
                 bgcolor: '#ffffff',
                 border: '1px solid #e2e8f0',
                 borderRadius: 0,
-                p: 2.5,
-                mb: 3
+                p: 1.75,
+                mb: 1.75
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, pb: 1, borderBottom: '1px solid #f1f5f9' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25, pb: 0.75, borderBottom: '1px solid #f1f5f9' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 4, height: 18, bgcolor: '#9333ea' }} />
-                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  <Box sx={{ width: 4, height: 16, bgcolor: '#9333ea' }} />
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                     2. Category & Classification
                   </Typography>
                 </Box>
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
+                <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.72rem' }}>
                   Tip: Press <b>Tab</b> to select and jump to Subcategory
                 </Typography>
               </Box>
 
-              <Grid container spacing={2.5}>
-                {/* Category Autocomplete */}
-                <Grid item xs={12} sm={6}>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
+              <Grid container spacing={1.5}>
+                {/* Category Autocomplete (minWidth 350) */}
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', gap: 0.75, minWidth: { xs: '100%', sm: 350 } }}>
                     <Autocomplete
                       fullWidth
+                      size="small"
                       openOnFocus
                       autoHighlight
                       selectOnFocus
@@ -603,27 +613,26 @@ export default function ProductFormModal({
                       renderInput={(params) => (
                         <TextField
                           {...params}
+                          size="small"
                           required
                           label="Category"
                           placeholder="Select category..."
                           InputLabelProps={{ shrink: true }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: 0,
-                              bgcolor: '#ffffff'
-                            }
-                          }}
+                          sx={compactFieldSx}
                         />
                       )}
                     />
                     <Tooltip title="Create new category on the fly">
                       <Button
                         variant="outlined"
+                        size="small"
                         onClick={() => setQuickCatOpen(true)}
                         sx={{
                           borderRadius: 0,
-                          minWidth: 44,
-                          px: 1,
+                          minWidth: 38,
+                          width: 38,
+                          height: 38,
+                          p: 0,
                           border: '1px solid #cbd5e1',
                           color: '#1A55E3',
                           '&:hover': { bgcolor: 'rgba(26, 85, 227, 0.08)', borderColor: '#1A55E3' }
@@ -635,11 +644,12 @@ export default function ProductFormModal({
                   </Box>
                 </Grid>
 
-                {/* Subcategory Autocomplete */}
-                <Grid item xs={12} sm={6}>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
+                {/* Subcategory Autocomplete (minWidth 350) */}
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', gap: 0.75, minWidth: { xs: '100%', sm: 350 } }}>
                     <Autocomplete
                       fullWidth
+                      size="small"
                       openOnFocus
                       autoHighlight
                       selectOnFocus
@@ -664,16 +674,12 @@ export default function ProductFormModal({
                       renderInput={(params) => (
                         <TextField
                           {...params}
+                          size="small"
                           label="Subcategory"
                           data-field="modalSubcategory"
                           placeholder={formData.cat_id ? 'Select subcategory...' : 'Select category first'}
                           InputLabelProps={{ shrink: true }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: 0,
-                              bgcolor: '#ffffff'
-                            }
-                          }}
+                          sx={compactFieldSx}
                         />
                       )}
                     />
@@ -681,13 +687,15 @@ export default function ProductFormModal({
                       <span>
                         <Button
                           variant="outlined"
+                          size="small"
                           disabled={!formData.cat_id}
                           onClick={() => setQuickSubCatOpen(true)}
                           sx={{
                             borderRadius: 0,
-                            minWidth: 44,
-                            height: '100%',
-                            px: 1,
+                            minWidth: 38,
+                            width: 38,
+                            height: 38,
+                            p: 0,
                             border: '1px solid #cbd5e1',
                             color: '#9333ea',
                             '&:hover': { bgcolor: 'rgba(147, 51, 234, 0.08)', borderColor: '#9333ea' }
@@ -702,27 +710,27 @@ export default function ProductFormModal({
               </Grid>
             </Box>
 
-            {/* SECTION 3: PRICING & VALUATION */}
+            {/* SECTION 3: PRICING & VALUATION (2x2 GRID, EACH MINWIDTH 350) */}
             <Box
               sx={{
                 bgcolor: '#ffffff',
                 border: '1px solid #e2e8f0',
                 borderRadius: 0,
-                p: 2.5,
-                mb: 3
+                p: 1.75,
+                mb: 1.75
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, pb: 1, borderBottom: '1px solid #f1f5f9' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25, pb: 0.75, borderBottom: '1px solid #f1f5f9' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 4, height: 18, bgcolor: '#16a34a' }} />
-                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  <Box sx={{ width: 4, height: 16, bgcolor: '#16a34a' }} />
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                     3. Pricing & Valuation
                   </Typography>
                 </Box>
 
                 {/* Real-Time Profit Margin Preview */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.72rem' }}>
                     EST. PROFIT:
                   </Typography>
                   <Chip
@@ -731,6 +739,8 @@ export default function ProductFormModal({
                     sx={{
                       borderRadius: 0,
                       fontWeight: 700,
+                      fontSize: '0.7rem',
+                      height: 20,
                       bgcolor: profitMarginVal >= 0 ? '#ecfdf5' : '#fef2f2',
                       color: profitMarginVal >= 0 ? '#15803d' : '#b91c1c',
                       border: `1px solid ${profitMarginVal >= 0 ? '#86efac' : '#fca5a5'}`
@@ -739,10 +749,11 @@ export default function ProductFormModal({
                 </Box>
               </Box>
 
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
+              <Grid container spacing={1.5}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Purchase Cost (CRate)"
                     name="pro_crate"
                     type="number"
@@ -752,15 +763,16 @@ export default function ProductFormModal({
                     placeholder="0.00"
                     InputLabelProps={{ shrink: true }}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#64748b' }}>Rs</InputAdornment>
+                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#64748b', fontSize: '0.8rem' }}>Rs</InputAdornment>
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0, bgcolor: '#ffffff' } }}
+                    sx={compactFieldSx}
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Sale Price"
                     name="pro_sale_price"
                     type="number"
@@ -770,21 +782,22 @@ export default function ProductFormModal({
                     placeholder="0.00"
                     InputLabelProps={{ shrink: true }}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#16a34a' }}>Rs</InputAdornment>
+                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#16a34a', fontSize: '0.8rem' }}>Rs</InputAdornment>
                     }}
                     sx={{
+                      ...compactFieldSx,
                       '& .MuiOutlinedInput-root': {
-                        borderRadius: 0,
-                        bgcolor: '#ffffff',
+                        ...compactFieldSx['& .MuiOutlinedInput-root'],
                         fontWeight: 600
                       }
                     }}
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Base Price"
                     name="pro_baser_price"
                     type="number"
@@ -794,15 +807,16 @@ export default function ProductFormModal({
                     placeholder="0.00"
                     InputLabelProps={{ shrink: true }}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#64748b' }}>Rs</InputAdornment>
+                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#64748b', fontSize: '0.8rem' }}>Rs</InputAdornment>
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0, bgcolor: '#ffffff' } }}
+                    sx={compactFieldSx}
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Cost Price"
                     name="pro_cost_price"
                     type="number"
@@ -812,39 +826,40 @@ export default function ProductFormModal({
                     placeholder="0.00"
                     InputLabelProps={{ shrink: true }}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#64748b' }}>Rs</InputAdornment>
+                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#64748b', fontSize: '0.8rem' }}>Rs</InputAdornment>
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0, bgcolor: '#ffffff' } }}
+                    sx={compactFieldSx}
                   />
                 </Grid>
               </Grid>
             </Box>
 
-            {/* SECTION 4: INVENTORY & STOCK (FIXED SQUEEZED STORE DROPDOWN) */}
+            {/* SECTION 4: INVENTORY & STOCK DETAILS (CLEAN 2-COLUMN, ALL MINWIDTH 350) */}
             <Box
               sx={{
                 bgcolor: '#ffffff',
                 border: '1px solid #e2e8f0',
                 borderRadius: 0,
-                p: 2.5,
-                mb: 3
+                p: 1.75,
+                mb: 1.75
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '1px solid #f1f5f9' }}>
-                <Box sx={{ width: 4, height: 18, bgcolor: '#d97706' }} />
-                <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25, pb: 0.75, borderBottom: '1px solid #f1f5f9' }}>
+                <Box sx={{ width: 4, height: 16, bgcolor: '#d97706' }} />
+                <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   4. Inventory & Stock Details
                 </Typography>
               </Box>
 
-              <Grid container spacing={2.5}>
-                {/* Store Selection - Given ample width (half row on sm, 6/12) */}
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth required={parseFloat(formData.pro_stock_qnty) > 0}>
-                    <InputLabel id="product-modal-store-label" shrink sx={{ fontWeight: 600 }}>
+              <Grid container spacing={1.5}>
+                {/* Store Selection (minWidth 350) */}
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth size="small" required={parseFloat(formData.pro_stock_qnty) > 0} sx={{ minWidth: { xs: '100%', sm: 350 } }}>
+                    <InputLabel id="product-modal-store-label" shrink sx={{ fontWeight: 600, fontSize: '0.85rem' }}>
                       Primary Storage / Store
                     </InputLabel>
                     <Select
+                      size="small"
                       labelId="product-modal-store-label"
                       name="store_id"
                       value={formData.store_id || ''}
@@ -854,14 +869,19 @@ export default function ProductFormModal({
                       sx={{
                         borderRadius: 0,
                         bgcolor: '#ffffff',
-                        fontSize: '0.95rem'
+                        fontSize: '0.875rem',
+                        height: 38,
+                        '& .MuiSelect-select': { py: '8px !important', px: '12px !important' },
+                        '& fieldset': { borderColor: '#cbd5e1' },
+                        '&:hover fieldset': { borderColor: '#94a3b8' },
+                        '&.Mui-focused fieldset': { borderColor: '#1A55E3' }
                       }}
                     >
-                      <MenuItem value="">
+                      <MenuItem value="" sx={{ fontSize: '0.875rem' }}>
                         <em style={{ color: '#94a3b8' }}>Select store location...</em>
                       </MenuItem>
                       {stores.map((s) => (
-                        <MenuItem key={s.storeid} value={s.storeid}>
+                        <MenuItem key={s.storeid} value={s.storeid} sx={{ fontSize: '0.875rem' }}>
                           {s.store_name}
                         </MenuItem>
                       ))}
@@ -869,10 +889,11 @@ export default function ProductFormModal({
                   </FormControl>
                 </Grid>
 
-                {/* Stock Quantity */}
-                <Grid item xs={12} sm={3}>
+                {/* Stock Quantity (minWidth 350) */}
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Stock Quantity"
                     name="pro_stock_qnty"
                     type="number"
@@ -880,14 +901,15 @@ export default function ProductFormModal({
                     onChange={handleChange}
                     placeholder="0"
                     InputLabelProps={{ shrink: true }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0, bgcolor: '#ffffff' } }}
+                    sx={compactFieldSx}
                   />
                 </Grid>
 
-                {/* Low Stock Alert Qty */}
-                <Grid item xs={12} sm={3}>
+                {/* Low Stock Alert Qty (minWidth 350) */}
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Low Stock Alert"
                     name="low_stock_quantity"
                     type="number"
@@ -895,23 +917,24 @@ export default function ProductFormModal({
                     onChange={handleChange}
                     placeholder="10"
                     InputLabelProps={{ shrink: true }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0, bgcolor: '#ffffff' } }}
+                    sx={compactFieldSx}
                   />
                 </Grid>
 
-                {/* Unit Field with Quick Preset Chips */}
-                <Grid item xs={12} sm={6}>
+                {/* Unit Field with Quick Preset Chips (minWidth 350) */}
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Unit of Measurement"
                     name="pro_unit"
                     value={formData.pro_unit}
                     onChange={handleChange}
                     placeholder="e.g., pieces, sq ft, sheets, boxes"
                     InputLabelProps={{ shrink: true }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0, bgcolor: '#ffffff' } }}
+                    sx={compactFieldSx}
                   />
-                  <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mt: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.75 }}>
                     {COMMON_UNITS.map(unit => (
                       <Chip
                         key={unit}
@@ -921,8 +944,8 @@ export default function ProductFormModal({
                         onClick={() => setFormData(prev => ({ ...prev, pro_unit: unit }))}
                         sx={{
                           borderRadius: 0,
-                          fontSize: '0.72rem',
-                          height: 22,
+                          fontSize: '0.68rem',
+                          height: 20,
                           bgcolor: formData.pro_unit === unit ? '#1A55E3' : '#f1f5f9',
                           color: formData.pro_unit === unit ? '#ffffff' : '#475569',
                           border: '1px solid #e2e8f0',
@@ -933,34 +956,36 @@ export default function ProductFormModal({
                   </Box>
                 </Grid>
 
-                {/* Packing Information */}
-                <Grid item xs={12} sm={6}>
+                {/* Packing Information (minWidth 350, full row) */}
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
+                    size="small"
                     label="Packing Information"
                     name="pro_packing"
                     value={formData.pro_packing}
                     onChange={handleChange}
                     placeholder="e.g., 10 sheets per wooden crate, bubble wrapped"
                     InputLabelProps={{ shrink: true }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0, bgcolor: '#ffffff' } }}
+                    sx={compactFieldSx}
                   />
                 </Grid>
               </Grid>
             </Box>
 
-            {/* SECTION 5: ASSOCIATED AD ON'S */}
+            {/* SECTION 5: ASSOCIATED AD ON'S (MINWIDTH 350) */}
             <Box
               sx={{
                 bgcolor: '#ffffff',
                 border: '1px solid #e2e8f0',
                 borderRadius: 0,
-                p: 2.5
+                p: 1.75,
+                minWidth: { xs: '100%', sm: 350 }
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '1px solid #f1f5f9' }}>
-                <Box sx={{ width: 4, height: 18, bgcolor: '#1A55E3' }} />
-                <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25, pb: 0.75, borderBottom: '1px solid #f1f5f9' }}>
+                <Box sx={{ width: 4, height: 16, bgcolor: '#1A55E3' }} />
+                <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   5. Associated Ad On&apos;s
                 </Typography>
               </Box>
@@ -970,17 +995,18 @@ export default function ProductFormModal({
                 onChange={(ids) => setFormData(prev => ({ ...prev, addon_ids: ids }))}
                 label="Select Ad On's for this Product"
                 placeholder="Search and attach add-ons (beveling, tempering, polishing, frost)..."
-                helperText="Attached add-on services will be linked to this product and easily selectable during Sales, Quotations, and Order billing."
+                helperText="Attached add-on services will be linked to this product and automatically available when creating Sales, Quotations, and Orders."
               />
             </Box>
 
           </Box>
         </DialogContent>
 
-        {/* DIALOG ACTIONS */}
+        {/* DIALOG ACTIONS - COMPACT PADDING */}
         <DialogActions
           sx={{
-            p: 2.5,
+            py: 1.25,
+            px: 2.25,
             bgcolor: '#ffffff',
             borderTop: '1px solid #e2e8f0',
             display: 'flex',
@@ -989,23 +1015,25 @@ export default function ProductFormModal({
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.72rem' }}>
               * Required fields: Product Title & Category
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               onClick={onClose}
               disabled={isSubmitting}
               variant="outlined"
+              size="small"
               sx={{
                 borderRadius: 0,
-                px: 3,
-                py: 1,
+                px: 2.5,
+                py: 0.6,
                 border: '1px solid #cbd5e1',
                 color: '#475569',
                 fontWeight: 700,
+                fontSize: '0.82rem',
                 textTransform: 'none',
                 '&:hover': { bgcolor: '#f8fafc', borderColor: '#94a3b8' }
               }}
@@ -1017,21 +1045,23 @@ export default function ProductFormModal({
               onClick={handleSubmit}
               disabled={isSubmitting}
               variant="contained"
-              startIcon={isSubmitting ? <CircularProgress size={18} sx={{ color: '#ffffff' }} /> : <SaveIcon />}
+              size="small"
+              startIcon={isSubmitting ? <CircularProgress size={16} sx={{ color: '#ffffff' }} /> : <SaveIcon sx={{ fontSize: 18 }} />}
               sx={{
                 borderRadius: 0,
-                px: 3.5,
-                py: 1,
+                px: 3,
+                py: 0.6,
                 bgcolor: '#1A55E3',
                 color: '#ffffff',
                 fontWeight: 700,
+                fontSize: '0.82rem',
                 textTransform: 'none',
                 boxShadow: '0 4px 14px rgba(26, 85, 227, 0.35)',
                 '&:hover': { bgcolor: '#1544b8' },
                 '&:disabled': { bgcolor: '#93c5fd', color: '#ffffff' }
               }}
             >
-              {isSubmitting ? 'Saving Product...' : isEditing ? 'Update Product' : 'Create Product'}
+              {isSubmitting ? 'Saving...' : isEditing ? 'Update Product' : 'Create Product'}
             </Button>
           </Box>
         </DialogActions>
@@ -1051,31 +1081,33 @@ export default function ProductFormModal({
           }
         }}
       >
-        <DialogTitle sx={{ bgcolor: '#0f172a', color: '#ffffff', py: 2, px: 2.5, borderBottom: '2px solid #1A55E3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>Create New Category</Typography>
-          <IconButton size="small" onClick={() => setQuickCatOpen(false)} sx={{ color: '#94a3b8', borderRadius: 0 }}>
-            <CloseIcon fontSize="small" />
+        <DialogTitle sx={{ bgcolor: '#0f172a', color: '#ffffff', py: 1.25, px: 2, borderBottom: '2px solid #1A55E3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '0.9rem' }}>Create New Category</Typography>
+          <IconButton size="small" onClick={() => setQuickCatOpen(false)} sx={{ color: '#94a3b8', borderRadius: 0, p: 0.5 }}>
+            <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 2.5, bgcolor: '#ffffff' }}>
+        <DialogContent sx={{ p: 2, bgcolor: '#ffffff' }}>
           <TextField
             autoFocus
             fullWidth
+            size="small"
             label="Category Name"
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
             placeholder="e.g. Architectural Glass, Mirrors"
-            sx={{ mt: 1.5, '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
+            sx={{ mt: 1, ...compactFieldSx }}
           />
         </DialogContent>
-        <DialogActions sx={{ p: 2, borderTop: '1px solid #e2e8f0' }}>
-          <Button onClick={() => setQuickCatOpen(false)} sx={{ borderRadius: 0, color: '#64748b', textTransform: 'none' }}>
+        <DialogActions sx={{ py: 1, px: 2, borderTop: '1px solid #e2e8f0' }}>
+          <Button size="small" onClick={() => setQuickCatOpen(false)} sx={{ borderRadius: 0, color: '#64748b', textTransform: 'none' }}>
             Cancel
           </Button>
           <Button
             onClick={handleCreateCategory}
             disabled={quickSubmitting || !newCatName.trim()}
             variant="contained"
+            size="small"
             sx={{ borderRadius: 0, bgcolor: '#1A55E3', textTransform: 'none', fontWeight: 700 }}
           >
             {quickSubmitting ? 'Adding...' : 'Add Category'}
@@ -1097,34 +1129,36 @@ export default function ProductFormModal({
           }
         }}
       >
-        <DialogTitle sx={{ bgcolor: '#0f172a', color: '#ffffff', py: 2, px: 2.5, borderBottom: '2px solid #9333ea', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>Create New Subcategory</Typography>
-          <IconButton size="small" onClick={() => setQuickSubCatOpen(false)} sx={{ color: '#94a3b8', borderRadius: 0 }}>
-            <CloseIcon fontSize="small" />
+        <DialogTitle sx={{ bgcolor: '#0f172a', color: '#ffffff', py: 1.25, px: 2, borderBottom: '2px solid #9333ea', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '0.9rem' }}>Create New Subcategory</Typography>
+          <IconButton size="small" onClick={() => setQuickSubCatOpen(false)} sx={{ color: '#94a3b8', borderRadius: 0, p: 0.5 }}>
+            <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 2.5, bgcolor: '#ffffff' }}>
-          <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
+        <DialogContent sx={{ p: 2, bgcolor: '#ffffff' }}>
+          <Typography variant="body2" sx={{ color: '#64748b', mb: 1.5, fontSize: '0.8rem' }}>
             Adding to category: <b>{categories.find(c => c.cat_id === formData.cat_id)?.cat_name || 'Selected'}</b>
           </Typography>
           <TextField
             autoFocus
             fullWidth
+            size="small"
             label="Subcategory Name"
             value={newSubCatName}
             onChange={(e) => setNewSubCatName(e.target.value)}
             placeholder="e.g. 12mm Clear, Beveled Edge"
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
+            sx={compactFieldSx}
           />
         </DialogContent>
-        <DialogActions sx={{ p: 2, borderTop: '1px solid #e2e8f0' }}>
-          <Button onClick={() => setQuickSubCatOpen(false)} sx={{ borderRadius: 0, color: '#64748b', textTransform: 'none' }}>
+        <DialogActions sx={{ py: 1, px: 2, borderTop: '1px solid #e2e8f0' }}>
+          <Button size="small" onClick={() => setQuickSubCatOpen(false)} sx={{ borderRadius: 0, color: '#64748b', textTransform: 'none' }}>
             Cancel
           </Button>
           <Button
             onClick={handleCreateSubcategory}
             disabled={quickSubmitting || !newSubCatName.trim()}
             variant="contained"
+            size="small"
             sx={{ borderRadius: 0, bgcolor: '#9333ea', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#7e22ce' } }}
           >
             {quickSubmitting ? 'Adding...' : 'Add Subcategory'}
@@ -1150,4 +1184,3 @@ export default function ProductFormModal({
     </>
   );
 }
-
