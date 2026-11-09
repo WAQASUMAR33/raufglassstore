@@ -734,123 +734,52 @@ export default function ProductsPage() {
       <Container maxWidth={false} sx={{ py: 4 }}>
         <Stack spacing={4}>
           {/* Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 3 }, flexWrap: 'wrap' }}>
             <Button
-              startIcon={<Plus size={28} />}
+              startIcon={<Plus size={20} strokeWidth={2.8} />}
               onClick={() => {
                 setEditingProduct(null);
                 setShowProductForm(true);
               }}
               sx={{
-                background: 'linear-gradient(135deg, #1A55E3 0%, #3b82f6 100%) !important',
-                border: '1px solid #1A55E3',
-                borderRadius: 0,
+                background: 'linear-gradient(90deg, #5b5be8 0%, #8b5cf6 30%, #d946ef 65%, #f43f5e 90%, #ef4444 100%)',
                 color: '#ffffff',
-                fontWeight: 700,
-                borderImage: 'linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.2)) 1',
+                px: { xs: 2.5, sm: 3.5 },
+                py: { xs: 1, sm: 1.25 },
+                borderRadius: '9999px',
+                fontSize: { xs: '0.85rem', sm: '0.925rem' },
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                boxShadow: '0 8px 24px -4px rgba(239, 68, 68, 0.4), 0 4px 14px -2px rgba(91, 91, 232, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35)',
+                transition: 'all 0.25s ease-in-out',
+                border: 'none',
+                whiteSpace: 'nowrap',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 25%, #e379f2 50%, #e53e3e 75%, #3182ce 100%) !important',
-                  transform: 'translateY(-4px) scale(1.08)',
-                  boxShadow: `
-                    0 30px 60px rgba(102, 126, 234, 0.4),
-                    0 20px 40px rgba(118, 75, 162, 0.3),
-                    0 15px 30px rgba(245, 87, 108, 0.25),
-                    0 10px 20px rgba(79, 172, 254, 0.2),
-                    0 0 0 1px rgba(255, 255, 255, 0.1),
-                    inset 0 2px 0 rgba(255, 255, 255, 0.3),
-                    inset 0 -2px 0 rgba(0, 0, 0, 0.2)
-                  `,
-                  animation: 'bounce 0.6s ease-in-out, gradientShift 3s ease infinite',
-                  borderImage: 'linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,255,255,0.3)) 1',
+                  background: 'linear-gradient(90deg, #4d4de0 0%, #7c3aed 30%, #c026d3 65%, #e11d48 90%, #dc2626 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 30px -4px rgba(239, 68, 68, 0.5), 0 6px 18px -2px rgba(91, 91, 232, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45)',
                 },
                 '&:active': {
-                  transform: 'translateY(-2px) scale(1.05)',
-                  boxShadow: `
-                    0 15px 30px rgba(102, 126, 234, 0.3),
-                    0 10px 20px rgba(118, 75, 162, 0.25),
-                    0 5px 10px rgba(245, 87, 108, 0.2),
-                    inset 0 1px 0 rgba(0, 0, 0, 0.2)
-                  `,
-                },
-                px: 6,
-                py: 3,
-                fontSize: '1.3rem',
-                fontWeight: '900',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                borderRadius: 50,
-                boxShadow: `
-                  0 20px 40px rgba(102, 126, 234, 0.25),
-                  0 15px 30px rgba(118, 75, 162, 0.2),
-                  0 10px 20px rgba(245, 87, 108, 0.15),
-                  0 5px 10px rgba(79, 172, 254, 0.1),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                  inset 0 -1px 0 rgba(0, 0, 0, 0.1)
-                `,
-                minWidth: '250px',
-                color: 'white',
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: '-100%',
-                  width: '100%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-                  transition: 'left 0.6s ease-in-out',
-                },
-                '&:hover::before': {
-                  left: '100%',
-                },
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  top: '-3px',
-                  left: '-3px',
-                  right: '-3px',
-                  bottom: '-3px',
-                  background: 'linear-gradient(135deg, #667eea, #764ba2, #f093fb, #f5576c, #4facfe)',
-                  borderRadius: '53px',
-                  zIndex: -1,
-                  animation: 'borderGlow 3s ease-in-out infinite alternate',
-                  filter: 'blur(10px)',
-                  opacity: 0.7,
-                },
-                '@keyframes gradientShift': {
-                  '0%': { backgroundPosition: '0% 50%' },
-                  '25%': { backgroundPosition: '100% 0%' },
-                  '50%': { backgroundPosition: '100% 100%' },
-                  '75%': { backgroundPosition: '0% 100%' },
-                  '100%': { backgroundPosition: '0% 50%' },
-                },
-                '@keyframes attentionBlink': {
-                  '0%, 15%': { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%) !important', transform: 'scale(1)' },
-                  '16%, 30%': { background: 'linear-gradient(135deg, #2d3748 0%, #2d1b69 25%, #4a0e4e 50%, #7f1d1d 75%, #1a365d 100%) !important', transform: 'scale(0.98)' },
-                  '31%, 45%': { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%) !important', transform: 'scale(1)' },
-                  '46%, 60%': { background: 'linear-gradient(135deg, #1a202c 0%, #2d1b69 25%, #6b21a8 50%, #9f1239 75%, #1e3a8a 100%) !important', transform: 'scale(0.99)' },
-                  '61%, 75%': { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%) !important', transform: 'scale(1)' },
-                  '76%, 90%': { background: 'linear-gradient(135deg, #4a5568 0%, #553c9a 25%, #7c2d12 50%, #991b1b 75%, #2c5282 100%) !important', transform: 'scale(0.995)' },
-                  '91%, 100%': { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%) !important', transform: 'scale(1)' },
-                },
-                '@keyframes bounce': {
-                  '0%, 20%, 50%, 80%, 100%': { transform: 'translateY(-4px) scale(1.08)' },
-                  '40%': { transform: 'translateY(-8px) scale(1.12)' },
-                  '60%': { transform: 'translateY(-6px) scale(1.1)' },
-                },
-                '@keyframes borderGlow': {
-                  '0%': { opacity: 0.3 },
-                  '100%': { opacity: 0.8 },
-                },
+                  transform: 'translateY(0)',
+                  boxShadow: '0 4px 12px -2px rgba(239, 68, 68, 0.3), 0 3px 8px -2px rgba(91, 91, 232, 0.3)',
+                }
               }}
             >
               Add New Product
             </Button>
             <Box>
-              <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  letterSpacing: '-0.02em',
+                  fontSize: { xs: '1.4rem', sm: '1.85rem' },
+                  lineHeight: 1.2
+                }}
+              >
                 Products Management
               </Typography>
             </Box>
