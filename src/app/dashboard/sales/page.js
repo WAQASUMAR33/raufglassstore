@@ -522,9 +522,9 @@ const SALE_ENTRY_ROW2_SX = {
   gridTemplateColumns: {
     xs: '1fr',
     sm: 'repeat(2, minmax(0, 1fr))',
-    md: 'minmax(0, 2.4fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.6fr) minmax(0, 0.85fr) minmax(0, 0.95fr) minmax(0, 1fr) 44px',
+    md: 'minmax(0, 2fr) minmax(0, 0.72fr) minmax(0, 0.72fr) minmax(0, 0.45fr) minmax(0, 0.7fr) minmax(0, 0.85fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1fr) 44px',
   },
-  gap: { xs: 1.25, md: 1.25 },
+  gap: { xs: 1.25, md: 1 },
   alignItems: 'end',
   width: '100%',
   mb: 1.5,
@@ -1858,6 +1858,20 @@ function SalesPageContent() {
     }
   }, [formSelectedStore, formSelectedProduct]);
 
+  // Get live split amounts for current entry row (Glass Total, Ad-ons Total, Net Total)
+  const getLiveRowTotals = () => {
+    const liveQty = parseFloat(productFormData.quantity) || 0;
+    const liveGlassRate = parseFloat(productFormData.rate) || 0;
+    const liveAddonsRate = (productFormData.selected_addons || []).reduce(
+      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+      0
+    );
+    const liveGlassTotal = Number((liveQty * liveGlassRate).toFixed(0));
+    const liveAddonsTotal = Number((liveQty * liveAddonsRate).toFixed(0));
+    const liveNetTotal = Number((liveQty * (liveGlassRate + liveAddonsRate)).toFixed(0));
+    return { liveQty, liveGlassRate, liveAddonsRate, liveGlassTotal, liveAddonsTotal, liveNetTotal };
+  };
+
   const handleQuantityChange = (newQuantity) => {
     const quantity = parseFloat(newQuantity) || 0;
     const addonsTotal = (productFormData.selected_addons || []).reduce(
@@ -1915,14 +1929,19 @@ function SalesPageContent() {
     const qty = parseFloat(newQty) || 0;
     setProductTableData(prev => prev.map(p => {
       if (p.id !== rowId) return p;
+      const glassRate = parseFloat(p.rate) || 0;
       const addonsTotal = (p.selected_addons || []).reduce(
         (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
         0
       );
-      const effectiveRate = (parseFloat(p.rate) || 0) + addonsTotal;
+      const glassAmount = Number((qty * glassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const effectiveRate = glassRate + addonsTotal;
       return {
         ...p,
         quantity: qty,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
         effective_rate: effectiveRate,
         amount: Number((qty * effectiveRate).toFixed(0)),
       };
@@ -1937,12 +1956,18 @@ function SalesPageContent() {
         (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
         0
       );
+      const qty = parseFloat(p.quantity) || 0;
+      const glassAmount = Number((qty * rate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
       const effectiveRate = rate + addonsTotal;
       return {
         ...p,
         rate: rate,
+        glass_rate: rate,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
         effective_rate: effectiveRate,
-        amount: Number((p.quantity * effectiveRate).toFixed(0)),
+        amount: Number((qty * effectiveRate).toFixed(0)),
       };
     }));
   };
@@ -1955,13 +1980,19 @@ function SalesPageContent() {
         (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
         0
       );
-      const effectiveRate = (parseFloat(p.rate) || 0) + addonsTotal;
+      const qty = parseFloat(p.quantity) || 0;
+      const glassRate = parseFloat(p.rate) || 0;
+      const glassAmount = Number((qty * glassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const effectiveRate = glassRate + addonsTotal;
       return {
         ...p,
         selected_addons: newSelected,
         addons_rate: addonsTotal,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
         effective_rate: effectiveRate,
-        amount: Number((p.quantity * effectiveRate).toFixed(0)),
+        amount: Number((qty * effectiveRate).toFixed(0)),
       };
     }));
   };
@@ -1990,8 +2021,11 @@ function SalesPageContent() {
       (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
       0
     );
-    const effectiveRate = (parseFloat(productFormData.rate) || 0) + addonsTotal;
+    const glassRate = parseFloat(productFormData.rate) || 0;
+    const effectiveRate = glassRate + addonsTotal;
     const qty = parseFloat(productFormData.quantity) || 0;
+    const glassAmount = Number((qty * glassRate).toFixed(0));
+    const addonsAmount = Number((qty * addonsTotal).toFixed(0));
     const lineAmount = Number((qty * effectiveRate).toFixed(0));
 
     const w = productFormData.width_in;
@@ -2020,8 +2054,11 @@ function SalesPageContent() {
       calc_height: cH || '',
       pieces: pcs,
       quantity: qty,
-      rate: parseFloat(productFormData.rate) || 0,
+      rate: glassRate,
+      glass_rate: glassRate,
       addons_rate: addonsTotal,
+      glass_amount: glassAmount,
+      addons_amount: addonsAmount,
       effective_rate: effectiveRate,
       selected_addons: [...(productFormData.selected_addons || [])],
       comments: productFormData.comments || '',
@@ -2254,6 +2291,28 @@ function SalesPageContent() {
   const formatTransportAccountLabel = (account) => {
     if (!account) return '';
     return account.cus_name || '';
+  };
+
+  // Calculate Total Glass Price (exclusive of ad-ons)
+  const calculateGlassTotal = () => {
+    const total = productTableData.reduce((sum, p) => {
+      const gAmt = p.glass_amount !== undefined && p.glass_amount !== null
+        ? parseFloat(p.glass_amount)
+        : (parseFloat(p.quantity || 0) * parseFloat(p.rate || 0));
+      return sum + (gAmt || 0);
+    }, 0);
+    return Number(total.toFixed(0));
+  };
+
+  // Calculate Total Ad-ons Price
+  const calculateAddonsTotal = () => {
+    const total = productTableData.reduce((sum, p) => {
+      const aAmt = p.addons_amount !== undefined && p.addons_amount !== null
+        ? parseFloat(p.addons_amount)
+        : (parseFloat(p.quantity || 0) * parseFloat(p.addons_rate || 0));
+      return sum + (aAmt || 0);
+    }, 0);
+    return Number(total.toFixed(0));
   };
 
   const calculateTotalAmount = () => {
@@ -6958,17 +7017,99 @@ function SalesPageContent() {
                   />
                 </Box>
 
-                {/* AMOUNT */}
+                {/* GLASS TOTAL */}
                 <Box sx={SALE_ENTRY_CELL_SX}>
-                  <Typography sx={SALE_ENTRY_LABEL_SX}>
-                    AMOUNT
+                  <Typography sx={{ ...SALE_ENTRY_LABEL_SX, color: '#166534', fontWeight: 800 }}>
+                    GLASS TOTAL
                   </Typography>
                   <TextField
                     fullWidth
                     size="small"
-                    type="number"
-                    value={productFormData.amount ?? ''}
-                    sx={SALE_ENTRY_CONTROL_SX}
+                    value={(() => {
+                      const { liveQty, liveGlassTotal } = getLiveRowTotals();
+                      return liveGlassTotal > 0 ? liveGlassTotal : (liveQty > 0 ? '0' : '');
+                    })()}
+                    placeholder="0"
+                    sx={{
+                      ...SALE_ENTRY_CONTROL_SX,
+                      '& .MuiInputBase-root': {
+                        height: 40,
+                        bgcolor: '#f0fdf4',
+                        border: '1.5px solid #86efac',
+                        borderRadius: 1,
+                      },
+                      '& .MuiInputBase-input': {
+                        fontWeight: 800,
+                        textAlign: 'right',
+                        color: '#166534 !important',
+                        WebkitTextFillColor: '#166534 !important',
+                      },
+                    }}
+                    disabled
+                  />
+                </Box>
+
+                {/* AD ON'S TOTAL */}
+                <Box sx={SALE_ENTRY_CELL_SX}>
+                  <Typography sx={{ ...SALE_ENTRY_LABEL_SX, color: '#065f46', fontWeight: 800 }}>
+                    AD ON&apos;S TOTAL
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={(() => {
+                      const { liveQty, liveAddonsTotal, liveAddonsRate } = getLiveRowTotals();
+                      return liveAddonsTotal > 0 ? liveAddonsTotal : (liveQty > 0 && liveAddonsRate > 0 ? '0' : '');
+                    })()}
+                    placeholder="0"
+                    sx={{
+                      ...SALE_ENTRY_CONTROL_SX,
+                      '& .MuiInputBase-root': {
+                        height: 40,
+                        bgcolor: '#ecfdf5',
+                        border: '1.5px solid #a7f3d0',
+                        borderRadius: 1,
+                      },
+                      '& .MuiInputBase-input': {
+                        fontWeight: 800,
+                        textAlign: 'right',
+                        color: '#065f46 !important',
+                        WebkitTextFillColor: '#065f46 !important',
+                      },
+                    }}
+                    disabled
+                  />
+                </Box>
+
+                {/* NET TOTAL */}
+                <Box sx={SALE_ENTRY_CELL_SX}>
+                  <Typography sx={{ ...SALE_ENTRY_LABEL_SX, color: '#0f172a', fontWeight: 900 }}>
+                    NET TOTAL
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={(() => {
+                      const { liveNetTotal } = getLiveRowTotals();
+                      return liveNetTotal > 0 ? liveNetTotal : (productFormData.amount || '');
+                    })()}
+                    placeholder="0"
+                    sx={{
+                      ...SALE_ENTRY_CONTROL_SX,
+                      '& .MuiInputBase-root': {
+                        height: 40,
+                        bgcolor: '#f8fafc',
+                        border: '1.5px solid #0f172a',
+                        borderRadius: 1,
+                      },
+                      '& .MuiInputBase-input': {
+                        fontWeight: 900,
+                        fontSize: '0.95rem',
+                        textAlign: 'right',
+                        color: '#0f172a !important',
+                        WebkitTextFillColor: '#0f172a !important',
+                      },
+                    }}
                     disabled
                   />
                 </Box>
@@ -7081,15 +7222,17 @@ function SalesPageContent() {
                   <TableHead>
                     <TableRow sx={{ bgcolor: '#2e7d32', '& th': { bgcolor: '#2e7d32 !important' } }}>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }}>S#</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 150 }}>Product</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 105 }} align="center">Entered Size (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 105 }} align="center">Calc / Avail (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="center">Qty (Sq Ft)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 150 }}>Comments</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Sale Rate</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Amount</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 95 }} align="center">Entered Size (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 95 }} align="center">Calc / Avail (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Pcs</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 120 }}>Ad On&apos;s</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 85 }} align="right">Glass Rate</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Glass Total</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Ad Ons Total</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Net Total</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Move</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Delete</TableCell>
                     </TableRow>
@@ -7097,7 +7240,7 @@ function SalesPageContent() {
                   <TableBody>
                     {productTableData.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
                           <Typography variant="body2" color="text.secondary">
                             No products added yet
                           </Typography>
@@ -7242,7 +7385,20 @@ function SalesPageContent() {
                                 );
                               })()}
                             </TableCell>
-                            <TableCell sx={{ py: 1, fontWeight: 'bold' }} align="right">{parseFloat(product.amount || 0).toFixed(0)}</TableCell>
+                            {/* Glass Total */}
+                            <TableCell sx={{ py: 1, fontWeight: 700, color: '#166534' }} align="right">
+                              {parseFloat(product.glass_amount ?? (parseFloat(product.quantity || 0) * parseFloat(product.rate || 0)) ?? 0).toFixed(0)}
+                            </TableCell>
+
+                            {/* Ad Ons Total */}
+                            <TableCell sx={{ py: 1, fontWeight: 700, color: '#065f46' }} align="right">
+                              {parseFloat(product.addons_amount ?? (parseFloat(product.quantity || 0) * parseFloat(product.addons_rate || 0)) ?? 0).toFixed(0)}
+                            </TableCell>
+
+                            {/* Net Total */}
+                            <TableCell sx={{ py: 1, fontWeight: 900, color: '#0f172a' }} align="right">
+                              {parseFloat(product.amount || 0).toFixed(0)}
+                            </TableCell>
                             <TableCell sx={{ py: 1 }} align="center">
                               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center' }}>
                                 <Tooltip title="Move up">
@@ -7285,13 +7441,23 @@ function SalesPageContent() {
                       })
                     )}
                     {productTableData.length > 0 && (
-                      <TableRow sx={{ bgcolor: '#2e7d32', borderTop: '2px solid #dee2e6', '& td': { bgcolor: '#2e7d32 !important' } }}>
-                        <TableCell colSpan={9} sx={{ py: 2, fontWeight: 'bold', textAlign: 'right', color: 'white' }}>
-                          Total Amount:
+                      <TableRow sx={{ bgcolor: '#1b5e20', borderTop: '2px solid #dee2e6', '& td': { bgcolor: '#1b5e20 !important', color: 'white !important' } }}>
+                        <TableCell colSpan={8} sx={{ py: 1.5, fontWeight: 800, textAlign: 'right', fontSize: '0.95rem' }}>
+                          Summary Totals:
                         </TableCell>
-                        <TableCell colSpan={3} sx={{ py: 2, fontWeight: 'bold', fontSize: '1.1rem', color: 'white' }} key={`table-total-${calculateTotalAmount()}-${transportOptions.length}`}>
+                        <TableCell align="right" sx={{ py: 1.5, fontWeight: 800, fontSize: '0.85rem', color: '#e2e8f0 !important' }}>
+                          —
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 1.5, fontWeight: 800, fontSize: '0.95rem', color: '#bbf7d0 !important' }}>
+                          PKR {calculateGlassTotal()}
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 1.5, fontWeight: 800, fontSize: '0.95rem', color: '#a7f3d0 !important' }}>
+                          PKR {calculateAddonsTotal()}
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 1.5, fontWeight: 900, fontSize: '1.05rem', color: '#ffffff !important' }} key={`table-total-${calculateTotalAmount()}-${transportOptions.length}`}>
                           PKR {Number(calculateTotalAmount()).toFixed(0)}
                         </TableCell>
+                        <TableCell colSpan={2} />
                       </TableRow>
                     )}
                   </TableBody>
@@ -7701,30 +7867,80 @@ function SalesPageContent() {
                     </Box>
                   )}
 
-                  {/* TOTAL AMOUNT (After Advance Deduction) - Hidden for Sale Return */}
+                  {/* TOTAL GLASS PRICE - Hidden for Sale Return */}
+                  {billType !== 'SALE_RETURN' && (
+                    <Box sx={{ mb: 1.25, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#166534', minWidth: '140px' }}>
+                        TOTAL GLASS PRICE
+                      </Typography>
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={calculateGlassTotal().toFixed(0)}
+                        sx={{
+                          bgcolor: '#f0fdf4',
+                          border: '1px solid #86efac',
+                          borderRadius: 1,
+                          '& .MuiInputBase-input': {
+                            padding: '8px',
+                            fontWeight: 800,
+                            color: '#166534 !important',
+                            WebkitTextFillColor: '#166534 !important'
+                          },
+                          flex: 1
+                        }}
+                        inputProps={{ readOnly: true }}
+                      />
+                    </Box>
+                  )}
+
+                  {/* TOTAL AD ON'S - Hidden for Sale Return */}
+                  {billType !== 'SALE_RETURN' && (
+                    <Box sx={{ mb: 1.25, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#065f46', minWidth: '140px' }}>
+                        TOTAL AD ON&apos;S
+                      </Typography>
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={calculateAddonsTotal().toFixed(0)}
+                        sx={{
+                          bgcolor: '#ecfdf5',
+                          border: '1px solid #a7f3d0',
+                          borderRadius: 1,
+                          '& .MuiInputBase-input': {
+                            padding: '8px',
+                            fontWeight: 800,
+                            color: '#065f46 !important',
+                            WebkitTextFillColor: '#065f46 !important'
+                          },
+                          flex: 1
+                        }}
+                        inputProps={{ readOnly: true }}
+                      />
+                    </Box>
+                  )}
+
+                  {/* NET PRODUCT TOTAL - Hidden for Sale Return */}
                   {billType !== 'SALE_RETURN' && (
                     <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary', minWidth: '140px' }}>
-                        TOTAL AMOUNT
+                      <Typography variant="body2" sx={{ fontWeight: 900, color: '#0f172a', minWidth: '140px' }}>
+                        NET PRODUCT TOTAL
                       </Typography>
                       <TextField
                         size="small"
                         type="number"
                         value={calculateTotalAmount().toFixed(0)}
-                        onChange={() => { }}
                         sx={{
-                          bgcolor: 'white',
+                          bgcolor: '#f8fafc',
+                          border: '1.5px solid #0f172a',
+                          borderRadius: 1,
                           '& .MuiInputBase-input': {
                             padding: '8px',
-                            fontWeight: 'bold',
+                            fontWeight: 900,
+                            fontSize: '0.95rem',
                             color: '#000000 !important',
                             WebkitTextFillColor: '#000000 !important'
-                          },
-                          '& .MuiInputBase-input::placeholder': {
-                            color: '#000000',
-                            WebkitTextFillColor: '#000000 !important',
-                            fontWeight: 'bold',
-                            opacity: 1
                           },
                           flex: 1
                         }}
