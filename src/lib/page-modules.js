@@ -252,6 +252,9 @@ export function expandLegacyModules(allowed) {
 export function normalizeAllowedModules(raw) {
   const expanded = expandLegacyModules(parseAllowedModules(raw));
   const pages = expanded.filter((id) => id !== 'dashboard-analytics');
+  if (pages.includes('products') && !pages.includes('addons')) {
+    pages.push('addons');
+  }
   const hasAnyAnalytics = DASHBOARD_ANALYTICS_CHILD_WIDGET_IDS.some((id) => pages.includes(id));
   if (hasAnyAnalytics) {
     ['dashboard-top-customers-sale', 'dashboard-top-products-sale'].forEach((id) => {
@@ -265,6 +268,9 @@ export function hasPageAccess(allowed, pageId) {
   const expanded = expandLegacyModules(parseAllowedModules(allowed));
   if (pageId === 'sales-v2' || pageId === 'sales-v2-quick') {
     return expanded.includes('sales-v2') || expanded.includes('sales-v2-quick') || expanded.includes('sales') || expanded.includes('new-sale');
+  }
+  if (pageId === 'addons') {
+    return expanded.includes('addons') || expanded.includes('products');
   }
   return expanded.includes(pageId);
 }

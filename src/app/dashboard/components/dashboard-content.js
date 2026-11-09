@@ -73,6 +73,7 @@ import {
   AlertTriangle,
   Maximize2,
   Minimize2,
+  Puzzle,
 } from 'lucide-react';
 import {
   SHORTCUT_PALETTE,
@@ -1217,6 +1218,7 @@ const ALL_QUICK_ACTIONS = [
   { title: 'New Purchase', icon: ShoppingBag, palette: 'blue', path: '/dashboard/purchases' },
   { title: 'Orders List', icon: ListOrdered, palette: 'yellow', path: '/dashboard/orders' },
   { title: 'Add Product', icon: Package, palette: 'cyan', path: '/dashboard/products' },
+  { title: "Ad On's", icon: Puzzle, palette: 'cyan', path: '/dashboard/addons' },
   { title: 'Add Customer', icon: Users, palette: 'periwinkle', path: '/dashboard/customers' },
   { title: 'Hold Bills', icon: ClipboardList, palette: 'orange', path: '/dashboard/hold-bills' },
   { title: 'Stock Transfer', icon: ArrowLeftRight, palette: 'cyan', path: '/dashboard/stock-transfer' },

@@ -270,6 +270,12 @@ export function canAccessMenuItem(user, item) {
     if (isAdminRole(role) || isSuperAdminRole(role)) return true;
   }
 
+  if (pageId === 'addons') {
+    const role = resolveStaffRole(user);
+    if (isAdminRole(role) || isSuperAdminRole(role)) return true;
+    return hasPageAccess(allowed, 'addons') || hasPageAccess(allowed, 'products');
+  }
+
   return hasPageAccess(allowed, pageId);
 }
 
@@ -400,6 +406,11 @@ export function canStaffAccessPath(userOrRole, pathname) {
 
   if (p === '/dashboard/activity-logs' || p.startsWith('/dashboard/activity-logs')) {
     if (isAdminRole(roleName) || isSuperAdminRole(roleName)) return true;
+  }
+
+  if (p === '/dashboard/addons' || p.startsWith('/dashboard/addons')) {
+    if (isAdminRole(roleName) || isSuperAdminRole(roleName)) return true;
+    return hasPageAccess(allowed, 'addons') || hasPageAccess(allowed, 'products');
   }
 
   const pageIds = getPageIdsForPath(p);
