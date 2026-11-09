@@ -1704,7 +1704,15 @@ function SalesPageContent() {
     setFormSelectedProduct(selectedProduct);
 
     if (selectedProduct) {
-      const defaultRate = parseFloat(selectedProduct.pro_sale_price) || 0;
+      const isWholesaleCustomer = formSelectedCustomer && (
+        formSelectedCustomer.cus_type_title?.toLowerCase().includes('wholesale') ||
+        formSelectedCustomer.customer_type?.cus_type_title?.toLowerCase().includes('wholesale') ||
+        String(formSelectedCustomer.cus_type || '').toLowerCase().includes('wholesale')
+      );
+      const wholesaleRate = parseFloat(selectedProduct.pro_wholesale_price);
+      const defaultRate = (isWholesaleCustomer && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
+        ? wholesaleRate
+        : (parseFloat(selectedProduct.pro_sale_price) || 0);
       setProductFormData(prev => {
         const wVal = parseFloat(prev.width_in);
         const hVal = parseFloat(prev.height_in);

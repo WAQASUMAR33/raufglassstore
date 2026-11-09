@@ -294,6 +294,7 @@ model Product {
   pro_description         String
   pro_cost_price                Decimal   @db.Decimal(18, 2)
   pro_sale_price                Decimal   @db.Decimal(18, 2)
+  pro_wholesale_price           Decimal?  @default(0.00) @db.Decimal(18, 2)
   pro_baser_price               Decimal   @db.Decimal(18, 2)
   pro_crate                     Decimal?  @default(0.00) @db.Decimal(10, 2)
   pro_stock_qnty                Decimal   @default(0.00) @db.Decimal(18, 2)

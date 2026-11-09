@@ -109,6 +109,7 @@ export default function ProductsPage() {
     pro_description: '',
     pro_cost_price: '',
     pro_sale_price: '',
+    pro_wholesale_price: '',
     pro_baser_price: '',
     pro_crate: '',
     pro_stock_qnty: '',
@@ -218,6 +219,7 @@ export default function ProductsPage() {
           pro_description: '',
           pro_cost_price: '',
           pro_sale_price: '',
+          pro_wholesale_price: '',
           pro_baser_price: '',
           pro_crate: '',
           pro_stock_qnty: '',
@@ -287,6 +289,7 @@ export default function ProductsPage() {
           pro_description: '',
           pro_cost_price: '',
           pro_sale_price: '',
+          pro_wholesale_price: '',
           pro_baser_price: '',
           pro_crate: '',
           pro_stock_qnty: '',
@@ -492,6 +495,7 @@ export default function ProductsPage() {
       pro_description: '',
       pro_cost_price: '',
       pro_sale_price: '',
+      pro_wholesale_price: '',
       pro_baser_price: '',
       pro_crate: '',
       pro_stock_qnty: '',
@@ -679,7 +683,7 @@ export default function ProductsPage() {
       }
 
       // Handle numeric sorting
-      if (sortBy === 'pro_cost_price' || sortBy === 'pro_sale_price' || sortBy === 'pro_stock_qnty') {
+      if (sortBy === 'pro_cost_price' || sortBy === 'pro_sale_price' || sortBy === 'pro_wholesale_price' || sortBy === 'pro_stock_qnty') {
         aValue = parseFloat(aValue) || 0;
         bValue = parseFloat(bValue) || 0;
       }
@@ -951,6 +955,7 @@ export default function ProductsPage() {
                         <MenuItem value="pro_title">Product Name</MenuItem>
                         <MenuItem value="pro_cost_price">Cost Price</MenuItem>
                         <MenuItem value="pro_sale_price">Sale Price</MenuItem>
+                        <MenuItem value="pro_wholesale_price">Wholesale Price</MenuItem>
                         <MenuItem value="pro_stock_qnty">Stock Quantity</MenuItem>
                         <MenuItem value="created_at">Created Date</MenuItem>
                       </Select>
@@ -1089,6 +1094,7 @@ export default function ProductsPage() {
                     <TableCell>Purchase Rate</TableCell>
                     <TableCell>Crate (CodeRate)</TableCell>
                     <TableCell>Sale Rate</TableCell>
+                    <TableCell>Wholesale Rate</TableCell>
                     <TableCell>Base Rate</TableCell>
                     <TableCell>Ad On's</TableCell>
                     <TableCell align="center">Action</TableCell>
@@ -1172,6 +1178,15 @@ export default function ProductsPage() {
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                           {fmtAmt(product.pro_sale_price)}
+                        </Typography>
+                      </TableCell>
+
+                      {/* Wholesale Rate */}
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 'medium', color: '#0284c7' }}>
+                          {product.pro_wholesale_price != null && parseFloat(product.pro_wholesale_price) > 0
+                            ? fmtAmt(product.pro_wholesale_price)
+                            : '-'}
                         </Typography>
                       </TableCell>
 

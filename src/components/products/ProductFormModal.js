@@ -38,6 +38,7 @@ const EMPTY_FORM = {
   pro_description: '',
   pro_cost_price: '',
   pro_sale_price: '',
+  pro_wholesale_price: '',
   pro_baser_price: '',
   pro_crate: '',
   pro_stock_qnty: '',
@@ -175,6 +176,7 @@ export default function ProductFormModal({
         pro_description: product.pro_description || '',
         pro_cost_price: product.pro_cost_price ?? '',
         pro_sale_price: product.pro_sale_price ?? '',
+        pro_wholesale_price: product.pro_wholesale_price ?? '',
         pro_baser_price: product.pro_baser_price ?? '',
         pro_crate: product.pro_crate ?? '',
         pro_stock_qnty: product.pro_stock_qnty ?? '',
@@ -783,6 +785,31 @@ export default function ProductFormModal({
                     InputLabelProps={{ shrink: true }}
                     InputProps={{
                       startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#16a34a', fontSize: '0.8rem' }}>Rs</InputAdornment>
+                    }}
+                    sx={{
+                      ...compactFieldSx,
+                      '& .MuiOutlinedInput-root': {
+                        ...compactFieldSx['& .MuiOutlinedInput-root'],
+                        fontWeight: 600
+                      }
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Wholesale Price"
+                    name="pro_wholesale_price"
+                    type="number"
+                    inputProps={{ step: '0.01' }}
+                    value={formData.pro_wholesale_price}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    InputLabelProps={{ shrink: true }}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start" sx={{ fontWeight: 700, color: '#0284c7', fontSize: '0.8rem' }}>Rs</InputAdornment>
                     }}
                     sx={{
                       ...compactFieldSx,
