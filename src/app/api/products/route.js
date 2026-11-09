@@ -82,6 +82,11 @@ export async function GET(request) {
         pro_unit: true,
         pro_packing: true,
         pro_stock_qnty: true,
+        addons: {
+          include: {
+            addon: true
+          }
+        },
         ...(skipStoreStocks
           ? {}
           : {

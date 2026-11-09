@@ -174,9 +174,10 @@ function buildSaleReceiptBill({
       pro_id: product.pro_id,
       qnty: product.quantity,
       unit: 'PCS',
-      unit_rate: product.rate,
+      unit_rate: product.effective_rate || product.rate,
       total_amount: product.amount,
       size: product.size || null,
+      comments: product.comments || '',
       product: { pro_title: product.pro_title || 'N/A' },
     })),
     labour: parseFloat(paymentData.labour) || 0,
@@ -379,6 +380,13 @@ const EMPTY_PRODUCT_FORM_DATA = {
   stock: '',
   crate: '',
   size: '',
+  width_in: '',
+  height_in: '',
+  calc_width: '',
+  calc_height: '',
+  pieces: 1,
+  comments: '',
+  selected_addons: [],
 };
 
 const normalizeProductFormData = (data) => ({
@@ -388,7 +396,42 @@ const normalizeProductFormData = (data) => ({
   stock: data?.stock ?? EMPTY_PRODUCT_FORM_DATA.stock,
   crate: data?.crate ?? EMPTY_PRODUCT_FORM_DATA.crate,
   size: data?.size ?? EMPTY_PRODUCT_FORM_DATA.size,
+  width_in: data?.width_in ?? EMPTY_PRODUCT_FORM_DATA.width_in,
+  height_in: data?.height_in ?? EMPTY_PRODUCT_FORM_DATA.height_in,
+  calc_width: data?.calc_width ?? EMPTY_PRODUCT_FORM_DATA.calc_width,
+  calc_height: data?.calc_height ?? EMPTY_PRODUCT_FORM_DATA.calc_height,
+  pieces: data?.pieces ?? EMPTY_PRODUCT_FORM_DATA.pieces,
+  comments: data?.comments ?? EMPTY_PRODUCT_FORM_DATA.comments,
+  selected_addons: Array.isArray(data?.selected_addons) ? data.selected_addons : [],
 });
+
+const parseSizeDetails = (sizeStr) => {
+  if (!sizeStr || typeof sizeStr !== 'string') {
+    return { width_in: '', height_in: '', calc_width: '', calc_height: '', pieces: 1, comments: '' };
+  }
+  let comments = '';
+  let dimensionsPart = sizeStr;
+  if (sizeStr.includes(' - ')) {
+    const parts = sizeStr.split(' - ');
+    dimensionsPart = parts[0];
+    comments = parts.slice(1).join(' - ');
+  } else if (!dimensionsPart.includes('x') && !dimensionsPart.includes('×')) {
+    return { width_in: '', height_in: '', calc_width: '', calc_height: '', pieces: 1, comments: sizeStr };
+  }
+
+  const match = dimensionsPart.match(/([0-9.]+)\s*["']?\s*[x×]\s*([0-9.]+)/i);
+  if (match) {
+    const w = match[1];
+    const h = match[2];
+    const cW = Math.ceil(parseFloat(w) || 0);
+    const cH = Math.ceil(parseFloat(h) || 0);
+    const pcsMatch = dimensionsPart.match(/\[(\d+)\s*pcs\]/i);
+    const pcs = pcsMatch ? parseInt(pcsMatch[1], 10) : 1;
+    return { width_in: w, height_in: h, calc_width: cW, calc_height: cH, pieces: pcs, comments };
+  }
+
+  return { width_in: '', height_in: '', calc_width: '', calc_height: '', pieces: 1, comments: sizeStr };
+};
 
 const EMPTY_CUSTOMER_FORM = {
   cus_name: '',
@@ -475,14 +518,14 @@ const SALE_ENTRY_ROW1_RETURN_SX = {
 const SALE_ENTRY_ROW2_SX = {
   display: 'grid',
   gridTemplateColumns: {
-    xs: '1fr 1fr',
-    sm: 'repeat(3, minmax(0, 1fr))',
-    md: 'minmax(0, 2.35fr) minmax(0, 1.15fr) minmax(0, 0.7fr) minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 0.7fr) 44px',
+    xs: '1fr',
+    sm: 'repeat(2, minmax(0, 1fr))',
+    md: 'minmax(0, 2.4fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.6fr) minmax(0, 0.85fr) minmax(0, 0.95fr) minmax(0, 1fr) 44px',
   },
-  gap: { xs: 1.5, md: 1.75 },
+  gap: { xs: 1.25, md: 1.25 },
   alignItems: 'end',
   width: '100%',
-  mb: 2,
+  mb: 1.5,
 };
 
 const SALE_DROPDOWN_LINE = '1px solid #c5c5c5';
@@ -996,8 +1039,38 @@ function SalesPageContent() {
   const saleReturnSearchTimerRef = useRef(null);
   const [selectedSaleForReturnMain, setSelectedSaleForReturnMain] = useState(null); // Distinct from dialog state
 
+  // Addons state
+  const [allAddons, setAllAddons] = useState([]);
+
+  // Fetch active addons on mount
+  useEffect(() => {
+    fetch('/api/addons?status=ACTIVE')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        const arr = Array.isArray(data) ? data : (data?.data || []);
+        setAllAddons(arr);
+      })
+      .catch(err => console.error('Failed to load addons:', err));
+  }, []);
+
   // Product form state
   const [productFormData, setProductFormData] = useState({ ...EMPTY_PRODUCT_FORM_DATA });
+
+  // Addons available for the currently selected product
+  const availableAddonsForProduct = useMemo(() => {
+    if (!formSelectedProduct) return [];
+    const productSpecific = (formSelectedProduct.addons || [])
+      .map(pa => pa.addon || pa)
+      .filter(Boolean);
+    const map = new Map();
+    productSpecific.forEach(a => map.set(a.id, { ...a, is_linked: true }));
+    allAddons.forEach(a => {
+      if (!map.has(a.id)) {
+        map.set(a.id, { ...a, is_linked: false });
+      }
+    });
+    return Array.from(map.values());
+  }, [formSelectedProduct, allAddons]);
 
   // Per-product dropdown 'eye' visibility state (which options show purchase rate)
   const [visibleCrates, setVisibleCrates] = useState([]);
@@ -1155,10 +1228,11 @@ function SalesPageContent() {
     setSnackbar({ open: true, message, severity });
   };
 
-  // Auto-select first store when stores load
+  // Auto-select Main store when stores load
   useEffect(() => {
-    if (!formSelectedStore && Array.isArray(stores) && stores.length > 0) {
-      setFormSelectedStore(stores[0]);
+    if (Array.isArray(stores) && stores.length > 0) {
+      const mainStore = stores.find(s => s.store_name?.toLowerCase().includes('main')) || stores[0];
+      setFormSelectedStore(mainStore);
     }
   }, [stores]);
 
@@ -1559,30 +1633,117 @@ function SalesPageContent() {
     return () => window.removeEventListener('keydown', handleScreenNavigation);
   }, [handleForwardNavigation, goToPreviousScreen, cancelCurrentScreen]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Handle glass dimension change (Width x Height -> Calc W x Calc H -> Sq Ft)
+  const handleDimensionChange = (field, value) => {
+    setProductFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      const wVal = parseFloat(field === 'width_in' ? value : updated.width_in);
+      const hVal = parseFloat(field === 'height_in' ? value : updated.height_in);
+      const pcsVal = parseInt(field === 'pieces' ? value : updated.pieces, 10) || 1;
+
+      let calcW = updated.calc_width;
+      let calcH = updated.calc_height;
+      let newQty = updated.quantity;
+
+      if (Number.isFinite(wVal) && wVal > 0 && Number.isFinite(hVal) && hVal > 0) {
+        // Round up to nearest whole inch
+        calcW = Math.ceil(wVal);
+        calcH = Math.ceil(hVal);
+        // Formula: ((calcW * calcH) / 144) * pcs
+        newQty = Number((((calcW * calcH) / 144) * pcsVal).toFixed(2));
+      } else {
+        calcW = Number.isFinite(wVal) && wVal > 0 ? Math.ceil(wVal) : '';
+        calcH = Number.isFinite(hVal) && hVal > 0 ? Math.ceil(hVal) : '';
+      }
+
+      const addonsTotal = (updated.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = (parseFloat(updated.rate) || 0) + addonsTotal;
+      const amount = Number(((parseFloat(newQty) || 0) * effectiveRate).toFixed(0));
+
+      return {
+        ...updated,
+        calc_width: calcW,
+        calc_height: calcH,
+        quantity: newQty,
+        amount: amount,
+      };
+    });
+  };
+
+  // Toggle add-on for the current product entry
+  const toggleProductAddon = (addon) => {
+    setProductFormData(prev => {
+      const addonId = addon.id || addon.addon_id;
+      const exists = (prev.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
+      const newSelected = exists
+        ? (prev.selected_addons || []).filter(a => (a.id || a.addon_id) !== addonId)
+        : [...(prev.selected_addons || []), addon];
+
+      const addonsTotal = newSelected.reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = (parseFloat(prev.rate) || 0) + addonsTotal;
+      const quantity = parseFloat(prev.quantity) || 0;
+      const amount = Number((quantity * effectiveRate).toFixed(0));
+
+      return {
+        ...prev,
+        selected_addons: newSelected,
+        amount: amount,
+      };
+    });
+  };
+
   // Handle product selection
   const handleProductSelect = (selectedProduct) => {
     console.log('🔍 Product selected:', selectedProduct);
     setFormSelectedProduct(selectedProduct);
 
     if (selectedProduct) {
-      // Update product form data with selected product details
       const defaultRate = parseFloat(selectedProduct.pro_sale_price) || 0;
-      setProductFormData(prev => ({
-        ...prev,
-        quantity: 1, // Default quantity to 1
-        rate: defaultRate,
-        stock: 0, // always derive from store-wise stock when available
-        amount: defaultRate, // rate * 1
-        crate: selectedProduct.pro_crate || '',
-        cost_price: getProductCostPrice(selectedProduct)
-      }));
+      setProductFormData(prev => {
+        const wVal = parseFloat(prev.width_in);
+        const hVal = parseFloat(prev.height_in);
+        const pcsVal = parseInt(prev.pieces, 10) || 1;
+        let calcW = prev.calc_width;
+        let calcH = prev.calc_height;
+        let qty = prev.quantity || 1;
 
-      // If a store is selected, fetch store-wise stock
-      if (formSelectedStore?.storeid) {
-        fetchStoreStock(formSelectedStore.storeid, selectedProduct.pro_id);
+        if (Number.isFinite(wVal) && wVal > 0 && Number.isFinite(hVal) && hVal > 0) {
+          calcW = Math.ceil(wVal);
+          calcH = Math.ceil(hVal);
+          qty = Number((((calcW * calcH) / 144) * pcsVal).toFixed(2));
+        }
+
+        const addonsTotal = (prev.selected_addons || []).reduce(
+          (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+          0
+        );
+        const effectiveRate = defaultRate + addonsTotal;
+        const amount = Number(((parseFloat(qty) || 0) * effectiveRate).toFixed(0));
+
+        return {
+          ...prev,
+          quantity: qty,
+          rate: defaultRate,
+          stock: 0,
+          amount: amount,
+          crate: selectedProduct.pro_crate || '',
+          cost_price: getProductCostPrice(selectedProduct),
+        };
+      });
+
+      // Ensure store is set to Main Store
+      const storeToUse = formSelectedStore || (stores.find(s => s.store_name?.toLowerCase().includes('main')) || stores[0]);
+      if (storeToUse?.storeid) {
+        if (!formSelectedStore) setFormSelectedStore(storeToUse);
+        fetchStoreStock(storeToUse.storeid, selectedProduct.pro_id);
       }
     } else {
-      // Reset form data when no product is selected
       setProductFormData({ ...EMPTY_PRODUCT_FORM_DATA, cost_price: 0 });
     }
   };
@@ -1595,7 +1756,6 @@ function SalesPageContent() {
       const data = await res.json();
       console.log('📦 Store stock raw response:', data);
 
-      // Normalize various possible response shapes
       let payload = data;
       if (payload && typeof payload === 'object') {
         payload = payload.data ?? payload.value ?? payload.stock ?? payload;
@@ -1611,15 +1771,11 @@ function SalesPageContent() {
         stockQty = parseInt(payload.stock_quantity ?? payload.quantity ?? payload.stock ?? 0);
       }
 
-      // Subtract quantities already added in current table for the same product & store
       const reservedQty = productTableData
         .filter(r => r.pro_id === productId && r.storeid === storeId)
         .reduce((sum, r) => sum + (parseFloat(r.qnty ?? r.quantity ?? 0) || 0), 0);
 
-      // Allow negative stock - removed Math.max constraint
       const available = (isNaN(stockQty) ? 0 : stockQty) - reservedQty;
-      console.log('📦 Store stock normalized:', { stockQty, reservedQty, available });
-
       setProductFormData(prev => ({ ...prev, stock: available }));
     } catch (e) {
       console.error('Failed to load store stock', e);
@@ -1636,8 +1792,12 @@ function SalesPageContent() {
 
   const handleQuantityChange = (newQuantity) => {
     const quantity = parseFloat(newQuantity) || 0;
-    const rate = productFormData.rate;
-    const amount = Number((quantity * rate).toFixed(0));
+    const addonsTotal = (productFormData.selected_addons || []).reduce(
+      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+      0
+    );
+    const effectiveRate = (parseFloat(productFormData.rate) || 0) + addonsTotal;
+    const amount = Number((quantity * effectiveRate).toFixed(0));
 
     setProductFormData(prev => ({
       ...prev,
@@ -1649,8 +1809,13 @@ function SalesPageContent() {
   // Handle rate change
   const handleRateChange = (newRate) => {
     const rate = parseFloat(newRate) || 0;
-    const quantity = productFormData.quantity;
-    const amount = Number((quantity * rate).toFixed(0));
+    const quantity = parseFloat(productFormData.quantity) || 0;
+    const addonsTotal = (productFormData.selected_addons || []).reduce(
+      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+      0
+    );
+    const effectiveRate = rate + addonsTotal;
+    const amount = Number((quantity * effectiveRate).toFixed(0));
 
     setProductFormData(prev => ({
       ...prev,
@@ -1659,38 +1824,142 @@ function SalesPageContent() {
     }));
   };
 
+  // Handle row-level updates in the product table
+  const updateRowComments = (rowId, newComment) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      let sizeStr = '';
+      if (p.width_in && p.height_in) {
+        sizeStr = `${p.width_in}"×${p.height_in}" (Avail: ${p.calc_width}"×${p.calc_height}") [${p.pieces || 1} pcs]`;
+      }
+      if (newComment) {
+        sizeStr = sizeStr ? `${sizeStr} - ${newComment}` : newComment;
+      }
+      return {
+        ...p,
+        comments: newComment,
+        size: sizeStr,
+      };
+    }));
+  };
+
+  const updateRowQuantity = (rowId, newQty) => {
+    const qty = parseFloat(newQty) || 0;
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const addonsTotal = (p.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = (parseFloat(p.rate) || 0) + addonsTotal;
+      return {
+        ...p,
+        quantity: qty,
+        effective_rate: effectiveRate,
+        amount: Number((qty * effectiveRate).toFixed(0)),
+      };
+    }));
+  };
+
+  const updateRowRate = (rowId, newRate) => {
+    const rate = parseFloat(newRate) || 0;
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const addonsTotal = (p.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = rate + addonsTotal;
+      return {
+        ...p,
+        rate: rate,
+        effective_rate: effectiveRate,
+        amount: Number((p.quantity * effectiveRate).toFixed(0)),
+      };
+    }));
+  };
+
+  const removeRowAddon = (rowId, addonId) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const newSelected = (p.selected_addons || []).filter(a => (a.id || a.addon_id) !== addonId);
+      const addonsTotal = newSelected.reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = (parseFloat(p.rate) || 0) + addonsTotal;
+      return {
+        ...p,
+        selected_addons: newSelected,
+        addons_rate: addonsTotal,
+        effective_rate: effectiveRate,
+        amount: Number((p.quantity * effectiveRate).toFixed(0)),
+      };
+    }));
+  };
+
   // Handle adding product to table
   const handleAddProductToTable = () => {
-    // Validate required fields
     if (!formSelectedProduct) {
       showSnackbar('Please select a product', 'error');
       return;
     }
-    if (!formSelectedStore) {
+    const store = formSelectedStore || stores.find(s => s.store_name?.toLowerCase().includes('main')) || stores[0];
+    if (!store) {
       showSnackbar('Please select a store', 'error');
       return;
     }
-    if (productFormData.quantity <= 0) {
-      showSnackbar('Please enter a valid quantity', 'error');
+    if ((parseFloat(productFormData.quantity) || 0) <= 0) {
+      showSnackbar('Please enter a valid quantity / dimensions', 'error');
       return;
     }
-    if (productFormData.rate <= 0) {
+    if ((parseFloat(productFormData.rate) || 0) <= 0) {
       showSnackbar('Please enter a valid rate', 'error');
       return;
     }
 
-    // Always add as a new line item (don't merge with existing products)
+    const addonsTotal = (productFormData.selected_addons || []).reduce(
+      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+      0
+    );
+    const effectiveRate = (parseFloat(productFormData.rate) || 0) + addonsTotal;
+    const qty = parseFloat(productFormData.quantity) || 0;
+    const lineAmount = Number((qty * effectiveRate).toFixed(0));
+
+    const w = productFormData.width_in;
+    const h = productFormData.height_in;
+    const cW = productFormData.calc_width || (w ? Math.ceil(parseFloat(w)) : '');
+    const cH = productFormData.calc_height || (h ? Math.ceil(parseFloat(h)) : '');
+    const pcs = parseInt(productFormData.pieces, 10) || 1;
+
+    let sizeStr = '';
+    if (w && h) {
+      sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]`;
+    }
+    if (productFormData.comments) {
+      sizeStr = sizeStr ? `${sizeStr} - ${productFormData.comments}` : productFormData.comments;
+    }
+
     const newProduct = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       pro_id: formSelectedProduct.pro_id,
       pro_title: formSelectedProduct.pro_title,
-      storeid: formSelectedStore.storeid,
-      store_name: formSelectedStore.store_name,
-      quantity: productFormData.quantity,
-      rate: productFormData.rate,
-      amount: productFormData.amount,
+      storeid: store.storeid,
+      store_name: store.store_name,
+      width_in: w || '',
+      height_in: h || '',
+      calc_width: cW || '',
+      calc_height: cH || '',
+      pieces: pcs,
+      quantity: qty,
+      rate: parseFloat(productFormData.rate) || 0,
+      addons_rate: addonsTotal,
+      effective_rate: effectiveRate,
+      selected_addons: [...(productFormData.selected_addons || [])],
+      comments: productFormData.comments || '',
+      amount: lineAmount,
       stock: productFormData.stock,
-      size: productFormData.size || '',
+      size: sizeStr,
       cost_price: getProductCostPrice(formSelectedProduct)
     };
 
@@ -1699,10 +1968,8 @@ function SalesPageContent() {
 
     // Reset form
     setFormSelectedProduct(null);
-    // Don't reset store - it should remain selected
     setProductFormData({ ...EMPTY_PRODUCT_FORM_DATA });
 
-    // Auto-focus on Product field after adding product to allow adding more items
     setTimeout(() => {
       const productInput = document.querySelector('input[placeholder*="Select product"]');
       if (productInput) {
@@ -2063,6 +2330,7 @@ function SalesPageContent() {
           crate: item.product ? (item.product.pro_crate || '') : '',
           cost_price: getProductCostPrice(item.product),
           stock: 0, // Stock will need to be fetched or updated
+          ...parseSizeDetails(item.size),
           size: item.size || '',
           storeid: fullOrder.store_id, // Map the store ID from the order
           store_name: selectedStore ? selectedStore.store_name : 'Unknown'
@@ -2563,7 +2831,7 @@ function SalesPageContent() {
           size: product.size || null,
           qnty: product.quantity,
           unit: 'PCS', // Default unit
-          unit_rate: product.rate,
+          unit_rate: product.effective_rate || product.rate,
           total_amount: product.amount,
           discount: 0,
           cus_id: formSelectedCustomer.cus_id
@@ -2646,9 +2914,10 @@ function SalesPageContent() {
               pro_id: product.pro_id,
               qnty: product.quantity,
               unit: 'PCS',
-              unit_rate: product.rate,
+              unit_rate: product.effective_rate || product.rate,
               total_amount: product.amount,
-              product: { pro_title: product.pro_title || 'N/A' }
+              product: { pro_title: product.pro_title || 'N/A' },
+              comments: product.comments || ''
             })),
             labour: parseFloat(paymentData.labour) || 0,
             notes: paymentData.notes || '',
@@ -5277,6 +5546,7 @@ function SalesPageContent() {
             stock: 0,
             unit: detail.unit || 'PCS',
             crate: rate,
+            ...parseSizeDetails(detail.size),
             size: detail.size || '',
             cost_price: getProductCostPrice(detail.product)
           };
@@ -5338,6 +5608,7 @@ function SalesPageContent() {
           stock: 0,
           unit: detail.unit || 'PCS',
           crate: parseFloat(detail.unit_rate),
+          ...parseSizeDetails(detail.size),
           size: detail.size || '',
           cost_price: getProductCostPrice(detail.product)
         };
@@ -6243,8 +6514,9 @@ function SalesPageContent() {
               </Box>
 
 
-              {/* Product Selection Row */}
+              {/* Product Selection & Glass Dimension Row */}
               <Box sx={SALE_ENTRY_ROW2_SX}>
+                {/* SELECT PRODUCT */}
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography sx={SALE_ENTRY_LABEL_SX}>
@@ -6355,7 +6627,7 @@ function SalesPageContent() {
                                     e,
                                     pick,
                                     (val) => handleProductSelect(val),
-                                    () => document.querySelector('input[placeholder*="Select Store"]')
+                                    () => document.querySelector('#sale-width-input') || document.querySelector('#sale-qty-input')
                                   );
                                   return;
                                 }
@@ -6370,49 +6642,89 @@ function SalesPageContent() {
                     disabled={products.length === 0}
                   />
                 </Box>
+
+                {/* WIDTH (IN) */}
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Typography sx={SALE_ENTRY_LABEL_SX}>
-                    SELECT STORE
+                    WIDTH (IN) {productFormData.calc_width ? `→ ${productFormData.calc_width}"` : ''}
                   </Typography>
-                  <Autocomplete
-                    size="small"
+                  <TextField
                     fullWidth
-                    sx={{ width: '100%', minWidth: 0 }}
-                    options={stores || []}
-                    getOptionLabel={(option) => option.store_name || ''}
-                    value={formSelectedStore ?? null}
-                    onChange={(event, newValue) => {
-                      setFormSelectedStore(newValue);
-                    }}
-                    isOptionEqualToValue={(option, value) => option.storeid === value?.storeid}
-                    autoSelect={true}
-                    autoHighlight={true}
-                    openOnFocus={true}
-                    selectOnFocus={true}
-                    onHighlightChange={(_, option) => {
-                      if (option) storeHighlightRef.current = option;
-                    }}
+                    size="small"
+                    type="number"
+                    id="sale-width-input"
+                    placeholder="Width"
+                    value={productFormData.width_in ?? ''}
+                    onChange={(e) => handleDimensionChange('width_in', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    inputProps={{ step: 'any', min: 0 }}
                     onKeyDown={(e) => {
-                      commitDropdownOnTab(
-                        e,
-                        storeHighlightRef.current || formSelectedStore,
-                        (val) => setFormSelectedStore(val),
-                        () => document.querySelector('#sale-qty-input')
-                      );
+                      if (e.key === 'Enter' || e.key === 'Tab') {
+                        e.preventDefault();
+                        const hInput = document.getElementById('sale-height-input');
+                        if (hInput) hInput.focus();
+                      }
                     }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Select Store"
-                        onFocus={(e) => e.target.select()}
-                        sx={{ ...SALE_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: formSelectedStore ? 'bold' : 'normal' } }}
-                      />
-                    )}
+                    sx={SALE_ENTRY_CONTROL_SX}
                   />
                 </Box>
+
+                {/* HEIGHT (IN) */}
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Typography sx={SALE_ENTRY_LABEL_SX}>
-                    QTY
+                    HEIGHT (IN) {productFormData.calc_height ? `→ ${productFormData.calc_height}"` : ''}
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    id="sale-height-input"
+                    placeholder="Height"
+                    value={productFormData.height_in ?? ''}
+                    onChange={(e) => handleDimensionChange('height_in', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    inputProps={{ step: 'any', min: 0 }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === 'Tab') {
+                        e.preventDefault();
+                        const pInput = document.getElementById('sale-pieces-input');
+                        if (pInput) pInput.focus();
+                      }
+                    }}
+                    sx={SALE_ENTRY_CONTROL_SX}
+                  />
+                </Box>
+
+                {/* PCS */}
+                <Box sx={SALE_ENTRY_CELL_SX}>
+                  <Typography sx={SALE_ENTRY_LABEL_SX}>
+                    PCS
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    id="sale-pieces-input"
+                    placeholder="Pcs"
+                    value={productFormData.pieces ?? 1}
+                    onChange={(e) => handleDimensionChange('pieces', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    inputProps={{ step: 1, min: 1 }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === 'Tab') {
+                        e.preventDefault();
+                        const rInput = document.getElementById('sale-rate-input');
+                        if (rInput) rInput.focus();
+                      }
+                    }}
+                    sx={SALE_ENTRY_CONTROL_SX}
+                  />
+                </Box>
+
+                {/* QTY (SQ FT) */}
+                <Box sx={SALE_ENTRY_CELL_SX}>
+                  <Typography sx={SALE_ENTRY_LABEL_SX}>
+                    QTY (SQ FT)
                   </Typography>
                   <TextField
                     fullWidth
@@ -6426,17 +6738,14 @@ function SalesPageContent() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        // If rate is already filled, add product directly
                         if (productFormData.rate > 0) {
                           handleAddProductToTable();
                         } else {
-                          // Focus on rate field if rate is not filled
                           const rateInput = document.getElementById('sale-rate-input');
                           if (rateInput) rateInput.focus();
                         }
                       } else if (e.key === 'Tab') {
                         e.preventDefault();
-                        // Move to RATE field
                         const rateInput = document.getElementById('sale-rate-input');
                         if (rateInput) rateInput.focus();
                       }
@@ -6457,6 +6766,8 @@ function SalesPageContent() {
                     }}
                   />
                 </Box>
+
+                {/* SALE RATE */}
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Typography sx={SALE_ENTRY_LABEL_SX}>
                     SALE RATE
@@ -6473,15 +6784,11 @@ function SalesPageContent() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        // Add product to table when Enter is pressed in rate field
                         handleAddProductToTable();
                       } else if (e.key === 'Tab') {
                         e.preventDefault();
-                        // Tab should focus the + button
                         const addBtn = document.getElementById('add-product-btn');
-                        if (addBtn) {
-                          addBtn.focus();
-                        }
+                        if (addBtn) addBtn.focus();
                       }
                     }}
                     sx={{
@@ -6500,6 +6807,8 @@ function SalesPageContent() {
                     }}
                   />
                 </Box>
+
+                {/* AMOUNT */}
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Typography sx={SALE_ENTRY_LABEL_SX}>
                     AMOUNT
@@ -6513,18 +6822,8 @@ function SalesPageContent() {
                     disabled
                   />
                 </Box>
-                <Box sx={SALE_ENTRY_CELL_SX}>
-                  <Typography sx={SALE_ENTRY_LABEL_SX}>
-                    STOCK
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={productFormData.stock ?? ''}
-                    disabled
-                    sx={{ ...SALE_ENTRY_CONTROL_SX, bgcolor: '#f8f9fa', '& .MuiInputBase-root': { ...SALE_ENTRY_CONTROL_SX['& .MuiInputBase-root'], bgcolor: '#f8f9fa' } }}
-                  />
-                </Box>
+
+                {/* ADD BUTTON */}
                 <Box sx={{ minWidth: 0, width: '100%', display: 'flex', alignItems: 'end' }}>
                   <Button
                     variant="contained"
@@ -6547,26 +6846,108 @@ function SalesPageContent() {
                 </Box>
               </Box>
 
+              {/* Row: Particular Comments & Associated Ad On's */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', md: 'row' },
+                  gap: 2,
+                  alignItems: 'stretch',
+                  mb: 2,
+                  bgcolor: '#f8fafc',
+                  p: 1.5,
+                  borderRadius: 1,
+                  border: '1px solid #e2e8f0'
+                }}
+              >
+                {/* Comments / Cutting Details */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={SALE_ENTRY_LABEL_SX}>
+                    COMMENTS / CUTTING DETAILS
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Enter remarks/comments for this particular (e.g. Corner Polish, Beveling 1 inch, Front Window)..."
+                    value={productFormData.comments || ''}
+                    onChange={(e) => setProductFormData(prev => ({ ...prev, comments: e.target.value }))}
+                    onFocus={(e) => e.target.select()}
+                    sx={SALE_ENTRY_CONTROL_SX}
+                  />
+                </Box>
+
+                {/* Associated Ad On's */}
+                <Box sx={{ flex: 1.3, minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography sx={SALE_ENTRY_LABEL_SX}>
+                      ASSOCIATED AD ON&apos;S {formSelectedProduct ? `(${formSelectedProduct.pro_title})` : ''}
+                    </Typography>
+                    {productFormData.selected_addons?.length > 0 && (
+                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669' }}>
+                        +{productFormData.selected_addons.reduce((sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0), 0)} PKR/sqft
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center', minHeight: 38 }}>
+                    {availableAddonsForProduct.length === 0 ? (
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic', py: 0.5 }}>
+                        {formSelectedProduct ? 'No associated ad-ons linked to this product' : 'Select a product to view and select ad-ons'}
+                      </Typography>
+                    ) : (
+                      availableAddonsForProduct.map((addon) => {
+                        const addonId = addon.id || addon.addon_id;
+                        const isSelected = (productFormData.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
+                        const price = parseFloat(addon.sale_price ?? addon.addon?.sale_price ?? 0);
+                        return (
+                          <Chip
+                            key={addonId}
+                            size="small"
+                            clickable
+                            onClick={() => toggleProductAddon(addon)}
+                            label={`${isSelected ? '✓ ' : '+ '} ${addon.name || addon.addon?.name} (PKR ${price})`}
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                              cursor: 'pointer',
+                              bgcolor: isSelected ? '#10b981' : '#ffffff',
+                              color: isSelected ? '#ffffff' : '#334155',
+                              border: isSelected ? '1px solid #059669' : '1px solid #cbd5e1',
+                              boxShadow: isSelected ? '0 2px 4px rgba(16,185,129,0.3)' : 'none',
+                              '&:hover': {
+                                bgcolor: isSelected ? '#059669' : '#f1f5f9',
+                              }
+                            }}
+                          />
+                        );
+                      })
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+
               {/* Product Table */}
               <TableContainer component={Paper} sx={{ mb: 2, border: '1px solid #e9ecef' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: '#2e7d32', '& th': { bgcolor: '#2e7d32 !important' } }}>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>S. No</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>Store</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>Product</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>Description</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>Qty</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>Sale Price</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>Amount</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>Move</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white' }}>Delete</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }}>S#</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 150 }}>Product</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 105 }} align="center">Entered Size (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 105 }} align="center">Calc / Avail (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="center">Qty (Sq Ft)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 150 }}>Comments</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Sale Rate</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Amount</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Move</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Delete</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {productTableData.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
                           <Typography variant="body2" color="text.secondary">
                             No products added yet
                           </Typography>
@@ -6593,73 +6974,27 @@ function SalesPageContent() {
                             }}
                           >
                             <TableCell sx={{ py: 1, fontWeight: 'bold', color: 'text.secondary', fontSize: '0.8rem' }}>{index + 1}</TableCell>
-                            <TableCell sx={{ py: 1 }}>
-                              <Select
-                                size="small"
-                                value={product.storeid || ''}
-                                onChange={(e) => {
-                                  const s = stores.find(st => st.storeid === e.target.value);
-                                  setProductTableData(prev => prev.map(p =>
-                                    p.id === product.id ? { ...p, storeid: s?.storeid, store_name: s?.store_name } : p
-                                  ));
-                                }}
-                                sx={{ minWidth: 110, fontSize: '0.85rem' }}
-                              >
-                                {stores.map(s => (
-                                  <MenuItem key={s.storeid} value={s.storeid}>{s.store_name}</MenuItem>
-                                ))}
-                              </Select>
-                            </TableCell>
                             <TableCell sx={{ py: 1, fontWeight: 700 }}>{product.pro_title}</TableCell>
-                            <TableCell sx={{ py: 1 }}>
-                              <TextField
-                                size="small"
-                                placeholder="Description"
-                                value={product.size || ''}
-                                onChange={(e) => {
-                                  const newSize = e.target.value;
-                                  setProductTableData((prev) =>
-                                    prev.map((p) =>
-                                      p.id === product.id ? { ...p, size: newSize } : p
-                                    )
-                                  );
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                sx={{
-                                  width: 150,
-                                  '& .MuiInputBase-input': {
-                                    padding: '4px 8px',
-                                    textAlign: 'left',
-                                    fontWeight: 'bold'
-                                  }
-                                }}
-                              />
+                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
+                              {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
                             </TableCell>
-                            <TableCell sx={{ py: 1 }}>
+                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 700, color: '#15803d' }} align="center">
+                              {product.calc_width && product.calc_height ? `${product.calc_width}" × ${product.calc_height}"` : '-'}
+                            </TableCell>
+                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
+                              {product.pieces || 1}
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }} align="center">
                               <TextField
                                 size="small"
                                 type="number"
                                 value={product.quantity}
-                                onChange={(e) => {
-                                  const newQuantity = parseFloat(e.target.value) || 0;
-                                  if (newQuantity > 0) {
-                                    const updatedData = productTableData.map((p) =>
-                                      p.id === product.id
-                                        ? {
-                                          ...p,
-                                          quantity: newQuantity,
-                                          amount: Number((newQuantity * p.rate).toFixed(0))
-                                        }
-                                        : p
-                                    );
-                                    setProductTableData(updatedData);
-                                  }
-                                }}
+                                onChange={(e) => updateRowQuantity(product.id, e.target.value)}
                                 onFocus={(e) => e.target.select()}
                                 sx={{
                                   width: 80,
                                   '& .MuiInputBase-input': {
-                                    padding: '4px 8px',
+                                    padding: '4px 6px',
                                     textAlign: 'center',
                                     fontWeight: 'bold'
                                   }
@@ -6667,7 +7002,54 @@ function SalesPageContent() {
                                 inputProps={{ min: 0.01, step: 'any' }}
                               />
                             </TableCell>
-                            <TableCell sx={{ py: 1, whiteSpace: 'normal', overflow: 'visible', verticalAlign: 'top' }}>
+                            <TableCell sx={{ py: 1 }}>
+                              <TextField
+                                size="small"
+                                placeholder="Particular comments..."
+                                value={product.comments || ''}
+                                onChange={(e) => updateRowComments(product.id, e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                sx={{
+                                  width: '100%',
+                                  minWidth: 140,
+                                  '& .MuiInputBase-input': {
+                                    padding: '4px 8px',
+                                    textAlign: 'left',
+                                    fontSize: '0.85rem'
+                                  }
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }}>
+                              {Array.isArray(product.selected_addons) && product.selected_addons.length > 0 ? (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {product.selected_addons.map(addon => {
+                                    const aId = addon.id || addon.addon_id;
+                                    const aPrice = addon.sale_price ?? addon.addon?.sale_price ?? 0;
+                                    return (
+                                      <Chip
+                                        key={aId}
+                                        size="small"
+                                        label={`${addon.name || addon.addon?.name} (+${aPrice})`}
+                                        onDelete={() => removeRowAddon(product.id, aId)}
+                                        sx={{
+                                          bgcolor: '#ecfdf5',
+                                          color: '#065f46',
+                                          fontWeight: 700,
+                                          fontSize: '0.72rem',
+                                          border: '1px solid #a7f3d0'
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </Box>
+                              ) : (
+                                <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                                  None
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell sx={{ py: 1, whiteSpace: 'normal', overflow: 'visible', verticalAlign: 'top' }} align="right">
                               {(() => {
                                 const cp = getCartLineCostRate(product, products);
                                 const belowCost = cp > 0 && parseFloat(product.rate) < cp;
@@ -6677,29 +7059,13 @@ function SalesPageContent() {
                                       size="small"
                                       type="number"
                                       value={product.rate}
-                                      onChange={(e) => {
-                                        const newRate = parseFloat(e.target.value) || 0;
-                                        if (newRate >= 0) {
-                                          setProductTableData((prev) =>
-                                            prev.map((p) =>
-                                              p.id === product.id
-                                                ? {
-                                                  ...p,
-                                                  rate: newRate,
-                                                  amount: Number((p.quantity * newRate).toFixed(0)),
-                                                  cost_price: p.cost_price || cp
-                                                }
-                                                : p
-                                            )
-                                          );
-                                        }
-                                      }}
+                                      onChange={(e) => updateRowRate(product.id, e.target.value)}
                                       onFocus={(e) => e.target.select()}
                                       sx={{
-                                        width: 100,
+                                        width: 85,
                                         '& .MuiInputBase-input': {
-                                          padding: '4px 8px',
-                                          textAlign: 'center',
+                                          padding: '4px 6px',
+                                          textAlign: 'right',
                                           fontWeight: 'bold',
                                           color: belowCost ? '#dc2626' : 'inherit'
                                         },
@@ -6712,6 +7078,11 @@ function SalesPageContent() {
                                       }}
                                       inputProps={{ min: 0, step: 'any' }}
                                     />
+                                    {product.addons_rate > 0 && (
+                                      <Typography variant="caption" sx={{ display: 'block', color: '#059669', fontWeight: 700, fontSize: '0.7rem' }}>
+                                        +{product.addons_rate} ad-ons
+                                      </Typography>
+                                    )}
                                     {belowCost ? (
                                       <Typography variant="caption" sx={{ color: '#dc2626', display: 'block', mt: 0.25, fontWeight: 600, whiteSpace: 'normal', lineHeight: 1.3 }}>
                                         ⚠️ Below cost ({fmtRateQty(cp)})
@@ -6721,9 +7092,9 @@ function SalesPageContent() {
                                 );
                               })()}
                             </TableCell>
-                            <TableCell sx={{ py: 1, fontWeight: 'bold' }}>{parseFloat(product.amount || 0).toFixed(0)}</TableCell>
-                            <TableCell sx={{ py: 1 }}>
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                            <TableCell sx={{ py: 1, fontWeight: 'bold' }} align="right">{parseFloat(product.amount || 0).toFixed(0)}</TableCell>
+                            <TableCell sx={{ py: 1 }} align="center">
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center' }}>
                                 <Tooltip title="Move up">
                                   <span>
                                     <IconButton
@@ -6750,7 +7121,7 @@ function SalesPageContent() {
                                 </Tooltip>
                               </Box>
                             </TableCell>
-                            <TableCell sx={{ py: 1 }}>
+                            <TableCell sx={{ py: 1 }} align="center">
                               <IconButton
                                 size="small"
                                 onClick={() => handleRemoveProductFromTable(product.id)}
@@ -6765,11 +7136,11 @@ function SalesPageContent() {
                     )}
                     {productTableData.length > 0 && (
                       <TableRow sx={{ bgcolor: '#2e7d32', borderTop: '2px solid #dee2e6', '& td': { bgcolor: '#2e7d32 !important' } }}>
-                        <TableCell colSpan={6} sx={{ py: 2, fontWeight: 'bold', textAlign: 'right', color: 'white' }}>
+                        <TableCell colSpan={9} sx={{ py: 2, fontWeight: 'bold', textAlign: 'right', color: 'white' }}>
                           Total Amount:
                         </TableCell>
-                        <TableCell colSpan={2} sx={{ py: 2, fontWeight: 'bold', fontSize: '1.1rem', color: 'white' }} key={`table-total-${calculateTotalAmount()}-${transportOptions.length}`}>
-                          {Number(calculateTotalAmount()).toFixed(0)}
+                        <TableCell colSpan={3} sx={{ py: 2, fontWeight: 'bold', fontSize: '1.1rem', color: 'white' }} key={`table-total-${calculateTotalAmount()}-${transportOptions.length}`}>
+                          PKR {Number(calculateTotalAmount()).toFixed(0)}
                         </TableCell>
                       </TableRow>
                     )}
