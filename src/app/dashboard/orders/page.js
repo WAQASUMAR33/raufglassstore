@@ -3300,20 +3300,7 @@ function OrdersPageContent() {
   // Render Sales Create View
   const renderSalesCreateView = () => (
     <DashboardLayout>
-      <Container
-        maxWidth={false}
-        sx={{
-          py: 1,
-          maxWidth: {
-            xs: '100%',           // Mobile: full width
-            sm: '100%',           // Small screens: full width  
-            md: '100%',           // Medium screens: full width
-            lg: '1200px',         // Large screens: reasonable max width
-            xl: '1400px'          // Extra large screens: slightly larger max width
-          },
-          mx: 'auto',             // Center the content
-          px: { xs: 2, sm: 3, md: 4 } // Responsive horizontal padding
-        }}>
+      <Container maxWidth={false} sx={{ py: 1, px: { xs: 1, sm: 2 } }}>
         <Stack spacing={2}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -5617,20 +5604,7 @@ function OrdersPageContent() {
 
   const renderSalesListView = () => (
     <DashboardLayout>
-      <Container
-        maxWidth={false}
-        sx={{
-          py: { xs: 2, md: 2.5 },
-          maxWidth: {
-            xs: '100%',
-            sm: '100%',
-            md: '100%',
-            lg: '1200px',
-            xl: '1400px'
-          },
-          mx: 'auto',
-          px: { xs: 2, sm: 3, md: 4 }
-        }}>
+      <Container maxWidth={false} sx={{ py: { xs: 2, md: 2.5 }, px: { xs: 1, sm: 2 } }}>
         <Stack spacing={3}>
           {/* Header - New Order Button on the left */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', py: 1.5 }}>
@@ -8269,20 +8243,7 @@ export default function OrdersPage() {
   return (
     <Suspense fallback={
       <DashboardLayout>
-        <Container
-          maxWidth={false}
-          sx={{
-            py: 4,
-            maxWidth: {
-              xs: '100%',           // Mobile: full width
-              sm: '100%',           // Small screens: full width  
-              md: '100%',           // Medium screens: full width
-              lg: '1200px',         // Large screens: reasonable max width
-              xl: '1400px'          // Extra large screens: slightly larger max width
-            },
-            mx: 'auto',             // Center the content
-            px: { xs: 2, sm: 3, md: 4 } // Responsive horizontal padding
-          }}>
+        <Container maxWidth={false} sx={{ py: 4, px: { xs: 1, sm: 2 } }}>
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
             <CircularProgress />
           </Box>

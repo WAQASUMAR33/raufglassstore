@@ -1763,7 +1763,7 @@ function QuotationsPageContent() {
         message={saveStatusMessage}
         subMessage="Do not close or refresh until the quotation is saved and the preview is ready"
       />
-      <Container maxWidth={false} sx={{ py: { xs: 2, md: 2.5 }, px: { xs: 2, sm: 3, md: 4 }, maxWidth: 1400, mx: 'auto' }}>
+      <Container maxWidth={false} sx={{ py: { xs: 2, md: 2.5 }, px: { xs: 1, sm: 2 } }}>
         <Stack spacing={2.5}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -2922,7 +2922,7 @@ function QuotationsPageContent() {
   // Render List View
   const renderListView = () => (
     <DashboardLayout>
-      <Container maxWidth={false} sx={{ py: { xs: 2, md: 2.5 }, px: { xs: 2, sm: 3, md: 4 }, maxWidth: 1400, mx: 'auto' }}>
+      <Container maxWidth={false} sx={{ py: { xs: 2, md: 2.5 }, px: { xs: 1, sm: 2 } }}>
         <Stack spacing={3}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
             <Button
