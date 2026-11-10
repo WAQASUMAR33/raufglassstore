@@ -110,6 +110,7 @@ const ROUTE_MAP = {
   'sub-categories': '/dashboard/subcategories',
   'products': '/dashboard/products',
   'addons': '/dashboard/addons',
+  'formulas': '/dashboard/formulas',
   'purchases': '/dashboard/purchases',
   'new-purchase': '/dashboard/purchases',
   'purchase-list': '/dashboard/purchases',
