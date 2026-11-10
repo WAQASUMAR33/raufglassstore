@@ -30,3 +30,4 @@ console.log('W=12.1 -> Expected 15, Got:', calculateGlassDimensions({ width: 12.
 console.log('\n--- AREA & PIECES TEST ---');
 const areaResult = calculateGlassDimensions({ width: 12.6, height: 23, pieces: 1, formula: formula1 });
 console.log('12.6" x 23" -> Adjusted:', areaResult.calc_width, 'x', areaResult.calc_height, 'Quantity (Sq Ft):', areaResult.quantity);
+

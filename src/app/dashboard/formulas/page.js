@@ -876,3 +876,4 @@ export default function FormulasManagementPage() {
     </DashboardLayout>
   );
 }
+

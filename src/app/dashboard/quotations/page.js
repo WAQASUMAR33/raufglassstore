@@ -58,6 +58,8 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
+  KeyboardArrowUp as ArrowUpIcon,
+  KeyboardArrowDown as ArrowDownIcon,
   ShoppingCart as ShoppingCartIcon,
   Receipt as ReceiptIcon,
   ReceiptLong as ReceiptLongIcon,
@@ -435,6 +437,9 @@ function QuotationsPageContent() {
   const [formSelectedProduct, setFormSelectedProduct] = useState(null);
   const [formSelectedStore, setFormSelectedStore] = useState(null);
 
+  // Bill price type state ('Retail' vs 'Whole sale')
+  const [billPriceType, setBillPriceType] = useState('Retail');
+
   // Product form state
   const [productFormData, setProductFormData] = useState({
     width_in: '',
@@ -445,7 +450,9 @@ function QuotationsPageContent() {
     quantity: 1,
     rate: 0,
     amount: 0,
-    stock: 0
+    stock: 0,
+    comments: '',
+    selected_addons: []
   });
 
   // Product table state
@@ -886,6 +893,211 @@ function QuotationsPageContent() {
     }
   }, [stores]);
 
+  // Live split amounts for current entry row (Glass Total, Ad-ons Total, Net Total)
+  const getLiveRowTotals = () => {
+    const liveQty = parseFloat(productFormData.quantity) || 0;
+    const liveGlassRate = parseFloat(productFormData.rate) || 0;
+    const liveAddonsRate = (productFormData.selected_addons || []).reduce(
+      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+      0
+    );
+    const liveGlassTotal = Number((liveQty * liveGlassRate).toFixed(0));
+    const liveAddonsTotal = Number((liveQty * liveAddonsRate).toFixed(0));
+    const liveNetTotal = Number((liveQty * (liveGlassRate + liveAddonsRate)).toFixed(0));
+    return { liveQty, liveGlassRate, liveAddonsRate, liveGlassTotal, liveAddonsTotal, liveNetTotal };
+  };
+
+  const calculateGlassTotal = () => {
+    return productTableData.reduce((sum, p) => {
+      const gAmt = p.glass_amount !== undefined
+        ? parseFloat(p.glass_amount)
+        : (parseFloat(p.quantity || 0) * parseFloat(p.rate || 0));
+      return sum + (Number.isFinite(gAmt) ? gAmt : 0);
+    }, 0);
+  };
+
+  const calculateAddonsTotal = () => {
+    return productTableData.reduce((sum, p) => {
+      const aAmt = p.addons_amount !== undefined
+        ? parseFloat(p.addons_amount)
+        : (parseFloat(p.quantity || 0) * parseFloat(p.addons_rate || 0));
+      return sum + (Number.isFinite(aAmt) ? aAmt : 0);
+    }, 0);
+  };
+
+  const toggleProductAddon = (addon) => {
+    setProductFormData(prev => {
+      const addonId = addon.id || addon.addon_id;
+      const exists = (prev.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
+      const newSelected = exists
+        ? (prev.selected_addons || []).filter(a => (a.id || a.addon_id) !== addonId)
+        : [...(prev.selected_addons || []), addon];
+      const addonsTotal = newSelected.reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = (parseFloat(prev.rate) || 0) + addonsTotal;
+      const amount = Number(((parseFloat(prev.quantity) || 0) * effectiveRate).toFixed(0));
+      return {
+        ...prev,
+        selected_addons: newSelected,
+        amount: amount,
+      };
+    });
+  };
+
+  const handleBillPriceTypeChange = (newType) => {
+    if (!newType || newType === billPriceType) return;
+    setBillPriceType(newType);
+
+    if (formSelectedProduct) {
+      const wholesaleRate = parseFloat(formSelectedProduct.pro_wholesale_price);
+      const retailRate = parseFloat(formSelectedProduct.pro_sale_price) || parseFloat(formSelectedProduct.pro_baser_price) || 0;
+      const defaultRate = (newType === 'Whole sale' && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
+        ? wholesaleRate
+        : retailRate;
+
+      setProductFormData(prev => {
+        const addonsTotal = (prev.selected_addons || []).reduce(
+          (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+          0
+        );
+        const effectiveRate = defaultRate + addonsTotal;
+        const amount = Number(((parseFloat(prev.quantity) || 0) * effectiveRate).toFixed(0));
+        return {
+          ...prev,
+          rate: defaultRate,
+          amount: amount,
+        };
+      });
+    }
+
+    setProductTableData(prev => prev.map(p => {
+      const wholesaleRate = parseFloat(p.product?.pro_wholesale_price ?? p.pro_wholesale_price);
+      const retailRate = parseFloat(p.product?.pro_sale_price ?? p.pro_sale_price ?? p.pro_baser_price) || parseFloat(p.rate) || 0;
+      const newGlassRate = (newType === 'Whole sale' && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
+        ? wholesaleRate
+        : retailRate;
+      const addonsTotal = (p.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const qty = parseFloat(p.quantity) || 0;
+      const glassAmount = Number((qty * newGlassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const effectiveRate = newGlassRate + addonsTotal;
+      return {
+        ...p,
+        rate: newGlassRate,
+        glass_rate: newGlassRate,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
+        effective_rate: effectiveRate,
+        amount: Number((qty * effectiveRate).toFixed(0)),
+      };
+    }));
+  };
+
+  const removeRowAddon = (rowId, addonId) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const newSelected = (p.selected_addons || []).filter(a => (a.id || a.addon_id) !== addonId);
+      const addonsTotal = newSelected.reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const qty = parseFloat(p.quantity) || 0;
+      const glassRate = parseFloat(p.rate) || 0;
+      const glassAmount = Number((qty * glassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const effectiveRate = glassRate + addonsTotal;
+      return {
+        ...p,
+        selected_addons: newSelected,
+        addons_rate: addonsTotal,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
+        effective_rate: effectiveRate,
+        amount: Number((qty * effectiveRate).toFixed(0)),
+      };
+    }));
+  };
+
+  const updateRowComments = (rowId, newComment) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      let sizeStr = '';
+      if (p.width_in && p.height_in) {
+        sizeStr = `${p.width_in}"×${p.height_in}" (Avail: ${p.calc_width}"×${p.calc_height}") [${p.pieces || 1} pcs]`;
+      }
+      if (newComment) {
+        sizeStr = sizeStr ? `${sizeStr} - ${newComment}` : newComment;
+      }
+      return {
+        ...p,
+        comments: newComment,
+        size: sizeStr,
+      };
+    }));
+  };
+
+  const updateRowQuantity = (rowId, newQty) => {
+    const qty = parseFloat(newQty) || 0;
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const glassRate = parseFloat(p.rate) || 0;
+      const addonsTotal = (p.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const glassAmount = Number((qty * glassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const effectiveRate = glassRate + addonsTotal;
+      return {
+        ...p,
+        quantity: qty,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
+        effective_rate: effectiveRate,
+        amount: Number((qty * effectiveRate).toFixed(0)),
+      };
+    }));
+  };
+
+  const updateRowRate = (rowId, newRate) => {
+    const rate = parseFloat(newRate) || 0;
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const addonsTotal = (p.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const qty = parseFloat(p.quantity) || 0;
+      const glassAmount = Number((qty * rate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const effectiveRate = rate + addonsTotal;
+      return {
+        ...p,
+        rate: rate,
+        glass_rate: rate,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
+        effective_rate: effectiveRate,
+        amount: Number((qty * effectiveRate).toFixed(0)),
+      };
+    }));
+  };
+
+  const moveProductRow = (index, direction) => {
+    setProductTableData(prev => {
+      const next = [...prev];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= next.length) return prev;
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
+  };
+
   // Handle glass dimension change (Width x Height -> Calc W x Calc H -> Sq Ft)
   const handleDimensionChange = (field, value) => {
     setProductFormData(prev => {
@@ -904,8 +1116,13 @@ function QuotationsPageContent() {
       const calcW = dimResult.calc_width || '';
       const calcH = dimResult.calc_height || '';
       const newQty = dimResult.quantity > 0 ? dimResult.quantity : (updated.quantity || 1);
-      const rate = parseFloat(updated.rate) || 0;
-      const amount = Number(((parseFloat(newQty) || 0) * rate).toFixed(0));
+      const glassRate = parseFloat(updated.rate) || 0;
+      const addonsTotal = (updated.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = glassRate + addonsTotal;
+      const amount = Number(((parseFloat(newQty) || 0) * effectiveRate).toFixed(0));
 
       return {
         ...updated,
@@ -922,7 +1139,12 @@ function QuotationsPageContent() {
     setFormSelectedProduct(selectedProduct);
 
     if (selectedProduct) {
-      const saleRate = parseFloat(selectedProduct.pro_sale_price) || parseFloat(selectedProduct.pro_baser_price) || 0;
+      const wholesaleRate = parseFloat(selectedProduct.pro_wholesale_price);
+      const retailRate = parseFloat(selectedProduct.pro_sale_price) || parseFloat(selectedProduct.pro_baser_price) || 0;
+      const defaultRate = (billPriceType === 'Whole sale' && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
+        ? wholesaleRate
+        : retailRate;
+
       setProductFormData(prev => {
         const dimResult = calculateGlassDimensions({
           width: prev.width_in,
@@ -933,16 +1155,18 @@ function QuotationsPageContent() {
         const calcW = dimResult.calc_width || '';
         const calcH = dimResult.calc_height || '';
         const qty = dimResult.quantity > 0 ? dimResult.quantity : (prev.quantity || 1);
-        const amount = Number(((parseFloat(qty) || 0) * saleRate).toFixed(0));
+        const amount = Number(((parseFloat(qty) || 0) * defaultRate).toFixed(0));
 
         return {
           ...prev,
           calc_width: calcW,
           calc_height: calcH,
           quantity: qty,
-          rate: saleRate,
+          rate: defaultRate,
           stock: 0,
-          amount: amount
+          amount: amount,
+          comments: '',
+          selected_addons: []
         };
       });
 
@@ -959,7 +1183,9 @@ function QuotationsPageContent() {
         quantity: 1,
         rate: 0,
         amount: 0,
-        stock: 0
+        stock: 0,
+        comments: '',
+        selected_addons: []
       });
     }
   };
@@ -979,37 +1205,32 @@ function QuotationsPageContent() {
       let stockQty = 0;
       if (typeof payload === 'number') {
         stockQty = payload;
-      } else if (Array.isArray(payload)) {
-        const first = payload[0] ?? {};
-        stockQty = parseInt(first.stock_quantity ?? first.quantity ?? first.stock ?? 0);
       } else if (payload && typeof payload === 'object') {
-        stockQty = parseInt(payload.stock_quantity ?? payload.quantity ?? payload.stock ?? 0);
+        stockQty = Number(payload.current_stock ?? payload.stock ?? payload.quantity ?? 0);
       }
 
-      const reservedQty = productTableData
-        .filter(r => r.pro_id === productId && r.storeid === storeId)
-        .reduce((sum, r) => sum + (parseFloat(r.qnty ?? r.quantity ?? 0) || 0), 0);
-
-      const available = (isNaN(stockQty) ? 0 : stockQty) - reservedQty;
-
-      setProductFormData(prev => ({ ...prev, stock: available }));
-    } catch (e) {
-      console.error('Failed to load store stock', e);
-      setProductFormData(prev => ({ ...prev, stock: 0 }));
+      setProductFormData(prev => ({
+        ...prev,
+        stock: Number.isFinite(stockQty) ? stockQty : 0
+      }));
+    } catch (err) {
+      console.error('Error fetching store stock:', err);
+      setProductFormData(prev => ({
+        ...prev,
+        stock: 0
+      }));
     }
   };
 
-  // When store or product changes, refresh store-wise stock
-  useEffect(() => {
-    if (formSelectedStore?.storeid && formSelectedProduct?.pro_id) {
-      fetchStoreStock(formSelectedStore.storeid, formSelectedProduct.pro_id);
-    }
-  }, [formSelectedStore, formSelectedProduct]);
-
   const handleQuantityChange = (newQuantity) => {
     const quantity = parseFloat(newQuantity) || 0;
-    const rate = productFormData.rate;
-    const amount = quantity * rate;
+    const glassRate = parseFloat(productFormData.rate) || 0;
+    const addonsTotal = (productFormData.selected_addons || []).reduce(
+      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+      0
+    );
+    const effectiveRate = glassRate + addonsTotal;
+    const amount = Number((quantity * effectiveRate).toFixed(0));
 
     setProductFormData(prev => ({
       ...prev,
@@ -1019,13 +1240,18 @@ function QuotationsPageContent() {
   };
 
   const handleRateChange = (newRate) => {
-    const rate = parseFloat(newRate) || 0;
-    const quantity = productFormData.quantity;
-    const amount = quantity * rate;
+    const glassRate = parseFloat(newRate) || 0;
+    const quantity = parseFloat(productFormData.quantity) || 0;
+    const addonsTotal = (productFormData.selected_addons || []).reduce(
+      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+      0
+    );
+    const effectiveRate = glassRate + addonsTotal;
+    const amount = Number((quantity * effectiveRate).toFixed(0));
 
     setProductFormData(prev => ({
       ...prev,
-      rate: rate,
+      rate: glassRate,
       amount: amount
     }));
   };
@@ -1057,11 +1283,27 @@ function QuotationsPageContent() {
     if (w && h) {
       sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]`;
     }
+    if (productFormData.comments) {
+      sizeStr = sizeStr ? `${sizeStr} - ${productFormData.comments}` : productFormData.comments;
+    }
+
+    const qty = parseFloat(productFormData.quantity) || 0;
+    const glassRate = parseFloat(productFormData.rate) || 0;
+    const selectedAddons = Array.isArray(productFormData.selected_addons) ? [...productFormData.selected_addons] : [];
+    const addonsTotal = selectedAddons.reduce(
+      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+      0
+    );
+    const effectiveRate = glassRate + addonsTotal;
+    const glassAmount = Number((qty * glassRate).toFixed(0));
+    const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+    const netTotal = Number((qty * effectiveRate).toFixed(0));
 
     const newProduct = {
       id: Date.now(),
       pro_id: formSelectedProduct.pro_id,
       pro_title: formSelectedProduct.pro_title,
+      product: formSelectedProduct,
       storeid: formSelectedStore.storeid,
       store_name: formSelectedStore.store_name,
       width_in: w || '',
@@ -1070,9 +1312,16 @@ function QuotationsPageContent() {
       calc_height: cH || '',
       pieces: pcs,
       size: sizeStr,
-      quantity: productFormData.quantity,
-      rate: productFormData.rate,
-      amount: productFormData.amount,
+      comments: productFormData.comments || '',
+      selected_addons: selectedAddons,
+      addons_rate: addonsTotal,
+      quantity: qty,
+      rate: glassRate,
+      glass_rate: glassRate,
+      glass_amount: glassAmount,
+      addons_amount: addonsAmount,
+      effective_rate: effectiveRate,
+      amount: netTotal,
       stock: productFormData.stock
     };
 
@@ -1089,7 +1338,9 @@ function QuotationsPageContent() {
       quantity: 1,
       rate: 0,
       amount: 0,
-      stock: 0
+      stock: 0,
+      comments: '',
+      selected_addons: []
     });
   };
 
@@ -1222,10 +1473,17 @@ function QuotationsPageContent() {
           vehicle_no: null,
           qnty: product.quantity,
           unit: 'PCS',
-          unit_rate: product.rate,
+          unit_rate: product.effective_rate ?? product.rate,
           total_amount: product.amount,
           discount: 0,
-          cus_id: formSelectedCustomer.cus_id
+          cus_id: formSelectedCustomer.cus_id,
+          size: product.size || (product.width_in && product.height_in ? `${product.width_in}"×${product.height_in}" (Avail: ${product.calc_width}"×${product.calc_height}") [${product.pieces || 1} pcs]` : ''),
+          comments: product.comments || '',
+          selected_addons: product.selected_addons || [],
+          addons_rate: product.addons_rate || 0,
+          glass_rate: product.glass_rate ?? product.rate,
+          glass_amount: product.glass_amount ?? (product.quantity * product.rate),
+          addons_amount: product.addons_amount ?? 0,
         })),
         transport_details: transportOptions.map(transport => ({
           account_id: transport.accountId,
@@ -1599,9 +1857,9 @@ function QuotationsPageContent() {
                 </Box>
               </Box>
 
-              {/* First Row - Customer, Date, Reference */}
+              {/* First Row - Customer, Bill Type, Date, Reference */}
               <Grid container spacing={2} sx={{ mb: 2, alignItems: 'flex-end' }}>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={4.5}>
                   <Box sx={{ position: 'relative' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
@@ -1625,7 +1883,7 @@ function QuotationsPageContent() {
                       fullWidth
                       size="small"
                       sx={{ 
-                        minWidth: 450,
+                        minWidth: 400,
                         '& .MuiAutocomplete-popupIndicator': { color: 'white' },
                         '& .MuiAutocomplete-clearIndicator': { color: 'white' }
                       }}
@@ -1691,7 +1949,7 @@ function QuotationsPageContent() {
                           onFocus={(e) => e.target.select()}
                           sx={{
                             bgcolor: BRAND.supporting.periwinkle,
-                            minWidth: 450,
+                            minWidth: 400,
                             borderRadius: 1,
                             '& .MuiOutlinedInput-root': {
                               fontSize: '1.05rem',
@@ -1717,7 +1975,38 @@ function QuotationsPageContent() {
                     />
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={2.5}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
+                        BILL TYPE
+                      </Typography>
+                      <Chip
+                        size="small"
+                        label={billPriceType === 'Whole sale' ? 'Wholesale Rate' : 'Retail Rate'}
+                        sx={{
+                          height: 18,
+                          fontSize: '0.62rem',
+                          fontWeight: 800,
+                          bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#ecfdf5',
+                          color: billPriceType === 'Whole sale' ? '#92400e' : '#065f46',
+                          border: billPriceType === 'Whole sale' ? '1px solid #fde68a' : '1px solid #a7f3d0'
+                        }}
+                      />
+                    </Box>
+                    <Select
+                      fullWidth
+                      size="small"
+                      value={billPriceType}
+                      onChange={(e) => handleBillPriceTypeChange(e.target.value)}
+                      sx={{ bgcolor: 'white', height: 40 }}
+                    >
+                      <MenuItem value="Retail">🏷️ Retail</MenuItem>
+                      <MenuItem value="Whole sale">📦 Whole sale</MenuItem>
+                    </Select>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={2.5}>
                   <Box>
                     <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium', color: 'text.secondary' }}>
                       DATE:
@@ -1728,11 +2017,11 @@ function QuotationsPageContent() {
                       size="small"
                       defaultValue={new Date().toISOString().split('T')[0]}
                       onFocus={(e) => e.target.select()}
-                      sx={{ bgcolor: 'white' }}
+                      sx={{ bgcolor: 'white', height: 40 }}
                     />
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={2.5}>
                   <Box>
                     <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium', color: 'text.secondary' }}>
                       REFERENCE
@@ -1740,7 +2029,7 @@ function QuotationsPageContent() {
                     <TextField
                       fullWidth
                       size="small"
-                      sx={{ bgcolor: 'white' }}
+                      sx={{ bgcolor: 'white', height: 40 }}
                       value={paymentData.notes || ''}
                       onChange={(e) => setPaymentData(prev => ({ ...prev, notes: e.target.value }))}
                       onFocus={(e) => e.target.select()}
@@ -1753,10 +2042,10 @@ function QuotationsPageContent() {
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: 'minmax(180px, 2fr) minmax(100px, 0.9fr) 82px 82px 55px 78px 90px 90px 65px 44px',
+                  gridTemplateColumns: 'minmax(200px, 2.2fr) 80px 80px 52px 75px 88px 90px 90px 92px 44px',
                   gap: 1.25,
                   alignItems: 'end',
-                  mb: 2,
+                  mb: 1.25,
                   p: { xs: 1.5, md: 2 },
                   borderRadius: 2,
                   border: '1px solid #e2e8f0',
@@ -1833,7 +2122,7 @@ function QuotationsPageContent() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && formSelectedProduct) {
                         e.preventDefault();
-                        document.getElementById('quote-store-input')?.focus();
+                        document.getElementById('quote-width-input')?.focus();
                       }
                     }}
                     renderInput={(params) => (
@@ -1853,43 +2142,18 @@ function QuotationsPageContent() {
                   />
                 </Box>
 
-                <Box sx={{ minWidth: { sm: 100 } }}>
-                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
-                    SELECT STORE
-                  </Typography>
-                  <Autocomplete
-                    size="small"
-                    fullWidth
-                    options={stores || []}
-                    getOptionLabel={(option) => option.store_name || ''}
-                    value={formSelectedStore}
-                    onChange={(event, newValue) => setFormSelectedStore(newValue)}
-                    isOptionEqualToValue={(option, value) => option.storeid === value?.storeid}
-                    autoSelect
-                    autoHighlight
-                    openOnFocus
-                    selectOnFocus
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        id="quote-store-input"
-                        placeholder="Store"
-                        onFocus={(e) => e.target.select()}
-                        sx={{
-                          bgcolor: 'white',
-                          '& .MuiOutlinedInput-root': { height: 40 },
-                          '& .MuiInputBase-input': { fontWeight: formSelectedStore ? 700 : 500, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-                  />
-                </Box>
-
                 {/* WIDTH (IN) */}
                 <Box>
-                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
-                    WIDTH {productFormData.calc_width ? `→ ${productFormData.calc_width}"` : '(IN)'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
+                      WIDTH (IN)
+                    </Typography>
+                    {productFormData.calc_width ? (
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: '#15803d', fontSize: '0.7rem' }}>
+                        → {productFormData.calc_width}&quot;
+                      </Typography>
+                    ) : null}
+                  </Box>
                   <TextField
                     fullWidth
                     size="small"
@@ -1916,9 +2180,16 @@ function QuotationsPageContent() {
 
                 {/* HEIGHT (IN) */}
                 <Box>
-                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
-                    HEIGHT {productFormData.calc_height ? `→ ${productFormData.calc_height}"` : '(IN)'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
+                      HEIGHT (IN)
+                    </Typography>
+                    {productFormData.calc_height ? (
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: '#15803d', fontSize: '0.7rem' }}>
+                        → {productFormData.calc_height}&quot;
+                      </Typography>
+                    ) : null}
+                  </Box>
                   <TextField
                     fullWidth
                     size="small"
@@ -1972,6 +2243,7 @@ function QuotationsPageContent() {
                   />
                 </Box>
 
+                {/* QTY (SQ FT) */}
                 <Box>
                   <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
                     QTY (SQ FT)
@@ -1999,10 +2271,25 @@ function QuotationsPageContent() {
                   />
                 </Box>
 
+                {/* SALE RATE */}
                 <Box>
-                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
-                    SALE RATE
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
+                      SALE RATE
+                    </Typography>
+                    <Chip
+                      size="small"
+                      label={billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}
+                      sx={{
+                        height: 15,
+                        fontSize: '0.58rem',
+                        fontWeight: 800,
+                        bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#ecfdf5',
+                        color: billPriceType === 'Whole sale' ? '#92400e' : '#065f46',
+                        px: 0.25
+                      }}
+                    />
+                  </Box>
                   <TextField
                     fullWidth
                     size="small"
@@ -2026,45 +2313,67 @@ function QuotationsPageContent() {
                   />
                 </Box>
 
+                {/* GLASS TOTAL */}
                 <Box>
-                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
-                    AMOUNT
+                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#166534', letterSpacing: '0.04em' }}>
+                    GLASS TOTAL
                   </Typography>
                   <TextField
                     fullWidth
                     size="small"
-                    value={productFormData.amount ?? ''}
+                    value={getLiveRowTotals().liveGlassTotal}
                     disabled
                     sx={{
-                      bgcolor: '#f1f5f9',
+                      bgcolor: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: 1,
                       '& .MuiOutlinedInput-root': { height: 40 },
-                      '& .MuiInputBase-input': { fontWeight: 700, textAlign: 'right', color: '#1e293b', WebkitTextFillColor: '#1e293b' },
+                      '& .MuiInputBase-input': { fontWeight: 800, textAlign: 'right', color: '#166534 !important', WebkitTextFillColor: '#166534 !important' },
                     }}
                   />
                 </Box>
 
+                {/* AD ON'S TOTAL */}
                 <Box>
-                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
-                    STOCK
+                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: '#065f46', letterSpacing: '0.04em' }}>
+                    AD ON&apos;S TOTAL
                   </Typography>
                   <TextField
                     fullWidth
                     size="small"
-                    value={productFormData.stock ?? ''}
+                    value={getLiveRowTotals().liveAddonsTotal}
                     disabled
                     sx={{
-                      bgcolor: '#f1f5f9',
+                      bgcolor: '#ecfdf5',
+                      border: '1px solid #a7f3d0',
+                      borderRadius: 1,
                       '& .MuiOutlinedInput-root': { height: 40 },
-                      '& .MuiInputBase-input': {
-                        fontWeight: 700,
-                        textAlign: 'center',
-                        color: productFormData.stock < 0 ? BRAND.primary.pink : '#1e293b',
-                        WebkitTextFillColor: productFormData.stock < 0 ? BRAND.primary.pink : '#1e293b',
-                      },
+                      '& .MuiInputBase-input': { fontWeight: 800, textAlign: 'right', color: '#065f46 !important', WebkitTextFillColor: '#065f46 !important' },
                     }}
                   />
                 </Box>
 
+                {/* NET TOTAL */}
+                <Box>
+                  <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 800, color: '#0f172a', letterSpacing: '0.04em' }}>
+                    NET TOTAL
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={getLiveRowTotals().liveNetTotal}
+                    disabled
+                    sx={{
+                      bgcolor: '#f8fafc',
+                      border: '1px solid #0f172a',
+                      borderRadius: 1,
+                      '& .MuiOutlinedInput-root': { height: 40 },
+                      '& .MuiInputBase-input': { fontWeight: 900, textAlign: 'right', color: '#0f172a !important', WebkitTextFillColor: '#0f172a !important' },
+                    }}
+                  />
+                </Box>
+
+                {/* Add button */}
                 <Box>
                   <Typography variant="caption" sx={{ mb: 0.75, display: 'block', fontWeight: 700, color: 'transparent', userSelect: 'none' }}>
                     .
@@ -2093,41 +2402,323 @@ function QuotationsPageContent() {
                 </Box>
               </Box>
 
+              {/* Row 3 - Particular Comments & Associated Ad-ons */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  alignItems: 'center',
+                  mb: 2,
+                  p: 1.5,
+                  bgcolor: '#ffffff',
+                  borderRadius: 2,
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                }}
+              >
+                <Box sx={{ flex: '1 1 50%', minWidth: 260 }}>
+                  <Typography variant="caption" sx={{ mb: 0.5, display: 'block', fontWeight: 700, color: '#475569', letterSpacing: '0.04em' }}>
+                    COMMENTS / CUTTING DETAILS
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Enter remarks/comments for this particular (e.g. Corner Polish, Beveling 1 inch, Front Window)"
+                    value={productFormData.comments}
+                    onChange={(e) => setProductFormData(prev => ({ ...prev, comments: e.target.value }))}
+                    sx={{
+                      bgcolor: '#fafafa',
+                      '& .MuiInputBase-input': {
+                        fontSize: '0.85rem',
+                        py: '7px'
+                      }
+                    }}
+                  />
+                </Box>
+
+                {/* Associated Add-ons Chips */}
+                {formSelectedProduct && (
+                  <Box sx={{ flex: '1 1 50%', minWidth: 260 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', letterSpacing: '0.04em' }}>
+                        ASSOCIATED AD ON&apos;S ({formSelectedProduct.pro_title?.toUpperCase()})
+                      </Typography>
+                      {productFormData.selected_addons.length > 0 && (
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#059669', fontSize: '0.75rem' }}>
+                          +{productFormData.selected_addons.reduce((sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0), 0)} PKR/sqft
+                        </Typography>
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center' }}>
+                      {(() => {
+                        const directAddons = formSelectedProduct.associated_addons || [];
+                        const productAddonLinks = formSelectedProduct.product_addons || [];
+                        const linkedAddons = productAddonLinks.map(pa => ({
+                          ...(pa.addon || {}),
+                          sale_price: pa.sale_price !== null && pa.sale_price !== undefined ? pa.sale_price : pa.addon?.sale_price
+                        }));
+                        const allAddons = directAddons.length > 0 ? directAddons : linkedAddons;
+
+                        if (allAddons.length === 0) {
+                          return (
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                              No ad-ons linked to this product (link ad-ons in Products → Edit)
+                            </Typography>
+                          );
+                        }
+
+                        return allAddons.map(addon => {
+                          const addonId = addon.id || addon.addon_id;
+                          const isSelected = (productFormData.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
+                          const price = addon.sale_price ?? addon.addon?.sale_price ?? 0;
+                          return (
+                            <Chip
+                              key={addonId}
+                              size="small"
+                              label={`${isSelected ? '✓ ' : ''}${addon.name || addon.addon?.name || 'Ad-on'} (PKR ${price})`}
+                              onClick={() => toggleProductAddon(addon)}
+                              sx={{
+                                cursor: 'pointer',
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                bgcolor: isSelected ? '#059669' : '#f1f5f9',
+                                color: isSelected ? '#ffffff' : '#334155',
+                                border: isSelected ? '1px solid #047857' : '1px solid #cbd5e1',
+                                '&:hover': {
+                                  bgcolor: isSelected ? '#047857' : '#e2e8f0',
+                                }
+                              }}
+                            />
+                          );
+                        });
+                      })()}
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+
               {/* Product Table */}
               <TableContainer component={Paper} sx={{ mb: 2, border: '1px solid #e9ecef' }}>
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ bgcolor: BRAND.supporting.periwinkle }}>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>S. No</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Store</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Product</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold', color: 'white' }}>Qty</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold', color: 'white' }}>Sale Price</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold', color: 'white' }}>Amount</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', color: 'white' }}>Delete</TableCell>
+                    <TableRow sx={{ bgcolor: BRAND.supporting.periwinkle, '& th': { bgcolor: `${BRAND.supporting.periwinkle} !important` } }}>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }}>S#</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 95 }} align="center">Entered Size (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 95 }} align="center">Calc / Avail (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Pcs</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 120 }}>Ad On&apos;s</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 85 }} align="right">Glass Rate</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Glass Total</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Ad Ons Total</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Net Total</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Move</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Delete</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {productTableData.map((row, index) => (
-                      <TableRow key={row.id} sx={{ '&:hover': { bgcolor: '#f8f9fa' } }}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>{row.store_name || '-'}</TableCell>
-                        <TableCell>{row.pro_title}</TableCell>
-                        <TableCell align="right">{row.quantity}</TableCell>
-                        <TableCell align="right">{fmtAmt(row.rate)}</TableCell>
-                        <TableCell align="right">{fmtAmt(row.amount)}</TableCell>
-                        <TableCell align="center">
-                          <IconButton size="small" color="error" onClick={() => handleRemoveProductFromTable(row.id)}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                    {productTableData.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            No products added yet
+                          </Typography>
                         </TableCell>
                       </TableRow>
-                    ))}
-                    {productTableData.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                          No products added yet
+                    ) : (
+                      productTableData.map((product, index) => {
+                        const rowColors = [
+                          '#e8f4fd', // light blue
+                          '#e8f8f0', // light green
+                          '#f3e8fd', // light purple
+                          '#fef9e7', // light yellow
+                          '#fdecea', // light red
+                          '#e8f6fd', // light cyan
+                        ];
+                        const rowBg = rowColors[index % rowColors.length];
+                        return (
+                          <TableRow
+                            key={product.id}
+                            sx={{
+                              bgcolor: rowBg,
+                              '&:hover': { filter: 'brightness(0.96)' },
+                              transition: 'background-color 0.15s'
+                            }}
+                          >
+                            <TableCell sx={{ py: 1, fontWeight: 'bold', color: 'text.secondary', fontSize: '0.8rem' }}>{index + 1}</TableCell>
+                            <TableCell sx={{ py: 1, fontWeight: 700 }}>{product.pro_title}</TableCell>
+                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
+                              {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
+                            </TableCell>
+                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 700, color: '#15803d' }} align="center">
+                              {product.calc_width && product.calc_height ? `${product.calc_width}" × ${product.calc_height}"` : '-'}
+                            </TableCell>
+                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
+                              {product.pieces || 1}
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }} align="center">
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={product.quantity}
+                                onChange={(e) => updateRowQuantity(product.id, e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                sx={{
+                                  width: 80,
+                                  '& .MuiInputBase-input': {
+                                    padding: '4px 6px',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold'
+                                  }
+                                }}
+                                inputProps={{ min: 0.01, step: 'any' }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }}>
+                              <TextField
+                                size="small"
+                                placeholder="Particular comments..."
+                                value={product.comments || ''}
+                                onChange={(e) => updateRowComments(product.id, e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                sx={{
+                                  width: '100%',
+                                  minWidth: 140,
+                                  '& .MuiInputBase-input': {
+                                    padding: '4px 8px',
+                                    textAlign: 'left',
+                                    fontSize: '0.85rem'
+                                  }
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }}>
+                              {Array.isArray(product.selected_addons) && product.selected_addons.length > 0 ? (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {product.selected_addons.map(addon => {
+                                    const aId = addon.id || addon.addon_id;
+                                    const aPrice = addon.sale_price ?? addon.addon?.sale_price ?? 0;
+                                    return (
+                                      <Chip
+                                        key={aId}
+                                        size="small"
+                                        label={`${addon.name || addon.addon?.name} (+${aPrice})`}
+                                        onDelete={() => removeRowAddon(product.id, aId)}
+                                        sx={{
+                                          bgcolor: '#ecfdf5',
+                                          color: '#065f46',
+                                          fontWeight: 700,
+                                          fontSize: '0.72rem',
+                                          border: '1px solid #a7f3d0'
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </Box>
+                              ) : (
+                                <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                                  None
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell sx={{ py: 1, whiteSpace: 'normal', overflow: 'visible', verticalAlign: 'top' }} align="right">
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={product.rate}
+                                onChange={(e) => updateRowRate(product.id, e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                sx={{
+                                  width: 85,
+                                  '& .MuiInputBase-input': {
+                                    padding: '4px 6px',
+                                    textAlign: 'right',
+                                    fontWeight: 'bold'
+                                  }
+                                }}
+                                inputProps={{ min: 0, step: 'any' }}
+                              />
+                              {product.addons_rate > 0 && (
+                                <Typography variant="caption" sx={{ display: 'block', color: '#059669', fontWeight: 700, fontSize: '0.7rem' }}>
+                                  +{product.addons_rate} ad-ons
+                                </Typography>
+                              )}
+                            </TableCell>
+                            {/* Glass Total */}
+                            <TableCell sx={{ py: 1, fontWeight: 700, color: '#166534' }} align="right">
+                              {parseFloat(product.glass_amount ?? (parseFloat(product.quantity || 0) * parseFloat(product.rate || 0)) ?? 0).toFixed(0)}
+                            </TableCell>
+
+                            {/* Ad Ons Total */}
+                            <TableCell sx={{ py: 1, fontWeight: 700, color: '#065f46' }} align="right">
+                              {parseFloat(product.addons_amount ?? (parseFloat(product.quantity || 0) * parseFloat(product.addons_rate || 0)) ?? 0).toFixed(0)}
+                            </TableCell>
+
+                            {/* Net Total */}
+                            <TableCell sx={{ py: 1, fontWeight: 900, color: '#0f172a' }} align="right">
+                              {parseFloat(product.amount || 0).toFixed(0)}
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }} align="center">
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center' }}>
+                                <Tooltip title="Move up">
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      disabled={index === 0}
+                                      onClick={() => moveProductRow(index, -1)}
+                                      sx={{ p: 0.25, color: 'primary.main', '&:disabled': { opacity: 0.3 } }}
+                                    >
+                                      <ArrowUpIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                                <Tooltip title="Move down">
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      disabled={index === productTableData.length - 1}
+                                      onClick={() => moveProductRow(index, 1)}
+                                      sx={{ p: 0.25, color: 'primary.main', '&:disabled': { opacity: 0.3 } }}
+                                    >
+                                      <ArrowDownIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              </Box>
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }} align="center">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRemoveProductFromTable(product.id)}
+                                sx={{ color: 'error.main' }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                    {productTableData.length > 0 && (
+                      <TableRow sx={{ bgcolor: BRAND.supporting.periwinkle, borderTop: '2px solid #dee2e6', '& td': { bgcolor: `${BRAND.supporting.periwinkle} !important`, color: 'white !important' } }}>
+                        <TableCell colSpan={8} sx={{ py: 1.5, fontWeight: 800, textAlign: 'right', fontSize: '0.95rem' }}>
+                          Summary Totals:
                         </TableCell>
+                        <TableCell align="right" sx={{ py: 1.5, fontWeight: 800, fontSize: '0.85rem', color: '#e2e8f0 !important' }}>
+                          —
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 1.5, fontWeight: 800, fontSize: '0.95rem', color: '#bbf7d0 !important' }}>
+                          PKR {calculateGlassTotal()}
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 1.5, fontWeight: 800, fontSize: '0.95rem', color: '#a7f3d0 !important' }}>
+                          PKR {calculateAddonsTotal()}
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 1.5, fontWeight: 900, fontSize: '1.05rem', color: '#ffffff !important' }}>
+                          PKR {Number(calculateTotalAmount()).toFixed(0)}
+                        </TableCell>
+                        <TableCell colSpan={2} />
                       </TableRow>
                     )}
                   </TableBody>
@@ -2205,8 +2796,22 @@ function QuotationsPageContent() {
 
                   <Box sx={{ p: 2.5, bgcolor: BRAND.tint.periwinkle, flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.25 }}>
-                      <Typography sx={{ fontSize: '0.875rem', color: '#475569', fontWeight: 600 }}>Items Subtotal</Typography>
-                      <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: '#1e293b', fontFamily: 'ui-monospace, monospace' }}>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#166534', fontWeight: 700 }}>Total Glass Price</Typography>
+                      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#166534', fontFamily: 'ui-monospace, monospace' }}>
+                        PKR {calculateGlassTotal()}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.25 }}>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#065f46', fontWeight: 700 }}>Total Ad On&apos;s</Typography>
+                      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#065f46', fontFamily: 'ui-monospace, monospace' }}>
+                        PKR {calculateAddonsTotal()}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.25, borderTop: '1px dashed #cbd5e1', pt: 0.75 }}>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#0f172a', fontWeight: 800 }}>Net Items Total</Typography>
+                      <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a', fontFamily: 'ui-monospace, monospace' }}>
                         {fmtAmt(calculateTotalAmount())}
                       </Typography>
                     </Box>
