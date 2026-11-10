@@ -6007,48 +6007,6 @@ function SalesPageContent() {
             </Box>
           </Box>
 
-
-          {/* Screen Stack Indicator */}
-          {currentScreenIndex >= 0 && screenStack.length > 0 && (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mt: 2, mb: 2, gap: 1 }}>
-              <Box
-                sx={{
-                  background: 'rgba(51, 65, 85, 0.1)',
-                  color: '#475569',
-                  padding: '2px 10px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  border: '1px solid rgba(51, 65, 85, 0.2)'
-                }}
-              >
-                SCREEN {currentScreenIndex + 1}
-                {screenStack.length > 1 && (
-                  <span style={{ opacity: 0.7, fontSize: '10px', marginLeft: '4px' }}>
-                    ({currentScreenIndex + 1}/{screenStack.length})
-                  </span>
-                )}
-              </Box>
-              {screenStack.length > 1 && (
-                <IconButton
-                  size="small"
-                  onClick={cancelCurrentScreen}
-                  title="Cancel this screen (Ctrl+X)"
-                  sx={{
-                    color: '#dc3545',
-                    padding: 0,
-                    '&:hover': { bgcolor: 'rgba(220, 53, 69, 0.1)' }
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              )}
-            </Box>
-          )}
-
           {/* Main Form */}
           <Card>
             <CardContent sx={{ p: 2 }}>
