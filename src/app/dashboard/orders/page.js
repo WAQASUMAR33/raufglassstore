@@ -2615,8 +2615,8 @@ function OrdersPageContent() {
         cus_category: newCustomer.cus_category,
         cus_type: newCustomer.cus_type,
         cus_balance: parseFloat(newCustomer.cus_balance) || 0,
-        CNIC: newCustomer.CNIC.trim(),
-        NTN_NO: newCustomer.NTN_NO.trim(),
+        CNIC: (newCustomer.CNIC || '').trim(),
+        NTN_NO: (newCustomer.NTN_NO || '').trim(),
         name_urdu: newCustomer.name_urdu.trim(),
         city_id: newCustomer.city_id || null
       };
@@ -6284,15 +6284,15 @@ function OrdersPageContent() {
             {/* Single Form Box */}
             <Box sx={{ p: 2.5, borderRadius: '14px', border: '1px solid #e2e8f0', bgcolor: '#ffffff', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.02)' }}>
               {/* Strict 2-Column CSS Grid Layout */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2.2 }}>
-                {/* Row 1 */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                {/* Row 1 - Account Name & Urdu Name */}
                 <TextField
                   fullWidth
                   required
                   inputRef={customerNameInputRef}
                   label="Account Name"
                   name="cus_name"
-                  value={newCustomer.cus_name}
+                  value={newCustomer.cus_name ?? ''}
                   onChange={(e) => setNewCustomer(prev => ({ ...prev, cus_name: e.target.value }))}
                   placeholder="Enter account name"
                   sx={{
@@ -6322,13 +6322,46 @@ function OrdersPageContent() {
 
                 <TextField
                   fullWidth
+                  label="Name in Urdu"
+                  name="name_urdu"
+                  value={newCustomer.name_urdu ?? ''}
+                  onChange={(e) => setNewCustomer(prev => ({ ...prev, name_urdu: e.target.value }))}
+                  placeholder="اردو نام درج کریں"
+                  sx={{
+                    bgcolor: '#ffffff',
+                    borderRadius: '10px',
+                    '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                      backgroundColor: '#ffffff',
+                      fontSize: '0.9rem',
+                      '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
+                      '&:hover fieldset': { borderColor: '#818cf8' },
+                      '&.Mui-focused fieldset': { borderColor: '#9333ea', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(147, 51, 234, 0.12)' },
+                    },
+                    '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, '&.Mui-focused': { color: '#9333ea', fontWeight: 700 } }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start" sx={{ mr: 0.8 }}>
+                        <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#f3e8ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <TranslateIcon sx={{ fontSize: 16, color: '#9333ea' }} />
+                        </Box>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                {/* Row 2 - Phone Numbers */}
+                <TextField
+                  fullWidth
                   required
                   label="Primary Phone"
                   name="cus_phone_no"
                   type="tel"
-                  value={newCustomer.cus_phone_no}
+                  value={newCustomer.cus_phone_no ?? ''}
                   onChange={(e) => setNewCustomer(prev => ({ ...prev, cus_phone_no: e.target.value }))}
-                  placeholder="Enter primary phone number"
+                  placeholder="0300-1234567"
                   sx={{
                     bgcolor: '#ffffff',
                     borderRadius: '10px',
@@ -6354,15 +6387,14 @@ function OrdersPageContent() {
                   }}
                 />
 
-                {/* Row 2 */}
                 <TextField
                   fullWidth
                   label="Secondary Phone"
                   name="cus_phone_no2"
                   type="tel"
-                  value={newCustomer.cus_phone_no2}
+                  value={newCustomer.cus_phone_no2 ?? ''}
                   onChange={(e) => setNewCustomer(prev => ({ ...prev, cus_phone_no2: e.target.value }))}
-                  placeholder="Enter secondary phone number"
+                  placeholder="Optional secondary phone"
                   sx={{
                     bgcolor: '#ffffff',
                     borderRadius: '10px',
@@ -6388,12 +6420,13 @@ function OrdersPageContent() {
                   }}
                 />
 
+                {/* Row 3 - Address & City */}
                 <TextField
                   fullWidth
                   required
                   label="Address"
                   name="cus_address"
-                  value={newCustomer.cus_address}
+                  value={newCustomer.cus_address ?? ''}
                   onChange={(e) => setNewCustomer(prev => ({ ...prev, cus_address: e.target.value }))}
                   placeholder="Enter complete address"
                   sx={{
@@ -6421,52 +6454,51 @@ function OrdersPageContent() {
                   }}
                 />
 
-                {/* Row 3 - Account Category & Account Type */}
                 <Autocomplete
-                  fullWidth
-                  autoSelect={true}
-                  autoHighlight={true}
-                  openOnFocus={true}
-                  selectOnFocus={true}
-                  PaperComponent={(props) => (
-                    <Paper
-                      {...props}
-                      elevation={8}
+                  options={cities}
+                  getOptionLabel={(option) => option.city_name || ''}
+                  value={cities.find(c => c.city_id === newCustomer.city_id) || null}
+                  onChange={(event, newValue) => {
+                    setNewCustomer(prev => ({
+                      ...prev,
+                      city_id: newValue ? newValue.city_id : ''
+                    }));
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="City"
+                      placeholder="Select city"
                       sx={{
-                        borderRadius: '12px',
-                        mt: 1,
-                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.08)',
-                        border: '1px solid #e2e8f0',
-                        overflow: 'hidden',
-                        '& .MuiAutocomplete-listbox': {
-                          p: 1,
-                          maxHeight: '260px',
-                          '&::-webkit-scrollbar': { width: '6px' },
-                          '&::-webkit-scrollbar-thumb': { backgroundColor: '#cbd5e1', borderRadius: '4px' },
-                          '&::-webkit-scrollbar-thumb:hover': { backgroundColor: '#94a3b8' }
+                        bgcolor: '#ffffff',
+                        borderRadius: '10px',
+                        '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '10px',
+                          backgroundColor: '#ffffff',
+                          fontSize: '0.9rem',
+                          '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
+                          '&:hover fieldset': { borderColor: '#818cf8' },
+                          '&.Mui-focused fieldset': { borderColor: '#d97706', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(217, 119, 6, 0.12)' },
                         },
-                        '& .MuiAutocomplete-option': {
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          py: 1.2,
-                          px: 2,
-                          borderRadius: '8px',
-                          mb: 0.5,
-                          transition: 'all 0.15s ease',
-                          color: '#334155',
-                          '&:hover': {
-                            backgroundColor: '#f1f5f9',
-                            color: '#0f172a'
-                          },
-                          '&[aria-selected="true"]': {
-                            backgroundColor: '#e0e7ff !important',
-                            color: '#4338ca',
-                            fontWeight: 600
-                          }
-                        }
+                        '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, '&.Mui-focused': { color: '#d97706', fontWeight: 700 } }
+                      }}
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <InputAdornment position="start" sx={{ mr: 0.8 }}>
+                            <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <MapPinIcon sx={{ fontSize: 16, color: '#d97706' }} />
+                            </Box>
+                          </InputAdornment>
+                        ),
                       }}
                     />
                   )}
+                />
+
+                {/* Row 4 - Account Category & Account Type */}
+                <Autocomplete
                   options={customerCategories.map(category => ({
                     id: category.cus_cat_id,
                     title: category.cus_cat_title
@@ -6489,12 +6521,6 @@ function OrdersPageContent() {
                       label="Account Category"
                       required
                       placeholder="Select category"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Tab' && params.inputProps?.ariaExpanded) {
-                          const firstCat = customerCategories && customerCategories.length ? customerCategories[0].cus_cat_id : '';
-                          if (!newCustomer.cus_category && firstCat) setNewCustomer(prev => ({ ...prev, cus_category: firstCat }));
-                        }
-                      }}
                       sx={{
                         bgcolor: '#ffffff',
                         borderRadius: '10px',
@@ -6524,50 +6550,6 @@ function OrdersPageContent() {
                 />
 
                 <Autocomplete
-                  fullWidth
-                  autoSelect={true}
-                  autoHighlight={true}
-                  openOnFocus={true}
-                  selectOnFocus={true}
-                  PaperComponent={(props) => (
-                    <Paper
-                      {...props}
-                      elevation={8}
-                      sx={{
-                        borderRadius: '12px',
-                        mt: 1,
-                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.08)',
-                        border: '1px solid #e2e8f0',
-                        overflow: 'hidden',
-                        '& .MuiAutocomplete-listbox': {
-                          p: 1,
-                          maxHeight: '260px',
-                          '&::-webkit-scrollbar': { width: '6px' },
-                          '&::-webkit-scrollbar-thumb': { backgroundColor: '#cbd5e1', borderRadius: '4px' },
-                          '&::-webkit-scrollbar-thumb:hover': { backgroundColor: '#94a3b8' }
-                        },
-                        '& .MuiAutocomplete-option': {
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          py: 1.2,
-                          px: 2,
-                          borderRadius: '8px',
-                          mb: 0.5,
-                          transition: 'all 0.15s ease',
-                          color: '#334155',
-                          '&:hover': {
-                            backgroundColor: '#f1f5f9',
-                            color: '#0f172a'
-                          },
-                          '&[aria-selected="true"]': {
-                            backgroundColor: '#e0e7ff !important',
-                            color: '#4338ca',
-                            fontWeight: 600
-                          }
-                        }
-                      }}
-                    />
-                  )}
                   options={customerTypes.map(type => ({
                     id: type.cus_type_id,
                     title: type.cus_type_title
@@ -6590,18 +6572,10 @@ function OrdersPageContent() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
+                      inputRef={customerTypeInputRef}
                       label="Account Type"
                       required
                       placeholder="Select type"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Tab' && customerTypeOpen) {
-                          const firstType = customerTypes && customerTypes.length ? customerTypes[0].cus_type_id : '';
-                          if (!newCustomer.cus_type && firstType) {
-                            setNewCustomer(prev => ({ ...prev, cus_type: firstType }));
-                          }
-                          setCustomerTypeOpen(false);
-                        }
-                      }}
                       sx={{
                         bgcolor: '#ffffff',
                         borderRadius: '10px',
@@ -6630,215 +6604,17 @@ function OrdersPageContent() {
                   )}
                 />
 
-                {/* Row 4 - City & Reference */}
-                <Autocomplete
-                  fullWidth
-                  autoSelect={true}
-                  autoHighlight={true}
-                  openOnFocus={true}
-                  selectOnFocus={true}
-                  PaperComponent={(props) => (
-                    <Paper
-                      {...props}
-                      elevation={8}
-                      sx={{
-                        borderRadius: '12px',
-                        mt: 1,
-                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.08)',
-                        border: '1px solid #e2e8f0',
-                        overflow: 'hidden',
-                        '& .MuiAutocomplete-listbox': {
-                          p: 1,
-                          maxHeight: '260px',
-                          '&::-webkit-scrollbar': { width: '6px' },
-                          '&::-webkit-scrollbar-thumb': { backgroundColor: '#cbd5e1', borderRadius: '4px' },
-                          '&::-webkit-scrollbar-thumb:hover': { backgroundColor: '#94a3b8' }
-                        },
-                        '& .MuiAutocomplete-option': {
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          py: 1.2,
-                          px: 2,
-                          borderRadius: '8px',
-                          mb: 0.5,
-                          transition: 'all 0.15s ease',
-                          color: '#334155',
-                          '&:hover': {
-                            backgroundColor: '#f1f5f9',
-                            color: '#0f172a'
-                          },
-                          '&[aria-selected="true"]': {
-                            backgroundColor: '#e0e7ff !important',
-                            color: '#4338ca',
-                            fontWeight: 600
-                          }
-                        }
-                      }}
-                    />
-                  )}
-                  options={cities.map(city => ({
-                    id: city.city_id,
-                    title: city.city_name
-                  }))}
-                  getOptionLabel={(option) => option.title || ''}
-                  value={(() => {
-                    return cities.find(option => option.city_id === newCustomer.city_id)
-                      ? { id: newCustomer.city_id, title: cities.find(option => option.city_id === newCustomer.city_id).city_name }
-                      : null;
-                  })()}
-                  onChange={(event, newValue) => {
-                    setNewCustomer(prev => ({
-                      ...prev,
-                      city_id: newValue ? newValue.id : ''
-                    }));
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="City"
-                      placeholder="Select city"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Tab' && params.inputProps?.ariaExpanded) {
-                          const firstCity = cities && cities.length ? cities[0].city_id : '';
-                          if (!newCustomer.city_id && firstCity) setNewCustomer(prev => ({ ...prev, city_id: firstCity }));
-                        }
-                      }}
-                      sx={{
-                        bgcolor: '#ffffff',
-                        borderRadius: '10px',
-                        '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '10px',
-                          backgroundColor: '#ffffff',
-                          fontSize: '0.9rem',
-                          '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
-                          '&:hover fieldset': { borderColor: '#818cf8' },
-                          '&.Mui-focused fieldset': { borderColor: '#d97706', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(217, 119, 6, 0.12)' },
-                        },
-                        '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, '&.Mui-focused': { color: '#d97706', fontWeight: 700 } }
-                      }}
-                      InputProps={{
-                        ...params.InputProps,
-                        startAdornment: (
-                          <InputAdornment position="start" sx={{ mr: 0.8 }}>
-                            <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <MapPinIcon sx={{ fontSize: 16, color: '#d97706' }} />
-                            </Box>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  )}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Reference"
-                  name="cus_reference"
-                  value={newCustomer.cus_reference}
-                  onChange={(e) => setNewCustomer(prev => ({ ...prev, cus_reference: e.target.value }))}
-                  placeholder="Enter reference number"
-                  sx={{
-                    bgcolor: '#ffffff',
-                    borderRadius: '10px',
-                    '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      backgroundColor: '#ffffff',
-                      fontSize: '0.9rem',
-                      '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
-                      '&:hover fieldset': { borderColor: '#818cf8' },
-                      '&.Mui-focused fieldset': { borderColor: '#0284c7', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(2, 132, 199, 0.12)' },
-                    },
-                    '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, '&.Mui-focused': { color: '#0284c7', fontWeight: 700 } }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start" sx={{ mr: 0.8 }}>
-                        <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <TagIcon sx={{ fontSize: 16, color: '#0284c7' }} />
-                        </Box>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                {/* Row 5 - CNIC & NTN Number */}
-                <TextField
-                  fullWidth
-                  label="CNIC"
-                  name="CNIC"
-                  value={newCustomer.CNIC}
-                  onChange={(e) => setNewCustomer(prev => ({ ...prev, CNIC: e.target.value }))}
-                  placeholder="Enter CNIC number"
-                  sx={{
-                    bgcolor: '#ffffff',
-                    borderRadius: '10px',
-                    '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      backgroundColor: '#ffffff',
-                      fontSize: '0.9rem',
-                      '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
-                      '&:hover fieldset': { borderColor: '#818cf8' },
-                      '&.Mui-focused fieldset': { borderColor: '#e11d48', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(225, 29, 72, 0.12)' },
-                    },
-                    '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, '&.Mui-focused': { color: '#e11d48', fontWeight: 700 } }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start" sx={{ mr: 0.8 }}>
-                        <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#ffe4e6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <CreditCardIcon sx={{ fontSize: 16, color: '#e11d48' }} />
-                        </Box>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="NTN Number"
-                  name="NTN_NO"
-                  value={newCustomer.NTN_NO}
-                  onChange={(e) => setNewCustomer(prev => ({ ...prev, NTN_NO: e.target.value }))}
-                  placeholder="Enter NTN number"
-                  sx={{
-                    bgcolor: '#ffffff',
-                    borderRadius: '10px',
-                    '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      backgroundColor: '#ffffff',
-                      fontSize: '0.9rem',
-                      '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
-                      '&:hover fieldset': { borderColor: '#818cf8' },
-                      '&.Mui-focused fieldset': { borderColor: '#0d9488', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(13, 148, 136, 0.12)' },
-                    },
-                    '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, '&.Mui-focused': { color: '#0d9488', fontWeight: 700 } }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start" sx={{ mr: 0.8 }}>
-                        <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <TagIcon sx={{ fontSize: 16, color: '#0d9488' }} />
-                        </Box>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                {/* Row 6 - Initial Balance & Account Info */}
+                {/* Row 5 - Opening Balance & Reference */}
                 <TextField
                   fullWidth
                   label="Opening Balance"
                   name="cus_balance"
                   type="number"
                   inputProps={{ step: '0.01' }}
-                  value={newCustomer.cus_balance}
+                  value={newCustomer.cus_balance ?? ''}
                   onChange={(e) => setNewCustomer(prev => ({ ...prev, cus_balance: e.target.value }))}
                   placeholder="0 — optional"
-                  helperText="Set starting balance when creating the account"
+                  helperText="Starting balance (PKR)"
                   sx={{
                     bgcolor: '#ffffff',
                     borderRadius: '10px',
@@ -6866,11 +6642,44 @@ function OrdersPageContent() {
 
                 <TextField
                   fullWidth
+                  label="Reference"
+                  name="cus_reference"
+                  value={newCustomer.cus_reference ?? ''}
+                  onChange={(e) => setNewCustomer(prev => ({ ...prev, cus_reference: e.target.value }))}
+                  placeholder="Enter reference number (e.g. GP#)"
+                  sx={{
+                    bgcolor: '#ffffff',
+                    borderRadius: '10px',
+                    '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                      backgroundColor: '#ffffff',
+                      fontSize: '0.9rem',
+                      '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
+                      '&:hover fieldset': { borderColor: '#818cf8' },
+                      '&.Mui-focused fieldset': { borderColor: '#0284c7', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(2, 132, 199, 0.12)' },
+                    },
+                    '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, '&.Mui-focused': { color: '#0284c7', fontWeight: 700 } }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start" sx={{ mr: 0.8 }}>
+                        <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <TagIcon sx={{ fontSize: 16, color: '#0284c7' }} />
+                        </Box>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                {/* Row 6 - Account Info & Other Information */}
+                <TextField
+                  fullWidth
                   label="Account Info"
                   name="cus_account_info"
-                  value={newCustomer.cus_account_info}
+                  value={newCustomer.cus_account_info ?? ''}
                   onChange={(e) => setNewCustomer(prev => ({ ...prev, cus_account_info: e.target.value }))}
-                  placeholder="Enter account information"
+                  placeholder="Enter account notes / details"
                   sx={{
                     bgcolor: '#ffffff',
                     borderRadius: '10px',
@@ -6896,46 +6705,13 @@ function OrdersPageContent() {
                   }}
                 />
 
-                {/* Row 7 - Name in Urdu & Other Information */}
-                <TextField
-                  fullWidth
-                  label="Name in Urdu"
-                  name="name_urdu"
-                  value={newCustomer.name_urdu}
-                  onChange={(e) => setNewCustomer(prev => ({ ...prev, name_urdu: e.target.value }))}
-                  placeholder="Enter name in Urdu"
-                  sx={{
-                    bgcolor: '#ffffff',
-                    borderRadius: '10px',
-                    '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      backgroundColor: '#ffffff',
-                      fontSize: '0.9rem',
-                      '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
-                      '&:hover fieldset': { borderColor: '#818cf8' },
-                      '&.Mui-focused fieldset': { borderColor: '#9333ea', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(147, 51, 234, 0.12)' },
-                    },
-                    '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, '&.Mui-focused': { color: '#9333ea', fontWeight: 700 } }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start" sx={{ mr: 0.8 }}>
-                        <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#f3e8ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <TranslateIcon sx={{ fontSize: 16, color: '#9333ea' }} />
-                        </Box>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
                 <TextField
                   fullWidth
                   label="Other Information"
                   name="other"
-                  value={newCustomer.other}
+                  value={newCustomer.other ?? ''}
                   onChange={(e) => setNewCustomer(prev => ({ ...prev, other: e.target.value }))}
-                  placeholder="Enter other information"
+                  placeholder="Enter additional remarks"
                   sx={{
                     bgcolor: '#ffffff',
                     borderRadius: '10px',
