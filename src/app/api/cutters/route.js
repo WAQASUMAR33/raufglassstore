@@ -139,3 +139,4 @@ export async function DELETE(request) {
     return errorResponse('Failed to delete cutter: ' + (error.message || 'Server error'), 500);
   }
 }
+

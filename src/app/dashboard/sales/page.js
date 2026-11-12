@@ -1304,12 +1304,12 @@ function SalesPageContent() {
     const ref = String(entry.bill_no).trim();
     if (!ref) return;
 
-    const isReturn = (entry.details || '').toLowerCase().includes('sale return') || 
-                     (entry.ledger_type || '').toLowerCase().includes('sale return') ||
-                     ref.startsWith('SR-');
+    const isReturn = (entry.details || '').toLowerCase().includes('sale return') ||
+      (entry.ledger_type || '').toLowerCase().includes('sale return') ||
+      ref.startsWith('SR-');
 
     const cleanId = ref.replace(/^[A-Za-z]+-/, '');
-    
+
     handleViewBill({
       sale_id: cleanId,
       bill_number: cleanId,
@@ -1949,12 +1949,12 @@ function SalesPageContent() {
       const cW = parseFloat(updated.calc_width) || 0;
       const cH = parseFloat(updated.calc_height) || 0;
       const pcs = parseInt(updated.pieces, 10) || 1;
-      
+
       let qty = parseFloat(p.quantity) || 0;
       if (cW > 0 && cH > 0) {
         qty = Number(((cW * cH / 144) * pcs).toFixed(2));
       }
-      
+
       const glassRate = parseFloat(p.rate || p.glass_rate || 0);
       const addonsTotal = (p.selected_addons || []).reduce(
         (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
@@ -1993,7 +1993,7 @@ function SalesPageContent() {
       if (p.id !== rowId) return p;
       const cW = parseFloat(p.calc_width) || 0;
       const cH = parseFloat(p.calc_height) || 0;
-      
+
       let qty = parseFloat(p.quantity) || 0;
       if (cW > 0 && cH > 0) {
         qty = Number(((cW * cH / 144) * pcs).toFixed(2));
@@ -12728,7 +12728,7 @@ function SalesPageContent() {
               Customer Ledger
             </Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Button
               size="small"
@@ -12747,8 +12747,8 @@ function SalesPageContent() {
             >
               Export
             </Button>
-            <IconButton 
-              onClick={() => setLedgerDialogOpen(false)} 
+            <IconButton
+              onClick={() => setLedgerDialogOpen(false)}
               sx={{ color: '#ef4444', ml: 1 }}
             >
               <CloseIcon />
@@ -12781,7 +12781,7 @@ function SalesPageContent() {
                 </Typography>
               </Box>
             </Box>
-            
+
             <Box sx={{ flex: '1 1 180px' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <PhoneIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
@@ -12813,11 +12813,11 @@ function SalesPageContent() {
           </Box>
 
           {/* Filters and Summary Bar */}
-          <Box sx={{ 
-            mb: 3, 
-            display: 'flex', 
-            flexWrap: 'wrap', 
-            alignItems: 'center', 
+          <Box sx={{
+            mb: 3,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
             justifyContent: 'space-between',
             gap: 3
           }}>
@@ -12845,10 +12845,10 @@ function SalesPageContent() {
                 variant="contained"
                 onClick={() => fetchLedgerData(formSelectedCustomer?.cus_id)}
                 disabled={ledgerLoading}
-                sx={{ 
-                  bgcolor: '#1e293b', 
-                  '&:hover': { bgcolor: '#0f172a' }, 
-                  height: 40, 
+                sx={{
+                  bgcolor: '#1e293b',
+                  '&:hover': { bgcolor: '#0f172a' },
+                  height: 40,
                   borderRadius: '8px',
                   textTransform: 'none',
                   fontWeight: 700
@@ -12925,18 +12925,18 @@ function SalesPageContent() {
                       const isCredit = parseFloat(entry.credit_amount || 0) > 0;
                       const isDebit = parseFloat(entry.debit_amount || 0) > 0 && !isCredit;
                       const serialNo = (ledgerPage - 1) * ledgerRowsPerPage + idx + 1;
-                      
+
                       return (
-                        <TableRow key={idx} hover sx={{ 
+                        <TableRow key={idx} hover sx={{
                           '& .MuiTableCell-root': { py: 1.5, px: 2, fontSize: '0.8125rem', borderBottom: '1px solid #f1f5f9', color: '#334155', lineHeight: 1.4 },
-                          '&:last-child td': { borderBottom: 0 } 
+                          '&:last-child td': { borderBottom: 0 }
                         }}>
                           <TableCell align="center" sx={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.75rem' }}>
                             {serialNo}
                           </TableCell>
-                        <TableCell sx={{ color: '#64748b', fontWeight: 500 }}>
-                          {formatDatePK(entry?.created_at)}
-                        </TableCell>
+                          <TableCell sx={{ color: '#64748b', fontWeight: 500 }}>
+                            {formatDatePK(entry?.created_at)}
+                          </TableCell>
                           <TableCell>
                             <Chip
                               label={entry.trnx_type}
@@ -12946,12 +12946,12 @@ function SalesPageContent() {
                                 fontSize: '0.65rem',
                                 height: 20,
                                 textTransform: 'uppercase',
-                                bgcolor: entry.trnx_type === 'SALE' ? '#eff6ff' : 
-                                         entry.trnx_type === 'SALE_RETURN' ? '#fff7ed' :
-                                         entry.trnx_type === 'PAYMENT' ? '#ecfdf5' : '#f1f5f9',
-                                color: entry.trnx_type === 'SALE' ? '#1d4ed8' : 
-                                       entry.trnx_type === 'SALE_RETURN' ? '#c2410c' :
-                                       entry.trnx_type === 'PAYMENT' ? '#047857' : '#64748b',
+                                bgcolor: entry.trnx_type === 'SALE' ? '#eff6ff' :
+                                  entry.trnx_type === 'SALE_RETURN' ? '#fff7ed' :
+                                    entry.trnx_type === 'PAYMENT' ? '#ecfdf5' : '#f1f5f9',
+                                color: entry.trnx_type === 'SALE' ? '#1d4ed8' :
+                                  entry.trnx_type === 'SALE_RETURN' ? '#c2410c' :
+                                    entry.trnx_type === 'PAYMENT' ? '#047857' : '#64748b',
                                 borderRadius: '6px'
                               }}
                             />
@@ -12963,10 +12963,10 @@ function SalesPageContent() {
                           </TableCell>
                           <TableCell>
                             {entry.bill_no ? (
-                              <Box 
+                              <Box
                                 onClick={() => handleViewLedgerDocument(entry)}
-                                sx={{ 
-                                  cursor: 'pointer', 
+                                sx={{
+                                  cursor: 'pointer',
                                   color: BRAND.primary.blue,
                                   fontWeight: 700,
                                   '&:hover': { textDecoration: 'underline' },
@@ -13004,10 +13004,10 @@ function SalesPageContent() {
               </TableContainer>
 
               {/* Pagination Controls */}
-              <Box sx={{ 
-                mt: 2.5, 
-                display: 'flex', 
-                alignItems: 'center', 
+              <Box sx={{
+                mt: 2.5,
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: 2
@@ -13042,7 +13042,7 @@ function SalesPageContent() {
                     onChange={(e, v) => setLedgerPage(v)}
                     color="primary"
                     size="small"
-                    sx={{ 
+                    sx={{
                       '& .MuiPaginationItem-root': { fontWeight: 700, borderRadius: '8px' },
                       '& .Mui-selected': { bgcolor: BRAND.primary.blue, color: '#fff', '&:hover': { bgcolor: '#1347c4' } }
                     }}
@@ -13051,11 +13051,11 @@ function SalesPageContent() {
               </Box>
             </>
           ) : (
-            <Box sx={{ 
-              py: 12, 
-              textAlign: 'center', 
-              bgcolor: '#fff', 
-              borderRadius: '20px', 
+            <Box sx={{
+              py: 12,
+              textAlign: 'center',
+              bgcolor: '#fff',
+              borderRadius: '20px',
               border: '2px dashed #e2e8f0',
             }}>
               {ledgerLoading ? (
