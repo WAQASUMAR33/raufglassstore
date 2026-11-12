@@ -84,6 +84,7 @@ import {
 import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
+import CommercialInvoiceReceipt from '@/components/invoices/CommercialInvoiceReceipt';
 
 const fmtAmt = (val) => {
   const n = parseFloat(val || 0);
@@ -248,86 +249,8 @@ function QuotationPrintTemplates({ billData }) {
     <>
       {/* A4 — off screen until print */}
       <Box sx={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '21cm', overflow: 'hidden', pointerEvents: 'none' }}>
-        <Box id="printable-invoice-a4" sx={{ width: '100%', bgcolor: '#fff', color: '#000', fontFamily: 'Arial, sans-serif' }}>
-          <Box sx={{ textAlign: 'center', py: 2.5, borderBottom: '2px solid #000' }}>
-            <Typography sx={{ fontWeight: 900, fontSize: '1.35rem', direction: 'rtl' }}>{COMPANY.nameUr}</Typography>
-            <Typography sx={{ fontSize: '0.9rem', mt: 0.5 }}>{COMPANY.name}</Typography>
-            <Typography sx={{ fontSize: '0.85rem', direction: 'rtl', mt: 0.25 }}>{COMPANY.address}</Typography>
-            <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, mt: 0.5 }}>Ph: {COMPANY.phones.join(', ')}</Typography>
-            <Typography sx={{ mt: 1.5, fontWeight: 900, letterSpacing: 2, fontSize: '1rem' }}>QUOTATION</Typography>
-          </Box>
-
-          <Box sx={{ px: 2.5, py: 1.5, display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #ddd', fontSize: '0.875rem' }}>
-            <Box>
-              <Typography sx={{ fontWeight: 700 }}>{billData.customer?.cus_name || 'N/A'}</Typography>
-              {billData.customer?.cus_phone_no && (
-                <Typography sx={{ color: '#444' }}>{billData.customer.cus_phone_no}</Typography>
-              )}
-              {billData.customer?.cus_address && (
-                <Typography sx={{ color: '#444' }}>{billData.customer.cus_address}</Typography>
-              )}
-            </Box>
-            <Box sx={{ textAlign: 'right' }}>
-              <Typography><strong>Quote #:</strong> {billData.sale_id}</Typography>
-              <Typography><strong>Date:</strong> {quoteDate}</Typography>
-              {(billData.reference || billData.notes) && (
-                <Typography><strong>Ref:</strong> {billData.reference || billData.notes}</Typography>
-              )}
-            </Box>
-          </Box>
-
-          <Box sx={{ px: 2.5, py: 1.5 }}>
-            <Table size="small" sx={{ border: '1px solid #bbb' }}>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#e8effd' }}>
-                  {['#', 'Item', 'Qty', 'Rate', 'Amount'].map((h, i) => (
-                    <TableCell key={h} align={i >= 2 ? 'right' : 'left'} sx={{ fontWeight: 800, border: '1px solid #bbb', py: 0.75, fontSize: '0.8125rem' }}>{h}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {details.length > 0 ? details.map((d, i) => (
-                  <TableRow key={i}>
-                    <TableCell sx={{ border: '1px solid #ddd', py: 0.5 }}>{i + 1}</TableCell>
-                    <TableCell sx={{ border: '1px solid #ddd', py: 0.5, fontWeight: 600 }}>{d.product?.pro_title || 'Item'}</TableCell>
-                    <TableCell align="right" sx={{ border: '1px solid #ddd', py: 0.5 }}>{d.qnty}</TableCell>
-                    <TableCell align="right" sx={{ border: '1px solid #ddd', py: 0.5 }}>{fmtAmt(d.unit_rate)}</TableCell>
-                    <TableCell align="right" sx={{ border: '1px solid #ddd', py: 0.5, fontWeight: 700 }}>{fmtAmt(d.total_amount)}</TableCell>
-                  </TableRow>
-                )) : (
-                  <TableRow><TableCell colSpan={5} align="center">No items</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-              <Box sx={{ minWidth: 240, fontSize: '0.875rem' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.35 }}>
-                  <span>Items Subtotal</span><strong>{fmtAmt(itemsSubtotal)}</strong>
-                </Box>
-                {labourAmount > 0 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.35 }}>
-                    <span>Labour</span><strong>{fmtAmt(labourAmount)}</strong>
-                  </Box>
-                )}
-                {shippingAmount > 0 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.35 }}>
-                    <span>Shipping</span><strong>{fmtAmt(shippingAmount)}</strong>
-                  </Box>
-                )}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.35 }}>
-                  <span>Discount</span><strong>{fmtAmt(discountAmount)}</strong>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, mt: 0.5, borderTop: '2px solid #000', fontSize: '1rem' }}>
-                  <strong>Quoted Total</strong><strong>{fmtAmt(totalAmount)}</strong>
-                </Box>
-              </Box>
-            </Box>
-
-            <Typography sx={{ mt: 2.5, fontSize: '0.75rem', color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
-              This is a quotation only. Prices and availability may change until converted to a sale.
-            </Typography>
-          </Box>
+        <Box id="printable-invoice-a4" sx={{ width: '100%', bgcolor: '#fff' }}>
+          <CommercialInvoiceReceipt bill={billData} isQuotation={true} />
         </Box>
       </Box>
 

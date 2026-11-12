@@ -10,9 +10,9 @@ export const COMPANY = {
   nameSub: 'Glass & Aluminium',
   nameUr: 'زین ٹریڈرز',
   tagline: 'Glass, Mirror & Aluminium Solutions',
-  address: 'Main Market, Pakistan',
-  addressUr: 'مین مارکیٹ، پاکستان',
-  phones: ['0300-7560306'],
+  address: 'Sargodha',
+  addressUr: 'سرگودھا',
+  phones: ['0483-712161', '0483-712160', '0321-8681824'],
 };
 
 export const POWERED_BY = {
