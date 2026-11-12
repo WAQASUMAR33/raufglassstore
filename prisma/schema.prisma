@@ -682,6 +682,20 @@ model Loader {
   @@map("loaders")
 }
 
+model Cutter {
+  cutter_id       Int          @id @default(autoincrement())
+  branch_id       Int          @default(1)
+  cutter_name     String
+  cutter_phone    String?
+  notes           String?      @db.Text
+  status          String       @default("ACTIVE")
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  @@index([branch_id], map: "cutters_branch_id_idx")
+  @@map("cutters")
+}
+
 model Cargo {
   cargo_id         Int      @id @default(autoincrement())
   branch_id        Int      @default(1)

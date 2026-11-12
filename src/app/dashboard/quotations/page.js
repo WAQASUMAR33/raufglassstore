@@ -43,6 +43,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  FormControlLabel,
+  Switch,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -74,8 +76,14 @@ import {
   Phone as PhoneIcon,
   Close as CloseIcon,
   LocationOn as MapPinIcon,
-  Business as BusinessIcon
+  Business as BusinessIcon,
+  ContentCut as CutterIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
+
+import CutterManagerModal from '@/components/cutters/CutterManagerModal';
+import AddonPickerModal from '@/components/addons/AddonPickerModal';
+import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
 
 const fmtAmt = (val) => {
   const n = parseFloat(val || 0);
@@ -457,6 +465,16 @@ function QuotationsPageContent() {
 
   // Product table state
   const [productTableData, setProductTableData] = useState([]);
+  const [isManualCalcSize, setIsManualCalcSize] = useState(false);
+  const [activeRowId, setActiveRowId] = useState(null);
+  const [cutters, setCutters] = useState([]);
+  const [selectedCutterId, setSelectedCutterId] = useState('');
+  const [selectedCutter, setSelectedCutter] = useState(null);
+  const [cutterModalOpen, setCutterModalOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicateTargetRow, setDuplicateTargetRow] = useState(null);
+  const [rowAddonModalOpen, setRowAddonModalOpen] = useState(false);
+  const [rowAddonTarget, setRowAddonTarget] = useState(null);
 
   // Transport state
   const [transportOptions, setTransportOptions] = useState([]);
@@ -1023,6 +1041,190 @@ function QuotationsPageContent() {
     }));
   };
 
+  // Cutter management helpers
+  const fetchCutters = useCallback(async () => {
+    try {
+      const res = await fetch('/api/cutters?status=ACTIVE');
+      if (res.ok) {
+        const data = await res.json();
+        setCutters(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Error fetching cutters:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCutters();
+  }, [fetchCutters]);
+
+  // Handle row-level updates in the product table
+  const updateRowSerial = (rowId, newSerial) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      return { ...p, serial_no: newSerial };
+    }));
+  };
+
+  const updateRowCalcDimension = (rowId, field, newVal) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const updated = { ...p, [field]: newVal };
+      const cW = parseFloat(updated.calc_width) || 0;
+      const cH = parseFloat(updated.calc_height) || 0;
+      const pcs = parseInt(updated.pieces, 10) || 1;
+      
+      let qty = parseFloat(p.quantity) || 0;
+      if (cW > 0 && cH > 0) {
+        qty = Number(((cW * cH / 144) * pcs).toFixed(2));
+      }
+      
+      const glassRate = parseFloat(p.rate || p.glass_rate || 0);
+      const addonsTotal = (p.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = glassRate + addonsTotal;
+      const glassAmount = Number((qty * glassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const lineAmount = Number((qty * effectiveRate).toFixed(0));
+
+      let sizeStr = '';
+      if (p.width_in && p.height_in) {
+        sizeStr = `${p.width_in}"×${p.height_in}" (Avail: ${updated.calc_width}"×${updated.calc_height}") [${pcs} pcs]`;
+      } else if (cW > 0 && cH > 0) {
+        sizeStr = `(Avail: ${updated.calc_width}"×${updated.calc_height}") [${pcs} pcs]`;
+      }
+      if (p.comments) {
+        sizeStr = sizeStr ? `${sizeStr} - ${p.comments}` : p.comments;
+      }
+
+      return {
+        ...updated,
+        quantity: qty,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
+        effective_rate: effectiveRate,
+        amount: lineAmount,
+        size: sizeStr,
+      };
+    }));
+  };
+
+  const updateRowPieces = (rowId, newPieces) => {
+    const pcs = parseInt(newPieces, 10) || 1;
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const cW = parseFloat(p.calc_width) || 0;
+      const cH = parseFloat(p.calc_height) || 0;
+      
+      let qty = parseFloat(p.quantity) || 0;
+      if (cW > 0 && cH > 0) {
+        qty = Number(((cW * cH / 144) * pcs).toFixed(2));
+      } else {
+        qty = pcs;
+      }
+
+      const glassRate = parseFloat(p.rate || p.glass_rate || 0);
+      const addonsTotal = (p.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = glassRate + addonsTotal;
+      const glassAmount = Number((qty * glassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const lineAmount = Number((qty * effectiveRate).toFixed(0));
+
+      let sizeStr = '';
+      if (p.width_in && p.height_in) {
+        sizeStr = `${p.width_in}"×${p.height_in}" (Avail: ${p.calc_width}"×${p.calc_height}") [${pcs} pcs]`;
+      } else if (cW > 0 && cH > 0) {
+        sizeStr = `(Avail: ${p.calc_width}"×${p.calc_height}") [${pcs} pcs]`;
+      }
+      if (p.comments) {
+        sizeStr = sizeStr ? `${sizeStr} - ${p.comments}` : p.comments;
+      }
+
+      return {
+        ...p,
+        pieces: pcs,
+        quantity: qty,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
+        effective_rate: effectiveRate,
+        amount: lineAmount,
+        size: sizeStr,
+      };
+    }));
+  };
+
+  const applyRowAddons = (rowId, selectedAddonList) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const addonsTotal = (selectedAddonList || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const qty = parseFloat(p.quantity) || 0;
+      const glassRate = parseFloat(p.rate || p.glass_rate || 0);
+      const effectiveRate = glassRate + addonsTotal;
+      const glassAmount = Number((qty * glassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const lineAmount = Number((qty * effectiveRate).toFixed(0));
+
+      return {
+        ...p,
+        selected_addons: selectedAddonList,
+        addons_rate: addonsTotal,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
+        effective_rate: effectiveRate,
+        amount: lineAmount,
+      };
+    }));
+    showSnackbar('Ad-ons updated for item', 'success');
+  };
+
+  const handleExecuteDuplicate = (targetRow, count = 1) => {
+    const numCopies = Math.max(1, parseInt(count, 10) || 1);
+    setProductTableData(prev => {
+      const targetIdx = prev.findIndex(p => p.id === targetRow.id);
+      if (targetIdx === -1) return prev;
+      const target = prev[targetIdx];
+      const clones = [];
+      for (let i = 0; i < numCopies; i++) {
+        clones.push({
+          ...target,
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          serial_no: target.serial_no ? `${target.serial_no}` : undefined,
+          selected_addons: Array.isArray(target.selected_addons) ? [...target.selected_addons] : [],
+        });
+      }
+      const next = [...prev];
+      next.splice(targetIdx + 1, 0, ...clones);
+      return next;
+    });
+    showSnackbar(`Duplicated ${numCopies} row(s) successfully`, 'success');
+  };
+
+  // Keyboard shortcut Ctrl + + for duplicate row
+  useEffect(() => {
+    const handleDuplicateKeyDown = (e) => {
+      if (e.ctrlKey && (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd' || e.code === 'Equal')) {
+        e.preventDefault();
+        if (productTableData.length > 0) {
+          const target = activeRowId
+            ? productTableData.find(p => p.id === activeRowId) || productTableData[0]
+            : productTableData[0];
+          setDuplicateTargetRow(target);
+          setDuplicateDialogOpen(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleDuplicateKeyDown);
+    return () => window.removeEventListener('keydown', handleDuplicateKeyDown);
+  }, [productTableData, activeRowId]);
+
   const updateRowComments = (rowId, newComment) => {
     setProductTableData(prev => prev.map(p => {
       if (p.id !== rowId) return p;
@@ -1467,8 +1669,20 @@ function QuotationsPageContent() {
         loader_id: null,
         shipping_amount: totalShippingAmount,
         bill_type: 'QUOTATION',
-        reference: paymentData.notes || null,
-        sale_details: productTableData.map(product => ({
+        cutter_id: selectedCutterId || null,
+        cutter_name: selectedCutter?.cutter_name || null,
+        reference: (() => {
+          let refStr = paymentData.notes ? `${paymentData.notes} [${billPriceType}]` : `[${billPriceType}]`;
+          if (selectedCutter?.cutter_name) {
+            refStr += ` [Cutter: ${selectedCutter.cutter_name}]`;
+          }
+          return refStr;
+        })(),
+        sale_details: productTableData.map((product, idx) => ({
+          serial_no: product.serial_no || (idx + 1),
+          pieces: product.pieces || 1,
+          calc_width: product.calc_width || null,
+          calc_height: product.calc_height || null,
           pro_id: product.pro_id,
           vehicle_no: null,
           qnty: product.quantity,
@@ -1857,9 +2071,9 @@ function QuotationsPageContent() {
                 </Box>
               </Box>
 
-              {/* First Row - Customer, Bill Type, Date, Reference */}
+              {/* First Row - Customer, Bill Type, Cutter, Date, Reference */}
               <Grid container spacing={2} sx={{ mb: 2, alignItems: 'flex-end' }}>
-                <Grid item xs={12} md={4.5}>
+                <Grid item xs={12} md={3.2}>
                   <Box sx={{ position: 'relative' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
@@ -1883,7 +2097,7 @@ function QuotationsPageContent() {
                       fullWidth
                       size="small"
                       sx={{ 
-                        minWidth: 400,
+                        minWidth: 260,
                         '& .MuiAutocomplete-popupIndicator': { color: 'white' },
                         '& .MuiAutocomplete-clearIndicator': { color: 'white' }
                       }}
@@ -1949,10 +2163,10 @@ function QuotationsPageContent() {
                           onFocus={(e) => e.target.select()}
                           sx={{
                             bgcolor: BRAND.supporting.periwinkle,
-                            minWidth: 400,
+                            minWidth: 260,
                             borderRadius: 1,
                             '& .MuiOutlinedInput-root': {
-                              fontSize: '1.05rem',
+                              fontSize: '1rem',
                               color: 'white !important',
                               WebkitTextFillColor: 'white !important',
                               '& fieldset': { borderColor: '#4a57d4', borderWidth: '2px' },
@@ -1975,7 +2189,7 @@ function QuotationsPageContent() {
                     />
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={2.5}>
+                <Grid item xs={12} md={1.8}>
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
@@ -2008,6 +2222,46 @@ function QuotationsPageContent() {
                 </Grid>
                 <Grid item xs={12} md={2.5}>
                   <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
+                        CUTTER
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<CutterIcon sx={{ fontSize: 13 }} />}
+                        onClick={() => setCutterModalOpen(true)}
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#16a34a', textTransform: 'none' }}
+                      >
+                        + Manage
+                      </Button>
+                    </Box>
+                    <Select
+                      fullWidth
+                      size="small"
+                      value={selectedCutterId || ''}
+                      onChange={(e) => {
+                        const cId = e.target.value;
+                        setSelectedCutterId(cId);
+                        const c = cutters.find(x => x.cutter_id === cId);
+                        setSelectedCutter(c || null);
+                      }}
+                      displayEmpty
+                      sx={{ bgcolor: 'white', height: 40, fontWeight: 600 }}
+                    >
+                      <MenuItem value="" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                        <em>None / Default</em>
+                      </MenuItem>
+                      {cutters.map((cutter) => (
+                        <MenuItem key={cutter.cutter_id} value={cutter.cutter_id} sx={{ fontWeight: 600 }}>
+                          ✂️ {cutter.cutter_name} {cutter.cutter_phone ? `(${cutter.cutter_phone})` : ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={2.2}>
+                  <Box>
                     <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium', color: 'text.secondary' }}>
                       DATE:
                     </Typography>
@@ -2021,7 +2275,7 @@ function QuotationsPageContent() {
                     />
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={2.5}>
+                <Grid item xs={12} md={2.3}>
                   <Box>
                     <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium', color: 'text.secondary' }}>
                       REFERENCE
@@ -2497,23 +2751,49 @@ function QuotationsPageContent() {
                 )}
               </Box>
 
+              {/* Product Table Header with Switch Toolbar */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, px: 0.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', fontSize: '0.9rem' }}>
+                  Quotation Items ({productTableData.length})
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        size="small"
+                        checked={isManualCalcSize}
+                        onChange={(e) => setIsManualCalcSize(e.target.checked)}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: isManualCalcSize ? '#4a57d4' : '#64748b', userSelect: 'none' }}>
+                        ✏️ Edit Calc Size (W×H)
+                      </Typography>
+                    }
+                    sx={{ m: 0 }}
+                  />
+                </Box>
+              </Box>
+
               {/* Product Table */}
               <TableContainer component={Paper} sx={{ mb: 2, border: '1px solid #e9ecef' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: BRAND.supporting.periwinkle, '& th': { bgcolor: `${BRAND.supporting.periwinkle} !important` } }}>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }}>S#</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">S#</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 95 }} align="center">Entered Size (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 95 }} align="center">Calc / Avail (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Pcs</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 105 }} align="center">Calc / Avail (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 120 }}>Ad On&apos;s</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 85 }} align="right">Glass Rate</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Glass Total</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Ad Ons Total</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Net Total</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Copy</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Move</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 45 }} align="center">Delete</TableCell>
                     </TableRow>
@@ -2521,7 +2801,7 @@ function QuotationsPageContent() {
                   <TableBody>
                     {productTableData.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={15} align="center" sx={{ py: 4 }}>
                           <Typography variant="body2" color="text.secondary">
                             No products added yet
                           </Typography>
@@ -2541,22 +2821,127 @@ function QuotationsPageContent() {
                         return (
                           <TableRow
                             key={product.id}
+                            onClick={() => setActiveRowId(product.id)}
                             sx={{
                               bgcolor: rowBg,
+                              outline: activeRowId === product.id ? '2px solid #5e6eed' : 'none',
                               '&:hover': { filter: 'brightness(0.96)' },
                               transition: 'background-color 0.15s'
                             }}
                           >
-                            <TableCell sx={{ py: 1, fontWeight: 'bold', color: 'text.secondary', fontSize: '0.8rem' }}>{index + 1}</TableCell>
+                            <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
+                              <TextField
+                                size="small"
+                                value={product.serial_no ?? (index + 1)}
+                                onChange={(e) => updateRowSerial(product.id, e.target.value)}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
+                                sx={{
+                                  width: 48,
+                                  '& .MuiInputBase-input': {
+                                    padding: '3px 4px',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.8rem',
+                                    color: '#1e293b',
+                                    bgcolor: 'rgba(255,255,255,0.85)',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '4px'
+                                  }
+                                }}
+                              />
+                            </TableCell>
                             <TableCell sx={{ py: 1, fontWeight: 700 }}>{product.pro_title}</TableCell>
                             <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
                               {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
                             </TableCell>
-                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 700, color: '#15803d' }} align="center">
-                              {product.calc_width && product.calc_height ? `${product.calc_width}" × ${product.calc_height}"` : '-'}
+                            <TableCell sx={{ py: 0.5, minWidth: 105 }} align="center">
+                              {isManualCalcSize ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                                  <TextField
+                                    size="small"
+                                    type="number"
+                                    value={product.calc_width ?? ''}
+                                    placeholder="W"
+                                    onChange={(e) => updateRowCalcDimension(product.id, 'calc_width', e.target.value)}
+                                    onFocus={(e) => {
+                                      e.target.select();
+                                      setActiveRowId(product.id);
+                                    }}
+                                    sx={{
+                                      width: 46,
+                                      '& .MuiInputBase-input': {
+                                        padding: '3px 4px',
+                                        textAlign: 'center',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700,
+                                        color: '#15803d',
+                                        bgcolor: '#f0fdf4',
+                                        border: '1px solid #86efac',
+                                        borderRadius: '4px'
+                                      }
+                                    }}
+                                    inputProps={{ min: 0, step: 'any' }}
+                                  />
+                                  <Typography variant="caption" sx={{ fontWeight: 900, color: '#15803d' }}>×</Typography>
+                                  <TextField
+                                    size="small"
+                                    type="number"
+                                    value={product.calc_height ?? ''}
+                                    placeholder="H"
+                                    onChange={(e) => updateRowCalcDimension(product.id, 'calc_height', e.target.value)}
+                                    onFocus={(e) => {
+                                      e.target.select();
+                                      setActiveRowId(product.id);
+                                    }}
+                                    sx={{
+                                      width: 46,
+                                      '& .MuiInputBase-input': {
+                                        padding: '3px 4px',
+                                        textAlign: 'center',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700,
+                                        color: '#15803d',
+                                        bgcolor: '#f0fdf4',
+                                        border: '1px solid #86efac',
+                                        borderRadius: '4px'
+                                      }
+                                    }}
+                                    inputProps={{ min: 0, step: 'any' }}
+                                  />
+                                </Box>
+                              ) : (
+                                <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#15803d' }}>
+                                  {product.calc_width && product.calc_height ? `${product.calc_width}" × ${product.calc_height}"` : '-'}
+                                </Typography>
+                              )}
                             </TableCell>
-                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
-                              {product.pieces || 1}
+                            <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={product.pieces || 1}
+                                onChange={(e) => updateRowPieces(product.id, e.target.value)}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
+                                sx={{
+                                  width: 50,
+                                  '& .MuiInputBase-input': {
+                                    padding: '3px 4px',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    bgcolor: 'rgba(255,255,255,0.85)',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '4px'
+                                  }
+                                }}
+                                inputProps={{ min: 1, step: 1 }}
+                              />
                             </TableCell>
                             <TableCell sx={{ py: 1 }} align="center">
                               <TextField
@@ -2564,7 +2949,10 @@ function QuotationsPageContent() {
                                 type="number"
                                 value={product.quantity}
                                 onChange={(e) => updateRowQuantity(product.id, e.target.value)}
-                                onFocus={(e) => e.target.select()}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
                                 sx={{
                                   width: 80,
                                   '& .MuiInputBase-input': {
@@ -2582,7 +2970,10 @@ function QuotationsPageContent() {
                                 placeholder="Particular comments..."
                                 value={product.comments || ''}
                                 onChange={(e) => updateRowComments(product.id, e.target.value)}
-                                onFocus={(e) => e.target.select()}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
                                 sx={{
                                   width: '100%',
                                   minWidth: 140,
@@ -2595,33 +2986,46 @@ function QuotationsPageContent() {
                               />
                             </TableCell>
                             <TableCell sx={{ py: 1 }}>
-                              {Array.isArray(product.selected_addons) && product.selected_addons.length > 0 ? (
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                  {product.selected_addons.map(addon => {
-                                    const aId = addon.id || addon.addon_id;
-                                    const aPrice = addon.sale_price ?? addon.addon?.sale_price ?? 0;
-                                    return (
-                                      <Chip
-                                        key={aId}
-                                        size="small"
-                                        label={`${addon.name || addon.addon?.name} (+${aPrice})`}
-                                        onDelete={() => removeRowAddon(product.id, aId)}
-                                        sx={{
-                                          bgcolor: '#ecfdf5',
-                                          color: '#065f46',
-                                          fontWeight: 700,
-                                          fontSize: '0.72rem',
-                                          border: '1px solid #a7f3d0'
-                                        }}
-                                      />
-                                    );
-                                  })}
-                                </Box>
-                              ) : (
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
-                                  None
-                                </Typography>
-                              )}
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+                                {Array.isArray(product.selected_addons) && product.selected_addons.map(addon => {
+                                  const aId = addon.id || addon.addon_id;
+                                  const aPrice = addon.sale_price ?? addon.addon?.sale_price ?? 0;
+                                  return (
+                                    <Chip
+                                      key={aId}
+                                      size="small"
+                                      label={`${addon.name || addon.addon?.name} (+${aPrice})`}
+                                      onDelete={() => removeRowAddon(product.id, aId)}
+                                      sx={{
+                                        bgcolor: '#ecfdf5',
+                                        color: '#065f46',
+                                        fontWeight: 700,
+                                        fontSize: '0.72rem',
+                                        border: '1px solid #a7f3d0'
+                                      }}
+                                    />
+                                  );
+                                })}
+                                <Chip
+                                  size="small"
+                                  icon={<AddIcon sx={{ fontSize: '13px !important' }} />}
+                                  label="Ad-on"
+                                  clickable
+                                  onClick={() => {
+                                    setActiveRowId(product.id);
+                                    setRowAddonTarget(product);
+                                    setRowAddonModalOpen(true);
+                                  }}
+                                  sx={{
+                                    bgcolor: '#f0fdf4',
+                                    color: '#15803d',
+                                    fontWeight: 700,
+                                    fontSize: '0.72rem',
+                                    border: '1px dashed #22c55e',
+                                    '&:hover': { bgcolor: '#dcfce7' }
+                                  }}
+                                />
+                              </Box>
                             </TableCell>
                             <TableCell sx={{ py: 1, whiteSpace: 'normal', overflow: 'visible', verticalAlign: 'top' }} align="right">
                               <TextField
@@ -2629,7 +3033,10 @@ function QuotationsPageContent() {
                                 type="number"
                                 value={product.rate}
                                 onChange={(e) => updateRowRate(product.id, e.target.value)}
-                                onFocus={(e) => e.target.select()}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
                                 sx={{
                                   width: 85,
                                   '& .MuiInputBase-input': {
@@ -2659,6 +3066,21 @@ function QuotationsPageContent() {
                             {/* Net Total */}
                             <TableCell sx={{ py: 1, fontWeight: 900, color: '#0f172a' }} align="right">
                               {parseFloat(product.amount || 0).toFixed(0)}
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }} align="center">
+                              <Tooltip title="Duplicate Row (Ctrl + +)">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    setActiveRowId(product.id);
+                                    setDuplicateTargetRow(product);
+                                    setDuplicateDialogOpen(true);
+                                  }}
+                                  sx={{ p: 0.5, color: '#0284c7', '&:hover': { bgcolor: '#e0f2fe' } }}
+                                >
+                                  <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                </IconButton>
+                              </Tooltip>
                             </TableCell>
                             <TableCell sx={{ py: 1 }} align="center">
                               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center' }}>
@@ -2718,7 +3140,7 @@ function QuotationsPageContent() {
                         <TableCell align="right" sx={{ py: 1.5, fontWeight: 900, fontSize: '1.05rem', color: '#ffffff !important' }}>
                           PKR {Number(calculateTotalAmount()).toFixed(0)}
                         </TableCell>
-                        <TableCell colSpan={2} />
+                        <TableCell colSpan={3} sx={{ py: 1.5 }} />
                       </TableRow>
                     )}
                   </TableBody>
@@ -3340,6 +3762,55 @@ function QuotationsPageContent() {
             showSnackbar('Product created and selected successfully!', 'success');
           }
         }}
+      />
+
+      {/* Cutter Manager Modal */}
+      <CutterManagerModal
+        open={cutterModalOpen}
+        onClose={() => setCutterModalOpen(false)}
+        selectedCutterId={selectedCutterId}
+        onCutterSaved={(saved) => {
+          fetchCutters();
+          if (saved?.cutter_id) {
+            setSelectedCutterId(saved.cutter_id);
+            setSelectedCutter(saved);
+          }
+        }}
+        onCutterDeleted={(delId) => {
+          fetchCutters();
+          if (selectedCutterId === delId) {
+            setSelectedCutterId('');
+            setSelectedCutter(null);
+          }
+        }}
+      />
+
+      {/* Row-Level Addon Picker Modal */}
+      <AddonPickerModal
+        open={rowAddonModalOpen}
+        onClose={() => {
+          setRowAddonModalOpen(false);
+          setRowAddonTarget(null);
+        }}
+        selectedAddonIds={(rowAddonTarget?.selected_addons || []).map(a => a.id || a.addon_id)}
+        onApply={(ids, selectedList) => {
+          if (rowAddonTarget) {
+            applyRowAddons(rowAddonTarget.id, selectedList);
+          }
+        }}
+        title={`Ad On's for ${rowAddonTarget?.pro_title || 'Item'}`}
+        subtitle="Select add-ons to add or remove for this specific row"
+      />
+
+      {/* Duplicate Row Dialog */}
+      <DuplicateRowDialog
+        open={duplicateDialogOpen}
+        onClose={() => {
+          setDuplicateDialogOpen(false);
+          setDuplicateTargetRow(null);
+        }}
+        targetRow={duplicateTargetRow}
+        onDuplicate={(row, count) => handleExecuteDuplicate(row, count)}
       />
 
       {/* Snackbar */}
