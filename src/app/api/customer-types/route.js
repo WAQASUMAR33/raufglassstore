@@ -10,6 +10,11 @@ export async function GET(request) {
 
   try {
     const customerTypes = await prisma.customerType.findMany({
+      include: {
+        _count: {
+          select: { customers: true }
+        }
+      },
       orderBy: {
         created_at: 'desc',
       },
