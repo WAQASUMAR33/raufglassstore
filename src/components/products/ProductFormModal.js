@@ -85,6 +85,7 @@ export default function ProductFormModal({
   categories: externalCategories = null,
   subcategories: externalSubcategories = null,
   stores: externalStores = null,
+  formulas: externalFormulas = null,
   initialData = null
 }) {
   const isEditing = Boolean(product && product.pro_id);
@@ -119,7 +120,7 @@ export default function ProductFormModal({
   // Toast Snackbar
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
 
-  // Load Metadata (Categories, Subcategories, Stores)
+  // Load Metadata (Categories, Subcategories, Stores, Formulas)
   const fetchMetadata = useCallback(async () => {
     try {
       setLoadingMeta(true);
@@ -127,7 +128,7 @@ export default function ProductFormModal({
         !externalCategories ? fetch('/api/categories') : null,
         !externalSubcategories ? fetch('/api/subcategories') : null,
         !externalStores ? fetch('/api/stores') : null,
-        fetch('/api/formulas?active_only=true')
+        !externalFormulas ? fetch('/api/formulas?active_only=true') : null
       ]);
 
       if (formulasRes && formulasRes.ok) {
@@ -156,17 +157,20 @@ export default function ProductFormModal({
     } finally {
       setLoadingMeta(false);
     }
-  }, [externalCategories, externalSubcategories, externalStores]);
+  }, [externalCategories, externalSubcategories, externalStores, externalFormulas]);
 
   useEffect(() => {
     if (externalCategories) setCategories(externalCategories);
     if (externalSubcategories) setSubcategories(externalSubcategories);
     if (externalStores) setStores(externalStores);
+    if (externalFormulas) setFormulas(externalFormulas);
 
-    if (open && (!externalCategories || !externalSubcategories || !externalStores)) {
-      fetchMetadata();
+    if (open) {
+      if (!externalCategories || !externalSubcategories || !externalStores || !externalFormulas || formulas.length === 0) {
+        fetchMetadata();
+      }
     }
-  }, [open, externalCategories, externalSubcategories, externalStores, fetchMetadata]);
+  }, [open, externalCategories, externalSubcategories, externalStores, externalFormulas, fetchMetadata, formulas.length]);
 
   // Sync Form with Product or initialData when modal opens
   useEffect(() => {

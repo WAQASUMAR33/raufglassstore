@@ -82,6 +82,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [stores, setStores] = useState([]);
+  const [formulas, setFormulas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
@@ -148,11 +149,12 @@ export default function ProductsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [productsRes, categoriesRes, subcategoriesRes, storesRes] = await Promise.all([
+      const [productsRes, categoriesRes, subcategoriesRes, storesRes, formulasRes] = await Promise.all([
         fetch('/api/products'),
         fetch('/api/categories'),
         fetch('/api/subcategories'),
-        fetch('/api/stores')
+        fetch('/api/stores'),
+        fetch('/api/formulas?active_only=true')
       ]);
 
       if (productsRes.ok) {
@@ -172,6 +174,10 @@ export default function ProductsPage() {
         if (storesData.success && Array.isArray(storesData.data)) {
           setStores(storesData.data);
         }
+      }
+      if (formulasRes && formulasRes.ok) {
+        const formulasData = await formulasRes.json();
+        setFormulas(Array.isArray(formulasData) ? formulasData : []);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -1273,6 +1279,7 @@ export default function ProductsPage() {
             categories={categories}
             subcategories={subcategories}
             stores={stores}
+            formulas={formulas}
             onSuccess={(savedProduct) => {
               if (editingProduct) {
                 setProducts(prev => prev.map(p => p.pro_id === savedProduct.pro_id ? savedProduct : p));
