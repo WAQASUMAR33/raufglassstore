@@ -8076,9 +8076,9 @@ function SalesPageContent() {
                   flexDirection: 'column'
                 }}>
                   {/* Transport & Fitter Options Row - In Payment Section Upper Part */}
-                  <Grid container spacing={1.5} sx={{ mb: 2, pb: 2, borderBottom: '1px solid #e2e8f0' }}>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2, pb: 2, borderBottom: '1px solid #e2e8f0' }}>
                     {/* Transport Options */}
-                    <Grid item xs={12} sm={6}>
+                    <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
                       <Typography variant="body2" sx={{ fontWeight: 700, color: '#6f42c1', display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
                         🚚 Transport Options
                       </Typography>
@@ -8086,6 +8086,7 @@ function SalesPageContent() {
                         <Autocomplete
                           size="small"
                           fullWidth
+                          sx={{ minWidth: 300, flex: 1 }}
                           options={transportAccounts || []}
                           getOptionLabel={(option) => formatTransportAccountLabel(option)}
                           value={transportAccounts.find(account => account.cus_id === newTransport.accountId) || null}
@@ -8142,10 +8143,10 @@ function SalesPageContent() {
                           ))}
                         </Box>
                       )}
-                    </Grid>
+                    </Box>
 
                     {/* Fitter Options (Without amount input - amount is below labour in right payment section) */}
-                    <Grid item xs={12} sm={6}>
+                    <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
                       <Typography variant="body2" sx={{ fontWeight: 700, color: '#0284c7', display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
                         🔧 Fitter Options
                       </Typography>
@@ -8153,6 +8154,7 @@ function SalesPageContent() {
                         <Autocomplete
                           size="small"
                           fullWidth
+                          sx={{ minWidth: 300, flex: 1 }}
                           options={fitterAccounts.length > 0 ? fitterAccounts : customers}
                           getOptionLabel={(option) => `${option.cus_name} (${option.customer_type?.cus_type_title || option.cus_type_name || 'Account'})`}
                           value={(fitterAccounts.length > 0 ? fitterAccounts : customers).find(account => account.cus_id === parseInt(newFitter.accountId)) || null}
@@ -8204,8 +8206,8 @@ function SalesPageContent() {
                           ))}
                         </Box>
                       )}
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
 
                   {/* First Row - CASH, BANK, BANK ACCOUNT, TOTAL CASH RECEIVED */}
                   <Grid container spacing={1} sx={{ mb: 2 }}>
