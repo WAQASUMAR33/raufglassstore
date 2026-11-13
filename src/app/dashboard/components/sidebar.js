@@ -451,7 +451,7 @@ export default function Sidebar({
     const fn = getNavFn(item);
 
     return (
-      <Box key={`${item.id}-${item.category}`} sx={{ px: 1.5, mb: 0.4 }}>
+      <Box key={`${item.id}-${item.category}`} sx={{ px: indent ? 0.75 : 1.25, mb: 0.35 }}>
         <Link href={href} passHref style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
           <Box
             onClick={(e) => {
@@ -465,10 +465,10 @@ export default function Sidebar({
               gap: 1.25,
               pl: indent ? 1.5 : 1.25,
               pr: 1.25,
-              py: 0.65,
-              ml: indent ? 0.75 : 0,
-              mr: indent ? 0.5 : 0,
-              borderRadius: 0,
+              py: 0.75,
+              ml: indent ? 0.5 : 0,
+              mr: indent ? 0.25 : 0,
+              borderRadius: '10px',
               cursor: 'pointer',
               position: 'relative',
               color: isActive ? '#ffffff' : '#334155',
@@ -476,14 +476,14 @@ export default function Sidebar({
                 ? 'linear-gradient(135deg, #1A55E3 0%, #2563EB 100%)'
                 : 'transparent',
               border: 'none',
-              boxShadow: isActive ? '0 4px 12px rgba(26, 85, 227, 0.28)' : 'none',
+              boxShadow: isActive ? '0 4px 14px rgba(26, 85, 227, 0.28)' : 'none',
               transition: 'all 0.18s ease-in-out',
               '&:hover': {
                 background: isActive
                   ? 'linear-gradient(135deg, #1A55E3 0%, #2563EB 100%)'
                   : '#f1f5f9',
                 color: isActive ? '#ffffff' : '#0f172a',
-                transform: isActive ? 'none' : 'translateX(2px)',
+                transform: isActive ? 'none' : 'translateX(3px)',
               },
             }}
           >
@@ -491,14 +491,14 @@ export default function Sidebar({
               sx={{
                 width: indent ? 26 : 30,
                 height: indent ? 26 : 30,
-                borderRadius: 0,
+                borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
                 bgcolor: isActive
-                  ? 'rgba(255,255,255,0.2)'
-                  : (indent ? 'transparent' : fn.bg),
+                  ? 'rgba(255, 255, 255, 0.22)'
+                  : (indent ? 'rgba(0, 0, 0, 0.03)' : fn.bg),
                 color: isActive ? '#ffffff' : fn.main,
                 transition: 'all 0.18s ease',
               }}
@@ -508,16 +508,31 @@ export default function Sidebar({
             <Typography
               sx={{
                 flex: 1,
-                fontSize: indent ? '0.8rem' : '0.835rem',
+                fontSize: indent ? '0.8125rem' : '0.84rem',
                 fontWeight: isActive ? 600 : 500,
                 letterSpacing: 0.01,
                 lineHeight: 1.4,
                 userSelect: 'none',
                 color: 'inherit',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
               {item.name}
             </Typography>
+            {isActive && (
+              <Box
+                sx={{
+                  width: 3.5,
+                  height: 16,
+                  borderRadius: '3px',
+                  bgcolor: 'rgba(255, 255, 255, 0.9)',
+                  boxShadow: '0 0 6px rgba(255, 255, 255, 0.5)',
+                  flexShrink: 0,
+                }}
+              />
+            )}
           </Box>
         </Link>
       </Box>
@@ -538,12 +553,12 @@ export default function Sidebar({
           tooltip: {
             sx: {
               bgcolor: '#0f172a',
-              fontSize: '0.75rem',
+              fontSize: '0.785rem',
               fontWeight: 600,
-              px: 1.25,
-              py: 0.75,
-              borderRadius: 0,
-              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
+              px: 1.5,
+              py: 0.85,
+              borderRadius: '8px',
+              boxShadow: '0 8px 20px rgba(15, 23, 42, 0.25)',
             },
           },
         }}
@@ -556,9 +571,11 @@ export default function Sidebar({
               }
             }}
             sx={{
-              borderRadius: 0,
-              mb: 0.5,
-              minHeight: 42,
+              borderRadius: '10px',
+              mb: 0.6,
+              minHeight: 40,
+              width: 42,
+              mx: 'auto',
               justifyContent: 'center',
               px: 1,
               background: isActive
@@ -566,11 +583,11 @@ export default function Sidebar({
                 : 'transparent',
               color: isActive ? '#ffffff' : fn.main,
               border: 'none',
-              boxShadow: isActive ? '0 4px 12px rgba(26, 85, 227, 0.28)' : 'none',
+              boxShadow: isActive ? '0 4px 14px rgba(26, 85, 227, 0.3)' : 'none',
               transition: 'all 0.18s ease',
               '&:hover': {
                 bgcolor: isActive ? '#1A55E3' : '#f1f5f9',
-                transform: 'scale(1.04)',
+                transform: 'scale(1.06)',
               },
             }}
           >
@@ -584,18 +601,17 @@ export default function Sidebar({
   };
 
   const renderSectionLabel = (label) => {
-    const sectionStyle = SIDEBAR_SECTION_LABELS[label] || SIDEBAR_SECTION_LABELS.Modules;
     return (
       <Typography
         sx={{
           px: 2,
           pt: 1.5,
-          pb: 0.75,
-          fontSize: '0.625rem',
+          pb: 0.6,
+          fontSize: '0.65rem',
           fontWeight: 700,
-          letterSpacing: '0.12em',
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          color: sectionStyle.color,
+          color: '#94a3b8',
         }}
       >
         {label}
@@ -619,38 +635,85 @@ export default function Sidebar({
           mx: 1,
           mb: 0.25,
           px: 1.25,
-          py: 0.85,
-          borderRadius: 0,
+          py: 0.8,
+          borderRadius: '10px',
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
+          gap: 1.15,
           cursor: collapsible ? 'pointer' : 'default',
           userSelect: 'none',
-          bgcolor: rowActive && collapsible ? SIDEBAR.bgHover : 'transparent',
-          transition: 'background 0.2s ease',
-          ...(collapsible && {
-            '&:hover': { bgcolor: SIDEBAR.bgHover },
-          }),
+          bgcolor: rowActive && collapsible ? (hasActive ? 'rgba(26, 85, 227, 0.05)' : SIDEBAR.bgHover) : 'transparent',
+          border: hasActive ? '1px solid rgba(26, 85, 227, 0.12)' : '1px solid transparent',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            bgcolor: SIDEBAR.bgHover,
+            borderColor: 'rgba(226, 232, 240, 0.8)',
+          },
         }}
       >
-        <Icon sx={{ fontSize: 18, color: rowActive ? fn.main : SIDEBAR.textMuted, flexShrink: 0 }} />
+        <Box
+          sx={{
+            width: 28,
+            height: 28,
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: hasActive ? 'rgba(26, 85, 227, 0.12)' : fn.bg,
+            color: hasActive ? '#1A55E3' : fn.main,
+            flexShrink: 0,
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <Icon sx={{ fontSize: 16 }} />
+        </Box>
 
         <Typography
           sx={{
             flex: 1,
-            fontSize: '0.8375rem',
-            fontWeight: rowActive ? 600 : 500,
-            color: fn.main,
+            fontSize: '0.835rem',
+            fontWeight: hasActive ? 700 : (rowActive ? 600 : 500),
+            color: hasActive ? '#1A55E3' : '#334155',
             lineHeight: 1.3,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}
         >
           {title}
         </Typography>
 
+        {itemCount > 0 && (
+          <Box
+            sx={{
+              px: 0.75,
+              py: 0.15,
+              borderRadius: '6px',
+              fontSize: '0.675rem',
+              fontWeight: 700,
+              bgcolor: hasActive ? '#eff6ff' : '#f1f5f9',
+              color: hasActive ? '#1A55E3' : '#64748b',
+              border: `1px solid ${hasActive ? '#bfdbfe' : '#e2e8f0'}`,
+              lineHeight: 1,
+            }}
+          >
+            {itemCount}
+          </Box>
+        )}
+
         {collapsible && (
-          isOpen
-            ? <ExpandLess sx={{ fontSize: 18, color: SIDEBAR.textMuted }} />
-            : <ChevronRightIcon sx={{ fontSize: 18, color: SIDEBAR.textMuted }} />
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+              color: hasActive ? '#1A55E3' : SIDEBAR.textMuted,
+            }}
+          >
+            <ChevronRightIcon sx={{ fontSize: 17 }} />
+          </Box>
         )}
       </Box>
     );
@@ -661,12 +724,10 @@ export default function Sidebar({
     if (items.length === 0) return null;
     const isExpanded = isCollapsed ? false : (isSearching ? true : expandedDropdowns[category]);
     const hasActiveChild = items.some(item => activeTab === item.id);
-    const meta = SECTION_META[title] || { fn: 'overview' };
-    const fn = NAV_FN[meta.fn] || NAV_FN.overview;
 
     if (isCollapsed) {
       return (
-        <Box key={category} sx={{ mb: 0.25 }}>
+        <Box key={category} sx={{ mb: 0.35 }}>
           {items.map(renderCollapsedIcon)}
           <Divider sx={{ my: 0.75, mx: 1, borderColor: SIDEBAR.border }} />
         </Box>
@@ -674,7 +735,7 @@ export default function Sidebar({
     }
 
     return (
-      <Box key={category} sx={{ mb: 0.35 }}>
+      <Box key={category} sx={{ mb: 0.4 }}>
         {renderSectionHeader(title, {
           collapsible: true,
           expanded: isExpanded,
@@ -684,7 +745,18 @@ export default function Sidebar({
         })}
 
         <Collapse in={isExpanded} timeout={250}>
-          <Box sx={{ mx: 0.5, mb: 0.5, pl: 1.5, pr: 0.5 }}>
+          <Box
+            sx={{
+              mt: 0.25,
+              mb: 0.5,
+              ml: 2.75,
+              pl: 1,
+              borderLeft: '1.5px solid #e2e8f0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.2,
+            }}
+          >
             {items.map((item) => renderNavLink(item, { indent: true }))}
           </Box>
         </Collapse>
@@ -700,57 +772,121 @@ export default function Sidebar({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      background: SIDEBAR.background,
+      background: '#ffffff',
     }}>
-      {/* Toggle + brand */}
-      <Box className="sidebar-header-shell" sx={{
+      {/* Brand Header */}
+      <Box sx={{
         flexShrink: 0,
+        position: 'relative',
         borderBottom: `1px solid ${SIDEBAR.border}`,
+        bgcolor: '#ffffff',
       }}>
-        <Box className="sidebar-header-accent" aria-hidden="true">
-          <span className="sidebar-header-accent-shine" />
-        </Box>
+        {/* Top subtle glow accent line */}
+        <Box
+          sx={{
+            height: 3,
+            width: '100%',
+            background: 'linear-gradient(90deg, #1A55E3 0%, #0DCAF0 50%, #00D284 100%)',
+          }}
+        />
 
         {!isMobile && (
           <Box
             sx={{
-              position: 'relative',
-              zIndex: 1,
               display: 'flex',
-              alignItems: isCollapsed ? 'center' : 'flex-start',
-              justifyContent: 'space-between',
-              gap: 0.75,
-              px: isCollapsed ? 0.75 : 1.25,
-              pt: isCollapsed ? 0.65 : 0.75,
-              pb: isCollapsed ? 1 : 1.1,
+              alignItems: 'center',
+              justifyContent: isCollapsed ? 'center' : 'space-between',
+              gap: 1.25,
+              px: isCollapsed ? 1 : 2,
+              py: isCollapsed ? 1.5 : 1.75,
               flexDirection: isCollapsed ? 'column' : 'row',
             }}
           >
             {!isCollapsed ? (
-              <Box className="sidebar-brand" sx={{ flex: 1, minWidth: 0, pt: 0, pb: 0 }}>
-                <Typography component="span" className="sidebar-brand-title" sx={{ display: 'block' }}>
-                  {COMPANY.nameShort}
-                </Typography>
-                <Typography component="span" className="sidebar-brand-sub">
-                  {COMPANY.nameSub}
-                </Typography>
-                <Box className="sidebar-brand-glow" />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '11px',
+                    background: 'linear-gradient(135deg, #1A55E3 0%, #2563EB 50%, #0DCAF0 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '0.875rem',
+                    letterSpacing: '0.04em',
+                    boxShadow: '0 4px 12px rgba(26, 85, 227, 0.3)',
+                    flexShrink: 0,
+                  }}
+                >
+                  ZT
+                </Box>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.85 }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '0.985rem',
+                        lineHeight: 1.2,
+                        color: '#0f172a',
+                        letterSpacing: '-0.015em',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {COMPANY.nameShort}
+                    </Typography>
+                    <Box
+                      sx={{
+                        fontSize: '0.625rem',
+                        fontWeight: 800,
+                        bgcolor: '#eff6ff',
+                        color: '#1A55E3',
+                        px: 0.7,
+                        py: 0.15,
+                        borderRadius: '6px',
+                        border: '1px solid #bfdbfe',
+                        lineHeight: 1,
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      ERP
+                    </Box>
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: '0.685rem',
+                      fontWeight: 600,
+                      color: '#64748b',
+                      letterSpacing: '0.02em',
+                      mt: 0.3,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {COMPANY.nameSub}
+                  </Typography>
+                </Box>
               </Box>
             ) : (
               <Box
                 sx={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 0,
-                  background: 'linear-gradient(135deg, #1A55E3 0%, #0DCAF0 100%)',
+                  width: 40,
+                  height: 40,
+                  borderRadius: '11px',
+                  background: 'linear-gradient(135deg, #1A55E3 0%, #2563EB 50%, #0DCAF0 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#ffffff',
                   fontWeight: 800,
-                  fontSize: '0.825rem',
+                  fontSize: '0.85rem',
                   letterSpacing: '0.04em',
-                  boxShadow: '0 4px 12px rgba(26, 85, 227, 0.25)',
+                  boxShadow: '0 4px 12px rgba(26, 85, 227, 0.28)',
                   mb: 0.5,
                 }}
               >
@@ -763,123 +899,168 @@ export default function Sidebar({
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               size="small"
               sx={{
-                bgcolor: '#f1f5f9',
-                color: '#475569',
-                width: 28,
-                height: 28,
-                borderRadius: 0,
+                bgcolor: '#f8fafc',
+                color: '#64748b',
+                width: 30,
+                height: 30,
+                borderRadius: '8px',
                 border: '1px solid #e2e8f0',
                 zIndex: 20,
                 flexShrink: 0,
-                mt: isCollapsed ? 0 : 0.25,
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.05)',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
                 transition: 'all 0.18s ease',
                 '&:hover': {
-                  bgcolor: '#e8effd',
+                  bgcolor: '#eff6ff',
                   color: '#1A55E3',
                   borderColor: '#bfdbfe',
-                  transform: 'scale(1.06)',
+                  transform: 'scale(1.05)',
                 },
                 '&:active': {
                   transform: 'scale(0.96)',
                 },
               }}
             >
-              {isCollapsed ? <ChevronRightIcon sx={{ fontSize: 16 }} /> : <ChevronLeftIcon sx={{ fontSize: 16 }} />}
+              {isCollapsed ? <ChevronRightIcon sx={{ fontSize: 17 }} /> : <ChevronLeftIcon sx={{ fontSize: 17 }} />}
             </IconButton>
           </Box>
         )}
 
         {isMobile && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1, pt: 0.5, pb: 0.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #1A55E3 0%, #0DCAF0 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                }}
+              >
+                ZT
+              </Box>
+              <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
+                {COMPANY.nameShort}
+              </Typography>
+            </Box>
             <IconButton
               onClick={() => setSidebarOpen(false)}
-              sx={{ color: SIDEBAR.textMuted, p: 0.5 }}
+              sx={{ color: '#64748b', p: 0.5, borderRadius: '8px', '&:hover': { bgcolor: '#f1f5f9' } }}
             >
               <CloseIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
         )}
-
-        {!isCollapsed && !isMobile && (
-          <Box className="sidebar-header-ornament" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </Box>
-        )}
-
-        {isMobile && !isCollapsed && (
-          <Box sx={{ px: 1.5, pb: 1.25, pt: 0.25 }}>
-            <Box className="sidebar-brand">
-              <Typography component="span" className="sidebar-brand-title" sx={{ display: 'block' }}>
-                {COMPANY.nameShort}
-              </Typography>
-              <Typography component="span" className="sidebar-brand-sub">
-                {COMPANY.nameSub}
-              </Typography>
-              <Box className="sidebar-brand-glow" />
-            </Box>
-          </Box>
-        )}
       </Box>
 
-      {/* Search — animated blue border */}
+      {/* Modern Search */}
       {!isCollapsed && (
-        <Box sx={{ px: 1.5, py: 1.25, borderBottom: `1px solid ${SIDEBAR.border}` }}>
-          <div className="sidebar-search-wrap">
-            <div className="sidebar-search-inner">
-              <SearchIcon className="sidebar-search-icon" />
-              <input
-                type="text"
-                className="sidebar-search-input"
-                placeholder="Search menu..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                aria-label="Search sidebar menu"
-              />
-              {searchQuery && (
-                <IconButton size="small" onClick={() => setSearchQuery('')} sx={{ p: 0.25, color: '#94a3b8' }}>
-                  <CloseIcon sx={{ fontSize: 15 }} />
-                </IconButton>
-              )}
-            </div>
-          </div>
+        <Box sx={{ px: 1.75, py: 1.25, borderBottom: `1px solid ${SIDEBAR.border}`, bgcolor: '#ffffff' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1.25,
+              py: 0.7,
+              borderRadius: '10px',
+              bgcolor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                borderColor: '#cbd5e1',
+                bgcolor: '#ffffff',
+              },
+              '&:focus-within': {
+                borderColor: '#1A55E3',
+                bgcolor: '#ffffff',
+                boxShadow: '0 0 0 3px rgba(26, 85, 227, 0.12)',
+              },
+            }}
+          >
+            <SearchIcon sx={{ color: '#94a3b8', fontSize: 17, flexShrink: 0 }} />
+            <Box
+              component="input"
+              type="text"
+              placeholder="Search menu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search sidebar menu"
+              sx={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                bgcolor: 'transparent',
+                fontSize: '0.8rem',
+                fontWeight: 500,
+                color: '#0f172a',
+                minWidth: 0,
+                '&::placeholder': {
+                  color: '#94a3b8',
+                  fontWeight: 400,
+                },
+              }}
+            />
+            {searchQuery ? (
+              <IconButton size="small" onClick={() => setSearchQuery('')} sx={{ p: 0.2, color: '#94a3b8', '&:hover': { color: '#0f172a' } }}>
+                <CloseIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            ) : (
+              <Box
+                sx={{
+                  fontSize: '0.625rem',
+                  fontWeight: 600,
+                  bgcolor: '#ffffff',
+                  color: '#94a3b8',
+                  px: 0.6,
+                  py: 0.15,
+                  borderRadius: '4px',
+                  border: '1px solid #e2e8f0',
+                  lineHeight: 1,
+                }}
+              >
+                /
+              </Box>
+            )}
+          </Box>
         </Box>
       )}
 
-      {/* Navigation */}
+      {/* Navigation List */}
       <Box
         ref={scrollContainerRef}
         sx={{
           flex: 1,
-          overflow: 'auto',
-          py: 0.5,
-          px: isCollapsed ? 0.75 : 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          py: 0.75,
+          px: isCollapsed ? 0.75 : 0.5,
           scrollBehavior: 'smooth',
           scrollbarWidth: 'thin',
-          scrollbarColor: `${SIDEBAR.bgActive} rgba(26, 85, 227, 0.08)`,
-          '&::-webkit-scrollbar': { width: 7 },
+          scrollbarColor: 'rgba(148, 163, 184, 0.35) transparent',
+          '&::-webkit-scrollbar': { width: 5 },
           '&::-webkit-scrollbar-track': {
-            background: 'rgba(26, 85, 227, 0.08)',
-            borderRadius: 0,
-            margin: '4px 0',
+            background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: 'rgba(26, 85, 227, 0.45)',
-            borderRadius: 0,
-            border: '1px solid rgba(255, 255, 255, 0.35)',
-            '&:hover': { background: 'rgba(26, 85, 227, 0.65)' },
+            background: 'rgba(148, 163, 184, 0.28)',
+            borderRadius: '10px',
+            '&:hover': { background: 'rgba(26, 85, 227, 0.5)' },
           },
         }}
       >
         <List disablePadding>
-          {/* Overview */}
+          {/* Quick Access */}
           {mainItems.length > 0 && (
-            <Box sx={{ mb: 0.25 }}>
+            <Box sx={{ mb: 0.5 }}>
               {!isCollapsed && renderSectionLabel('Quick Access')}
               {!isCollapsed ? (
-                <Box sx={{ mx: 0.5, mb: 0.5, px: 0.5 }}>
+                <Box sx={{ mb: 0.5 }}>
                   {mainItems.map((item) => renderNavLink(item))}
                 </Box>
               ) : (
@@ -902,10 +1083,10 @@ export default function Sidebar({
 
           {/* System */}
           {systemItems.length > 0 && (
-            <Box sx={{ mb: 1 }}>
+            <Box sx={{ mb: 1, mt: 0.5 }}>
               {!isCollapsed && renderSectionLabel('System')}
               {!isCollapsed ? (
-                <Box sx={{ mx: 0.5, mb: 0.5, px: 0.5 }}>
+                <Box sx={{ mb: 0.5 }}>
                   {systemItems.map((item) => renderNavLink(item))}
                 </Box>
               ) : (
@@ -924,69 +1105,122 @@ export default function Sidebar({
         </List>
       </Box>
 
-      {/* Powered By — fixed footer */}
+      {/* Modern Status & Powered By Footer */}
       <Box
-        className="sidebar-powered-by"
         sx={{
           flexShrink: 0,
           borderTop: `1px solid ${SIDEBAR.border}`,
-          bgcolor: SIDEBAR.bgElevated,
-          px: isCollapsed ? 0.5 : 1.25,
-          py: isCollapsed ? 1 : 1.15,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: isCollapsed ? 'center' : 'flex-start',
+          bgcolor: '#ffffff',
+          px: isCollapsed ? 1 : 1.5,
+          py: 1.25,
         }}
       >
         {!isCollapsed ? (
-          <Box sx={{ width: '100%' }}>
-            <Typography
-              component="span"
+          <Box
+            sx={{
+              p: 1.15,
+              borderRadius: '10px',
+              bgcolor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 1,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: '#10b981',
+                  boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.2)',
+                  flexShrink: 0,
+                }}
+              />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: '0.625rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: '#64748b',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  System Online
+                </Typography>
+                <Typography
+                  component="span"
+                  className="sidebar-powered-name"
+                  sx={{
+                    display: 'block',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.02em',
+                    lineHeight: 1.25,
+                    mt: 0.2,
+                  }}
+                >
+                  {POWERED_BY.name}
+                </Typography>
+              </Box>
+            </Box>
+            <Box
               sx={{
-                display: 'block',
-                fontSize: '0.5625rem',
+                fontSize: '0.6rem',
                 fontWeight: 700,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: SIDEBAR.textMuted,
-                lineHeight: 1.2,
-                mb: 0.25,
+                bgcolor: '#eff6ff',
+                color: '#1A55E3',
+                px: 0.75,
+                py: 0.25,
+                borderRadius: '6px',
+                border: '1px solid #bfdbfe',
+                whiteSpace: 'nowrap',
               }}
             >
-              {POWERED_BY.label}
-            </Typography>
-            <Typography
-              component="span"
-              className="sidebar-powered-name"
-              sx={{
-                display: 'block',
-                fontSize: '0.75rem',
-                fontWeight: 800,
-                letterSpacing: '0.05em',
-                lineHeight: 1.25,
-              }}
-            >
-              {POWERED_BY.name}
-            </Typography>
+              v2.0
+            </Box>
           </Box>
         ) : (
-          <Tooltip title={`${POWERED_BY.label} ${POWERED_BY.name}`} placement="right" arrow>
+          <Tooltip title={`System Online • ${POWERED_BY.name}`} placement="right" arrow>
             <Box
-              className="sidebar-powered-collapsed"
               sx={{
-                width: 36,
-                height: 36,
-                borderRadius: 0,
+                width: 38,
+                height: 38,
+                mx: 'auto',
+                borderRadius: '10px',
+                bgcolor: '#f8fafc',
+                border: '1px solid #e2e8f0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.65rem',
-                fontWeight: 800,
-                letterSpacing: '0.02em',
                 cursor: 'default',
+                position: 'relative',
+                transition: 'all 0.18s ease',
+                '&:hover': {
+                  borderColor: '#cbd5e1',
+                  bgcolor: '#ffffff',
+                },
               }}
             >
-              {POWERED_BY.nameShort}
+              <Box
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  bgcolor: '#10b981',
+                  position: 'absolute',
+                  top: 5,
+                  right: 5,
+                  boxShadow: '0 0 0 2px #ffffff',
+                }}
+              />
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: '#1A55E3' }}>
+                {POWERED_BY.nameShort}
+              </Typography>
             </Box>
           </Tooltip>
         )}
