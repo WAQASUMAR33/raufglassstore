@@ -7100,7 +7100,10 @@ function FinancePageContent() {
           >
             {/* Header */}
             <Box sx={{ textAlign: 'center', pb: 1, borderBottom: '2px solid #000' }}>
-              <Typography sx={{ fontSize: '15px', fontWeight: '900', fontFamily: 'Arial, sans-serif', direction: 'rtl', color: '#000' }}>
+              <Typography sx={{ fontSize: '15px', fontWeight: '900', color: '#000', mb: 0.25 }}>
+                Zain Traders Mandi Bahauddin
+              </Typography>
+              <Typography sx={{ fontSize: '15px', fontWeight: 'bold', fontFamily: 'Arial, sans-serif', direction: 'rtl', color: '#000' }}>
                 زین ٹریڈرز منڈی بہاؤالدین
               </Typography>
               <Typography sx={{ fontSize: '11px', direction: 'rtl', mt: 0.25, color: '#000' }}>

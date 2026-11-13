@@ -402,7 +402,7 @@ export default function StoreStockPage() {
     doc.text('ZAIN TRADERS MANDI BAHAUDDIN', pageWidth / 2, 36, { align: 'center' });
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Phalia Road , Near Aljannat Petrol pump M.B.Din.', pageWidth / 2, 52, { align: 'center' });
+    doc.text('Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218', pageWidth / 2, 52, { align: 'center' });
 
     doc.setFillColor(30, 41, 59);
     doc.rect(30, 62, pageWidth - 60, 22, 'F');

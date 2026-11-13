@@ -218,7 +218,10 @@ export default function SaleReport() {
 
   const handleExport = () => {
     if (!reportData) return;
-    let csv = 'SALES REGISTER\n';
+    let csv = 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'SALES REGISTER\n';
     csv += `Period: ${formatDate(startDate)} to ${formatDate(endDate)}\n\n`;
     csv += 'S.No,Date,Invoice No,Party Name,Type,Gross Amount,Discount,Shipping,Net Amount,Received,Balance\n';
     reportData.sales.forEach((s, i) => {
@@ -277,7 +280,7 @@ export default function SaleReport() {
           <div class="company">
             <h2 style="margin:0;font-size:20px">Zain Traders Mandi Bahauddin</h2>
             <div>Phalia Road , Near Aljannat Petrol pump M.B.Din.</div>
-            <div>Ph: 0302-2133218</div>
+            <div>Ph: 0302-2133218, 0315-4533218</div>
             <div style="margin-top:6px;font-weight:bold;font-size:18px">SALE INVOICE</div>
           </div>
 
@@ -730,7 +733,7 @@ export default function SaleReport() {
               {/* Print Footer */}
               <div className="hidden print:flex justify-between items-center mt-6 pt-4 border-t-2 border-black text-xs">
                 <span>Generated: {new Date().toLocaleString('en-GB')}</span>
-                <span className="font-semibold">Ittefaq Management System</span>
+                <span className="font-semibold">Zain Traders Mandi Bahauddin</span>
                 <span>Page 1 of 1</span>
               </div>
             </div>

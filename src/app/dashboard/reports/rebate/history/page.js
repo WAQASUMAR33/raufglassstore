@@ -150,7 +150,10 @@ function RebateHistoryContent() {
 
   const handleExport = () => {
     if (!selectedSupplier || !monthlyData) return;
-    let csv = 'Zain Traders Mandi Bahauddin\nRebate History\n';
+    let csv = 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'Rebate History\n';
     csv += `Supplier: ${selectedSupplier.cus_name}\n\n`;
     csv += 'Month,Bills,Products,Total Qty,Purchase Amount,Rebate Paid,Status,Paid Date\n';
     filteredRows.forEach((row) => {

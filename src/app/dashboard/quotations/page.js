@@ -269,6 +269,7 @@ function QuotationPrintTemplates({ billData }) {
           }}
         >
           <Box sx={{ textAlign: 'center', pb: 1, borderBottom: '2px solid #000' }}>
+            <Typography sx={{ fontSize: '15px', fontWeight: '900', color: '#000', mb: 0.25 }}>{COMPANY.name}</Typography>
             <Typography sx={{ fontSize: '14px', fontWeight: 900, direction: 'rtl' }}>{COMPANY.nameUr}</Typography>
             <Typography sx={{ fontSize: '10px', direction: 'rtl', mt: 0.25 }}>{COMPANY.address}</Typography>
             <Typography sx={{ fontSize: '10px', fontWeight: 700, mt: 0.25 }}>Ph: {COMPANY.phones.join(', ')}</Typography>

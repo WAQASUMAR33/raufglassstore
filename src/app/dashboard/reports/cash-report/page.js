@@ -160,7 +160,10 @@ export default function CashReport() {
 
   const handleExport = () => {
     if (!reportData) return;
-    let csv = 'CASH BOOK REPORT\n';
+    let csv = 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'CASH BOOK REPORT\n';
     csv += `Period: ${formatDate(startDate)} to ${formatDate(endDate)}\n\n`;
     csv += 'S.No,Date,Type,Account Title,Description,Bill No,Debit (Cash In),Credit (Cash Out),Running Balance\n';
     (reportData.ledgerEntries || []).forEach((entry, i) => {

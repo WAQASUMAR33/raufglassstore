@@ -79,7 +79,8 @@ export async function downloadEmployeeLedgerPdf({
   doc.setFontSize(9);
   doc.setTextColor(100, 116, 139);
   if (COMPANY.address) {
-    doc.text(String(COMPANY.address), 14, y);
+    const phones = (COMPANY.phones || []).length ? ` | Tel: ${COMPANY.phones.join(', ')}` : '';
+    doc.text(String(COMPANY.address) + phones, 14, y);
     y += 4;
   }
   doc.text(`Generated: ${new Date().toLocaleString('en-GB')}`, 14, y);

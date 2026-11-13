@@ -297,7 +297,10 @@ export default function ProfitReport() {
 
   const handleExport = () => {
     if (!reportData) return;
-    let csv = `PROFIT REPORT\nPeriod: ${fmtDate(startDate)} to ${fmtDate(endDate)}\n\n`;
+    let csv = 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += `PROFIT REPORT\nPeriod: ${fmtDate(startDate)} to ${fmtDate(endDate)}\n\n`;
 
     csv += 'PROFIT BY MONTH\n';
     csv += 'Month,Sale Amt,Cost,Discount,Gross Profit,Employee Expense,Other Expenses,Total Expenses,Net Profit,Net Margin\n';
@@ -486,8 +489,8 @@ export default function ProfitReport() {
             {/* Print Header */}
             <div className="hidden print:block border-b-2 border-black pb-4 mb-4 px-4 pt-4">
               <div className="text-center">
-                <h1 className="text-2xl font-bold">ZAIN TRADERS MANDI BAHAUDDIN</h1>
-                <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
+                <h1 className="text-2xl font-bold tracking-wider">ZAIN TRADERS MANDI BAHAUDDIN</h1>
+                <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
                 <div className="mt-2 py-2 bg-black text-white"><h2 className="text-lg font-bold">PROFIT REPORT</h2></div>
                 <p className="mt-2 text-sm">Period: {fmtDate(startDate)} to {fmtDate(endDate)}</p>
               </div>

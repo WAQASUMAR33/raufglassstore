@@ -206,10 +206,10 @@ export function buildSuperOrderPdf({ orderLines, orderSummary, metaLines, orderN
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text(COMPANY.nameShort?.toUpperCase() || 'ZAIN TRADERS MANDI BAHAUDDIN', pageWidth / 2, 36, { align: 'center' });
+  doc.text(COMPANY.name?.toUpperCase() || 'ZAIN TRADERS MANDI BAHAUDDIN', pageWidth / 2, 36, { align: 'center' });
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.', pageWidth / 2, 52, { align: 'center' });
+  doc.text((COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.') + ' | Tel: ' + (COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', '), pageWidth / 2, 52, { align: 'center' });
 
   const blue = BRAND.primary.blue.replace('#', '');
   doc.setFillColor(

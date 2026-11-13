@@ -35,6 +35,7 @@ export function buildEmployeeReceiptPrintHtml(receipt) {
   @media print{body{padding:8px}}
 </style></head><body>
   <div class="head">
+    <div class="eng" style="font-size:16px;font-weight:900;color:#0f172a;margin-bottom:2px;">${COMPANY.name || 'Zain Traders Mandi Bahauddin'}</div>
     <div class="ur">${COMPANY.nameUr || COMPANY.name}</div>
     <div class="sub">${COMPANY.address || ''}</div>
     <div class="sub">Ph: ${(COMPANY.phones || []).join(', ')}</div>

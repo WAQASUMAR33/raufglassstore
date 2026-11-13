@@ -56,7 +56,10 @@ export default function BalanceSheet() {
   const handleExport = () => {
     if (!reportData) return;
     const data = getFilteredData();
-    let csv = 'BALANCE SHEET\n';
+    let csv = 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'BALANCE SHEET\n';
     csv += `As of: ${new Date().toLocaleDateString('en-GB')}\n\n`;
     csv += 'ASSETS\n';
     csv += 'Receivables (Debit Balances)\n';
@@ -471,7 +474,7 @@ export default function BalanceSheet() {
               {/* Print Footer */}
               <div className="hidden print:flex justify-between items-center mt-6 pt-4 border-t-2 border-black text-xs">
                 <span>Generated: {new Date().toLocaleString('en-GB')}</span>
-                <span className="font-semibold">Ittefaq Management System</span>
+                <span className="font-semibold">Zain Traders Mandi Bahauddin</span>
                 <span>Page 1 of 1</span>
               </div>
             </div>

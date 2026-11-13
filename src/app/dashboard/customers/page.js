@@ -743,7 +743,7 @@ export default function CustomersPage() {
     }).join('');
 
     return `<!DOCTYPE html><html><head><meta charset="utf-8">
-    <title>Accounts List — Itefaq Iron & Cement Store</title>
+    <title>Accounts List — Zain Traders Mandi Bahauddin</title>
     <style>
       body{font-family:'Segoe UI',sans-serif;margin:24px;color:#1e293b}
       h1{font-size:1.2rem;font-weight:800;margin:0}
@@ -756,7 +756,8 @@ export default function CustomersPage() {
       .dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
       @media print{@page{size:A4 portrait;margin:12mm}}
     </style></head><body>
-    <h1>Itefaq Iron &amp; Cement Store — Accounts List</h1>
+    <h1>Zain Traders Mandi Bahauddin — Accounts List</h1>
+    <p style="font-size:0.78rem;color:#475569;margin:2px 0 4px">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
     <p class="sub">Printed: ${now} &nbsp;|&nbsp; Total: ${list.length} accounts</p>
     <table>
       <thead><tr>

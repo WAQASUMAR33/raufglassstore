@@ -188,7 +188,12 @@ export default function CustomerBalanceReport() {
     };
 
     const handleExportCSV = () => {
-        let csv = 'Customer ID,Customer Name,Phone,Type,Last Activity,Balance,Status\n';
+        let csv = 'Zain Traders Mandi Bahauddin\n';
+        csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+        csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+        csv += 'Customer Balance Report\n';
+        csv += `Generated: ${new Date().toLocaleString('en-GB')}\n\n`;
+        csv += 'Customer ID,Customer Name,Phone,Type,Last Activity,Balance,Status\n';
         filteredCustomers.forEach(c => {
             const balance = parseBalance(c.cus_balance);
             const status = balance >= 0 ? 'Receivable' : 'Payable';
@@ -451,10 +456,11 @@ export default function CustomerBalanceReport() {
                     className="print-table"
                 >
                     {/* Print Header (Only visible when printing) */}
-                    <Box className="hidden print:block" sx={{ textAlign: 'center', p: 4, borderBottom: '2px solid #000' }}>
-                        <Typography variant="h4" sx={{ fontWeight: 800 }}>ITTEFAQ BUILDERS</Typography>
-                        <Typography variant="h6">Customer Balance Report</Typography>
-                        <Typography variant="body2">Date: {formatDatePK(new Date())}</Typography>
+                    <Box className="hidden print:block" sx={{ textAlign: 'center', p: 3, borderBottom: '2px solid #000' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>ZAIN TRADERS MANDI BAHAUDDIN</Typography>
+                        <Typography variant="body2" sx={{ color: '#475569', mt: 0.5 }}>Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</Typography>
+                        <Typography variant="h6" sx={{ mt: 1, fontWeight: 700 }}>Customer Balance Report</Typography>
+                        <Typography variant="caption" sx={{ color: '#64748b' }}>Date: {formatDatePK(new Date())}</Typography>
                         <Divider sx={{ my: 2 }} />
                     </Box>
 

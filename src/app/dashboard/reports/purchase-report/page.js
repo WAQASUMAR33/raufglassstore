@@ -193,7 +193,10 @@ export default function PurchaseReport() {
 
   const handleExport = () => {
     if (!reportData) return;
-    let csv = 'PURCHASE REGISTER\n';
+    let csv = 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'PURCHASE REGISTER\n';
     csv += `Period: ${formatDate(startDate)} to ${formatDate(endDate)}\n\n`;
     csv += 'S.No,Date,Voucher No,Party Name,Gross Amount,Unloading,Fare,Discount,Net Amount,Paid,Balance\n';
     reportData.purchases.forEach((p, i) => {
@@ -439,7 +442,7 @@ export default function PurchaseReport() {
               {/* Print Footer */}
               <div className="hidden print:flex justify-between items-center mt-6 pt-4 border-t-2 border-black text-xs">
                 <span>Generated: {new Date().toLocaleString('en-GB')}</span>
-                <span className="font-semibold">Ittefaq Management System</span>
+                <span className="font-semibold">Zain Traders Mandi Bahauddin</span>
                 <span>Page 1 of 1</span>
               </div>
             </div>
