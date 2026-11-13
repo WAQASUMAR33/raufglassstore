@@ -3840,11 +3840,7 @@ function SalesPageContent() {
       showSnackbar('Please select a fitter account', 'error');
       return;
     }
-    const amt = parseFloat(newFitter.amount) || 0;
-    if (amt <= 0) {
-      showSnackbar('Please enter a valid fitter amount', 'error');
-      return;
-    }
+    const amt = parseFloat(newFitter.amount) || parseFloat(paymentData.fittingCharges) || 0;
     const selectedAccount = fitterAccounts.find(account => account.cus_id === parseInt(newFitter.accountId)) || customers.find(c => c.cus_id === parseInt(newFitter.accountId));
 
     const fitter = {
@@ -6991,6 +6987,57 @@ function SalesPageContent() {
                   </Box>
                 )}
 
+                {/* Cutter Selection */}
+                <Box sx={SALE_ENTRY_CELL_SX}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75, minHeight: 22 }}>
+                    <Typography sx={{ ...SALE_ENTRY_LABEL_SX, mb: 0 }}>
+                      CUTTER
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="text"
+                      startIcon={<CutterIcon sx={{ fontSize: 13 }} />}
+                      onClick={() => setCutterModalOpen(true)}
+                      sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#16a34a', textTransform: 'none' }}
+                    >
+                      + Manage
+                    </Button>
+                  </Box>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={selectedCutterId || ''}
+                      onChange={(e) => {
+                        const cId = e.target.value;
+                        setSelectedCutterId(cId);
+                        const c = cutters.find(x => x.cutter_id === cId);
+                        setSelectedCutter(c || null);
+                      }}
+                      displayEmpty
+                      sx={{
+                        ...SALE_ENTRY_CONTROL_SX,
+                        height: 40,
+                        bgcolor: '#ffffff',
+                        fontWeight: 700,
+                        '& .MuiSelect-select': {
+                          py: '8px !important',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        },
+                      }}
+                    >
+                      <MenuItem value="" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                        <em>None / Default</em>
+                      </MenuItem>
+                      {cutters.map((cutter) => (
+                        <MenuItem key={cutter.cutter_id} value={cutter.cutter_id} sx={{ fontWeight: 600 }}>
+                          ✂️ {cutter.cutter_name} {cutter.cutter_phone ? `(${cutter.cutter_phone})` : ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Typography sx={SALE_ENTRY_LABEL_SX}>
                     DATE
@@ -8016,211 +8063,7 @@ function SalesPageContent() {
               </TableContainer>
 
               {/* Payment Details */}
-              <Box sx={{ mt: 2, p: 2, bgcolor: '#ffffff', borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                {/* Top Section: Cutter, Transport & Fitter Options - Above Payment Fields */}
-                <Box sx={{ mb: 2.5, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
-                  <Grid container spacing={2} alignItems="flex-start">
-                    {/* ✂️ Cutter Selection */}
-                    <Grid item xs={12} md={6} lg={4}>
-                      <Box sx={{ bgcolor: 'white', p: 1.5, borderRadius: 1.5, border: '1px solid #e2e8f0', height: '100%' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                            ✂️ Cutter
-                          </Typography>
-                          <Button
-                            size="small"
-                            variant="text"
-                            startIcon={<CutterIcon sx={{ fontSize: 13 }} />}
-                            onClick={() => setCutterModalOpen(true)}
-                            sx={{ color: '#16a34a', textTransform: 'none', py: 0, px: 0.75, fontSize: '0.75rem', fontWeight: 600 }}
-                          >
-                            + Manage
-                          </Button>
-                        </Box>
-                        <FormControl size="small" fullWidth sx={{ minWidth: 260 }}>
-                          <Select
-                            value={selectedCutterId || ''}
-                            onChange={(e) => {
-                              const cId = e.target.value;
-                              setSelectedCutterId(cId);
-                              const c = cutters.find(x => x.cutter_id === cId);
-                              setSelectedCutter(c || null);
-                            }}
-                            displayEmpty
-                            sx={{
-                              bgcolor: 'white',
-                              height: 38,
-                              fontSize: '0.85rem',
-                              fontWeight: 600,
-                              '& .MuiSelect-select': { py: '8px !important' }
-                            }}
-                          >
-                            <MenuItem value="" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
-                              <em>Select Cutter (Optional)</em>
-                            </MenuItem>
-                            {cutters.map((cutter) => (
-                              <MenuItem key={cutter.cutter_id} value={cutter.cutter_id} sx={{ fontWeight: 600 }}>
-                                ✂️ {cutter.cutter_name} {cutter.cutter_phone ? `(${cutter.cutter_phone})` : ''}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
-                    </Grid>
-
-                    {/* 🚚 Transport Options */}
-                    <Grid item xs={12} md={6} lg={4}>
-                      <Box sx={{ bgcolor: 'white', p: 1.5, borderRadius: 1.5, border: '1px solid #e2e8f0', height: '100%' }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#6f42c1', display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-                          🚚 Transport Options
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                          <Autocomplete
-                            size="small"
-                            fullWidth
-                            sx={{ minWidth: 220, flex: 1 }}
-                            options={transportAccounts || []}
-                            getOptionLabel={(option) => formatTransportAccountLabel(option)}
-                            value={transportAccounts.find(account => account.cus_id === newTransport.accountId) || null}
-                            onChange={(event, newValue) => {
-                              setNewTransport((prev) => ({
-                                ...prev,
-                                accountId: newValue ? newValue.cus_id : '',
-                                accountName: newValue ? formatTransportAccountLabel(newValue) : '',
-                              }));
-                            }}
-                            isOptionEqualToValue={(option, value) => option.cus_id === value?.cus_id}
-                            autoSelect={true}
-                            autoHighlight={true}
-                            openOnFocus={true}
-                            selectOnFocus={true}
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                placeholder="Select Transport Account"
-                                onFocus={(e) => e.target.select()}
-                                sx={{ bgcolor: 'white' }}
-                              />
-                            )}
-                          />
-                          <Button
-                            variant="contained"
-                            onClick={handleAddTransport}
-                            sx={{
-                              bgcolor: '#6f42c1',
-                              color: 'white',
-                              fontWeight: 700,
-                              minWidth: 40,
-                              width: 40,
-                              height: 38,
-                              p: 0,
-                              fontSize: '1.2rem',
-                              '&:hover': { bgcolor: '#5a2d91' }
-                            }}
-                          >
-                            +
-                          </Button>
-                        </Box>
-                        {transportOptions.length > 0 && (
-                          <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center' }}>
-                            {transportOptions.map((transport) => (
-                              <Chip
-                                key={transport.id}
-                                size="small"
-                                label={`${transport.accountName}: ${transport.amount.toFixed(0)}`}
-                                onDelete={() => handleRemoveTransport(transport.id)}
-                                color="primary"
-                                variant="outlined"
-                              />
-                            ))}
-                            <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#6f42c1' }}>
-                              Total: PKR {calculateTransportTotal().toFixed(0)}
-                            </Typography>
-                          </Box>
-                        )}
-                      </Box>
-                    </Grid>
-
-                    {/* 🔧 Fitter Options */}
-                    <Grid item xs={12} md={12} lg={4}>
-                      <Box sx={{ bgcolor: 'white', p: 1.5, borderRadius: 1.5, border: '1px solid #e2e8f0', height: '100%' }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0284c7', display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-                          🔧 Fitter Options
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <Autocomplete
-                            size="small"
-                            sx={{ minWidth: 170, flex: 2 }}
-                            options={fitterAccounts.length > 0 ? fitterAccounts : customers}
-                            getOptionLabel={(option) => `${option.cus_name} (${option.customer_type?.cus_type_title || option.cus_type_name || 'Account'})`}
-                            value={(fitterAccounts.length > 0 ? fitterAccounts : customers).find(account => account.cus_id === parseInt(newFitter.accountId)) || null}
-                            onChange={(event, newValue) => {
-                              setNewFitter(prev => ({
-                                ...prev,
-                                accountId: newValue ? newValue.cus_id : '',
-                                accountName: newValue ? newValue.cus_name : '',
-                              }));
-                            }}
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                placeholder="Select Fitter Account"
-                                sx={{ bgcolor: 'white' }}
-                              />
-                            )}
-                          />
-                          <TextField
-                            size="small"
-                            type="number"
-                            placeholder="Amount (PKR)"
-                            value={newFitter.amount || ''}
-                            onChange={(e) => setNewFitter(prev => ({ ...prev, amount: e.target.value }))}
-                            sx={{ bgcolor: 'white', width: 110, minWidth: 90 }}
-                            inputProps={{ min: 0 }}
-                          />
-                          <Button
-                            variant="contained"
-                            onClick={handleAddFitter}
-                            sx={{
-                              bgcolor: '#0284c7',
-                              color: 'white',
-                              fontWeight: 700,
-                              height: 38,
-                              px: 1.5,
-                              whiteSpace: 'nowrap',
-                              fontSize: '0.8rem',
-                              textTransform: 'none',
-                              '&:hover': { bgcolor: '#0369a1' }
-                            }}
-                          >
-                            + Add
-                          </Button>
-                        </Box>
-                        {fitterOptions.length > 0 && (
-                          <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center' }}>
-                            {fitterOptions.map((fitter) => (
-                              <Chip
-                                key={fitter.id}
-                                size="small"
-                                label={`${fitter.accountName}: PKR ${fmtAmt(fitter.amount)}`}
-                                onDelete={() => handleRemoveFitter(fitter.id)}
-                                color="info"
-                                variant="filled"
-                                sx={{ fontWeight: 700 }}
-                              />
-                            ))}
-                            <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#0284c7' }}>
-                              Total: PKR {fmtAmt(calculateFitterTotal())}
-                            </Typography>
-                          </Box>
-                        )}
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </Box>
-
-                {/* Bottom Two-Column Split: Payment Fields (Left) and Charges & Totals (Right) */}
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ mt: 2, p: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 {/* Left Section - Payment Fields */}
                 <Box sx={{
                   flex: '1 1 48%',
@@ -8232,6 +8075,138 @@ function SalesPageContent() {
                   display: 'flex',
                   flexDirection: 'column'
                 }}>
+                  {/* Transport & Fitter Options Row - In Payment Section Upper Part */}
+                  <Grid container spacing={1.5} sx={{ mb: 2, pb: 2, borderBottom: '1px solid #e2e8f0' }}>
+                    {/* Transport Options */}
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#6f42c1', display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+                        🚚 Transport Options
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
+                        <Autocomplete
+                          size="small"
+                          fullWidth
+                          options={transportAccounts || []}
+                          getOptionLabel={(option) => formatTransportAccountLabel(option)}
+                          value={transportAccounts.find(account => account.cus_id === newTransport.accountId) || null}
+                          onChange={(event, newValue) => {
+                            setNewTransport((prev) => ({
+                              ...prev,
+                              accountId: newValue ? newValue.cus_id : '',
+                              accountName: newValue ? formatTransportAccountLabel(newValue) : '',
+                            }));
+                          }}
+                          isOptionEqualToValue={(option, value) => option.cus_id === value?.cus_id}
+                          autoSelect={true}
+                          autoHighlight={true}
+                          openOnFocus={true}
+                          selectOnFocus={true}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              placeholder="Select Transport Account"
+                              onFocus={(e) => e.target.select()}
+                              sx={{ bgcolor: 'white' }}
+                            />
+                          )}
+                        />
+                        <Button
+                          variant="contained"
+                          onClick={handleAddTransport}
+                          sx={{
+                            bgcolor: '#6f42c1',
+                            color: 'white',
+                            fontWeight: 700,
+                            minWidth: 38,
+                            width: 38,
+                            height: 38,
+                            p: 0,
+                            fontSize: '1.2rem',
+                            '&:hover': { bgcolor: '#5a2d91' }
+                          }}
+                        >
+                          +
+                        </Button>
+                      </Box>
+                      {transportOptions.length > 0 && (
+                        <Box sx={{ mt: 0.75, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {transportOptions.map((transport) => (
+                            <Chip
+                              key={transport.id}
+                              size="small"
+                              label={transport.accountName}
+                              onDelete={() => handleRemoveTransport(transport.id)}
+                              color="primary"
+                              variant="outlined"
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </Grid>
+
+                    {/* Fitter Options (Without amount input - amount is below labour in right payment section) */}
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#0284c7', display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+                        🔧 Fitter Options
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
+                        <Autocomplete
+                          size="small"
+                          fullWidth
+                          options={fitterAccounts.length > 0 ? fitterAccounts : customers}
+                          getOptionLabel={(option) => `${option.cus_name} (${option.customer_type?.cus_type_title || option.cus_type_name || 'Account'})`}
+                          value={(fitterAccounts.length > 0 ? fitterAccounts : customers).find(account => account.cus_id === parseInt(newFitter.accountId)) || null}
+                          onChange={(event, newValue) => {
+                            setNewFitter(prev => ({
+                              ...prev,
+                              accountId: newValue ? newValue.cus_id : '',
+                              accountName: newValue ? newValue.cus_name : '',
+                            }));
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              placeholder="Select Fitter Account"
+                              sx={{ bgcolor: 'white' }}
+                            />
+                          )}
+                        />
+                        <Button
+                          variant="contained"
+                          onClick={handleAddFitter}
+                          sx={{
+                            bgcolor: '#0284c7',
+                            color: 'white',
+                            fontWeight: 700,
+                            minWidth: 38,
+                            width: 38,
+                            height: 38,
+                            p: 0,
+                            fontSize: '1.2rem',
+                            '&:hover': { bgcolor: '#0369a1' }
+                          }}
+                        >
+                          +
+                        </Button>
+                      </Box>
+                      {fitterOptions.length > 0 && (
+                        <Box sx={{ mt: 0.75, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {fitterOptions.map((fitter) => (
+                            <Chip
+                              key={fitter.id}
+                              size="small"
+                              label={fitter.accountName}
+                              onDelete={() => handleRemoveFitter(fitter.id)}
+                              color="info"
+                              variant="filled"
+                              sx={{ fontWeight: 600 }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </Grid>
+                  </Grid>
+
                   {/* First Row - CASH, BANK, BANK ACCOUNT, TOTAL CASH RECEIVED */}
                   <Grid container spacing={1} sx={{ mb: 2 }}>
                     <Grid item xs={3}>
@@ -8658,6 +8633,42 @@ function SalesPageContent() {
                     />
                   </Box>
 
+                  {/* FITTER (moved on the place of the cutter dropdown) */}
+                  <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary', minWidth: '140px' }}>
+                      FITTER
+                    </Typography>
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={paymentInputValue(paymentData.fittingCharges)}
+                      onChange={(e) => handlePaymentDataChange('fittingCharges', e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      inputProps={{ step: 'any' }}
+                      sx={{
+                        bgcolor: 'white',
+                        '& .MuiInputBase-input': {
+                          padding: '8px',
+                          fontWeight: 'bold',
+                          color: '#000000',
+                          WebkitTextFillColor: '#000000 !important'
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#000000',
+                          WebkitTextFillColor: '#000000 !important',
+                          fontWeight: 'bold',
+                          opacity: 1
+                        },
+                        flex: 1
+                      }}
+                      placeholder="0"
+                    />
+                    {fitterOptions.length > 0 && (
+                      <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                        ({fitterOptions.map(f => f.accountName).join(', ')})
+                      </Typography>
+                    )}
+                  </Box>
 
                   {/* DELIVERY CHARGES (total including transport) */}
                   <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -8903,8 +8914,6 @@ function SalesPageContent() {
                   )}
                 </Box>
               </Box>
-            </Box>
-
 
               {/* Action Buttons */}
               <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
