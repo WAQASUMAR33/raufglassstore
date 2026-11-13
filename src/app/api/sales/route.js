@@ -1323,6 +1323,8 @@ export async function POST(request) {
       reference,
       sale_details,
       transport_details,
+      fitter_details,
+      dc_no,
       split_payments,
       is_loaded_order, // Flag to indicate if this is a loaded order
       order_id,
@@ -1424,6 +1426,9 @@ export async function POST(request) {
       ]);
       if (transport_details?.length) {
         transport_details.forEach((td) => { if (td.account_id) targetAccountIds.add(parseInt(td.account_id)); });
+      }
+      if (fitter_details?.length) {
+        fitter_details.forEach((fd) => { if (fd.account_id) targetAccountIds.add(parseInt(fd.account_id)); });
       }
       if (split_payments?.length) {
         split_payments.forEach((sp) => {
@@ -1933,6 +1938,36 @@ export async function POST(request) {
           }
         }
 
+        // 5b. Fitter account entries — credit each fitter account for fitting charges
+        if (fitter_details && fitter_details.length > 0) {
+          for (const fd of fitter_details) {
+            const fitterAmount = parseFloat(fd.amount) || 0;
+            if (!fd.account_id || fitterAmount <= 0) continue;
+
+            const fitterAccount = accountMap.get(parseInt(fd.account_id)) || await tx.customer.findUnique({ where: { cus_id: parseInt(fd.account_id) } });
+            if (!fitterAccount) {
+              console.warn(`⚠️ Fitter account ${fd.account_id} not found — skipping ledger entry`);
+              continue;
+            }
+
+            const fitterEntry = createLedgerEntry({
+              cus_id: fitterAccount.cus_id,
+              opening_balance: await getRunningBalanceForAccount(fitterAccount.cus_id),
+              debit_amount: 0,
+              credit_amount: Number(fitterAmount.toFixed(2)),
+              bill_no: sale.sale_id.toString(),
+              trnx_type: 'CREDIT',
+              details: `Fitting Charges - ${bill_type || 'BILL'} - ${customer?.cus_name || 'Customer'} (Credit)`,
+              payments: 0,
+              updated_by: validatedUpdatedBy
+            });
+
+            ledgerEntries.push(fitterEntry);
+
+            saleLog(`🔧 Fitter Entry: Account=${fitterAccount.cus_name}, Credit=${fitterAmount}, Closing=${fitterEntry.closing_balance}`);
+          }
+        }
+
         // 6. Split Payment Entries (if any) - Skip entries for bank/cash accounts (already created separately)
         // For ORDER: do not add split lines that post to the sale customer (advance is not a customer A/R line)
         if (split_payments && split_payments.length > 0) {
@@ -2289,6 +2324,8 @@ export async function PUT(request) {
       reference,
       sale_details,
       transport_details,
+      fitter_details,
+      dc_no,
       split_payments,
       updated_by,
       date = null,
@@ -2891,6 +2928,34 @@ export async function PUT(request) {
             ledgerEntries.push(transportEntry);
 
             saleLog(`   🚚 Transport Credit: Account=${transportAccount.cus_name}, Amount=${transportAmount}`);
+          }
+        }
+
+        // ── 4f-2. Fitter account entries ──
+        if (fitter_details && fitter_details.length > 0) {
+          for (const fd of fitter_details) {
+            const fitterAmount = parseFloat(fd.amount) || 0;
+            if (!fd.account_id || fitterAmount <= 0) continue;
+
+            const fitterAccount = await tx.customer.findUnique({ where: { cus_id: parseInt(fd.account_id) } });
+            if (!fitterAccount) continue;
+
+            const currentFitterBalance = await getRunningBalanceForAccount(fitterAccount.cus_id);
+
+            const fitterEntry = createLedgerEntry({
+              cus_id: fitterAccount.cus_id,
+              opening_balance: currentFitterBalance,
+              debit_amount: 0,
+              credit_amount: Number(fitterAmount.toFixed(2)),
+              bill_no: sale.sale_id.toString(),
+              trnx_type: 'CREDIT',
+              details: `Fitting Charges - ${bill_type || 'BILL'} - ${freshCustomer.cus_name} (Credit)`,
+              payments: 0,
+              updated_by: validatedUpdatedBy
+            });
+            ledgerEntries.push(fitterEntry);
+
+            saleLog(`   🔧 Fitter Credit: Account=${fitterAccount.cus_name}, Amount=${fitterAmount}`);
           }
         }
 

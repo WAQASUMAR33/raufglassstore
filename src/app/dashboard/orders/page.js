@@ -180,6 +180,9 @@ function buildOrderReceiptBill({
       unit: 'PCS',
       unit_rate: product.rate,
       total_amount: product.amount,
+      size: product.is_general
+        ? (`General: ${product.pro_title || 'General Item'}` + (product.comments ? ` - ${product.comments}` : ''))
+        : (product.size || null),
       product: { pro_title: product.pro_title || 'N/A' },
     })),
     labour: parseFloat(paymentData.labour) || 0,
@@ -1627,6 +1630,52 @@ function OrdersPageContent() {
     return () => window.removeEventListener('keydown', handleDuplicateKeyDown);
   }, [productTableData, activeRowId]);
 
+  const updateRowTitle = (rowId, newTitle) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      return {
+        ...p,
+        pro_title: newTitle,
+        is_general: true,
+        size: `General: ${newTitle}`
+      };
+    }));
+  };
+
+  const handleAddGeneralItem = () => {
+    const store = formSelectedStore || stores.find(s => s.store_name?.toLowerCase().includes('main')) || stores[0];
+    const generalProd = products.find(p => p.pro_title?.toLowerCase().includes('general product')) || { pro_id: 3, pro_title: 'General Product' };
+    const newProduct = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      pro_id: generalProd.pro_id,
+      pro_title: 'General Item',
+      is_general: true,
+      storeid: store?.storeid || 1,
+      store_name: store?.store_name || 'Main Store',
+      width_in: '',
+      height_in: '',
+      calc_width: '',
+      calc_height: '',
+      pieces: 1,
+      quantity: 1,
+      rate: 0,
+      glass_rate: 0,
+      addons_rate: 0,
+      glass_amount: 0,
+      addons_amount: 0,
+      effective_rate: 0,
+      selected_addons: [],
+      comments: '',
+      amount: 0,
+      stock: 9999,
+      size: 'General: General Item',
+      cost_price: 0
+    };
+    setProductTableData(prev => [newProduct, ...prev]);
+    setActiveRowId(newProduct.id);
+    showSnackbar('General product row added. Enter name and price directly in the grid.', 'success');
+  };
+
   const updateRowComments = (rowId, newComment) => {
     setProductTableData(prev => prev.map(p => {
       if (p.id !== rowId) return p;
@@ -1910,11 +1959,17 @@ function OrdersPageContent() {
     const cH = productFormData.calc_height;
     const pcs = parseInt(productFormData.pieces, 10) || 1;
     let sizeStr = '';
+    const isGeneral = formSelectedProduct.is_general || formSelectedProduct.pro_title?.toLowerCase().includes('general product') || formSelectedProduct.pro_id === 3;
+    const itemTitle = isGeneral && productFormData.comments ? productFormData.comments : formSelectedProduct.pro_title;
+
     if (w && h) {
       sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]`;
     }
     if (productFormData.comments) {
       sizeStr = sizeStr ? `${sizeStr} - ${productFormData.comments}` : productFormData.comments;
+    }
+    if (isGeneral && !sizeStr) {
+      sizeStr = `General: ${itemTitle}`;
     }
 
     const addonsTotal = (productFormData.selected_addons || []).reduce(
@@ -1932,7 +1987,8 @@ function OrdersPageContent() {
     const newProduct = {
       id: Date.now(), // Temporary ID for table row (unique for each addition)
       pro_id: formSelectedProduct.pro_id,
-      pro_title: formSelectedProduct.pro_title,
+      pro_title: itemTitle,
+      is_general: isGeneral,
       storeid: formSelectedStore.storeid,
       store_name: formSelectedStore.store_name,
       width_in: w || '',
@@ -2212,7 +2268,9 @@ function OrdersPageContent() {
           calc_height: product.calc_height || null,
           pro_id: product.pro_id,
           vehicle_no: null,
-          size: product.size || null,
+          size: product.is_general
+            ? (`General: ${product.pro_title || 'General Item'}` + (product.comments ? ` - ${product.comments}` : ''))
+            : (product.size || null),
           qnty: product.quantity,
           unit: 'PCS', // Default unit
           unit_rate: product.effective_rate || product.rate,
@@ -4020,15 +4078,27 @@ function OrdersPageContent() {
                           </Tooltip>
                         )}
                       </Box>
-                      <Button
-                        size="small"
-                        variant="text"
-                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
-                        onClick={() => setShowAddProductModal(true)}
-                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
-                      >
-                        + Add Product
-                      </Button>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                          onClick={() => setShowAddProductModal(true)}
+                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                        >
+                          + Add Product
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                          onClick={handleAddGeneralItem}
+                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#0284c7', textTransform: 'none' }}
+                          title="Add a custom general product row directly to table"
+                        >
+                          + General Item
+                        </Button>
+                      </Box>
                     </Box>
                     <Autocomplete
                       size="small"
@@ -4624,7 +4694,35 @@ function OrdersPageContent() {
                                 }}
                               />
                             </TableCell>
-                            <TableCell sx={{ py: 1, fontWeight: 700 }}>{product.pro_title}</TableCell>
+                            <TableCell sx={{ py: 1, fontWeight: 700 }}>
+                              {(product.is_general || product.pro_id === 3 || product.pro_title?.toLowerCase().includes('general product')) ? (
+                                <TextField
+                                  size="small"
+                                  value={product.pro_title || ''}
+                                  placeholder="Enter custom product name..."
+                                  onChange={(e) => updateRowTitle(product.id, e.target.value)}
+                                  onFocus={(e) => {
+                                    e.target.select();
+                                    setActiveRowId(product.id);
+                                  }}
+                                  sx={{
+                                    width: '100%',
+                                    minWidth: 150,
+                                    '& .MuiInputBase-input': {
+                                      padding: '4px 8px',
+                                      fontWeight: 700,
+                                      fontSize: '0.875rem',
+                                      color: '#0284c7',
+                                      bgcolor: 'rgba(255,255,255,0.9)',
+                                      border: '1px solid #38bdf8',
+                                      borderRadius: '4px'
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                product.pro_title
+                              )}
+                            </TableCell>
                             <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
                               {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
                             </TableCell>

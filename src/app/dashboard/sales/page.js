@@ -365,6 +365,8 @@ const EMPTY_PAYMENT_DATA = {
   discount: '',
   labour: '',
   deliveryCharges: '',
+  fittingCharges: '',
+  dcNo: '',
   notes: '',
   isLoadedOrder: false,
 };
@@ -378,6 +380,8 @@ const normalizePaymentData = (data) => ({
   discount: data?.discount ?? EMPTY_PAYMENT_DATA.discount,
   labour: data?.labour ?? EMPTY_PAYMENT_DATA.labour,
   deliveryCharges: data?.deliveryCharges ?? EMPTY_PAYMENT_DATA.deliveryCharges,
+  fittingCharges: data?.fittingCharges ?? EMPTY_PAYMENT_DATA.fittingCharges,
+  dcNo: data?.dcNo ?? EMPTY_PAYMENT_DATA.dcNo,
   notes: data?.notes ?? EMPTY_PAYMENT_DATA.notes,
   isLoadedOrder: data?.isLoadedOrder ?? EMPTY_PAYMENT_DATA.isLoadedOrder,
 });
@@ -1110,6 +1114,14 @@ function SalesPageContent() {
   const [transportAccounts, setTransportAccounts] = useState([]);
   const [newTransport, setNewTransport] = useState({
     amount: 0,
+    accountId: ''
+  });
+
+  // Fitter state
+  const [fitterOptions, setFitterOptions] = useState([]);
+  const [fitterAccounts, setFitterAccounts] = useState([]);
+  const [newFitter, setNewFitter] = useState({
+    amount: '',
     accountId: ''
   });
 
@@ -2168,6 +2180,52 @@ function SalesPageContent() {
     }));
   };
 
+  const updateRowTitle = (rowId, newTitle) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      return {
+        ...p,
+        pro_title: newTitle,
+        is_general: true,
+        size: `General: ${newTitle}`
+      };
+    }));
+  };
+
+  const handleAddGeneralItem = () => {
+    const store = formSelectedStore || stores.find(s => s.store_name?.toLowerCase().includes('main')) || stores[0];
+    const generalProd = products.find(p => p.pro_title?.toLowerCase().includes('general product')) || { pro_id: 3, pro_title: 'General Product' };
+    const newProduct = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      pro_id: generalProd.pro_id,
+      pro_title: 'General Item',
+      is_general: true,
+      storeid: store?.storeid || 1,
+      store_name: store?.store_name || 'Main Store',
+      width_in: '',
+      height_in: '',
+      calc_width: '',
+      calc_height: '',
+      pieces: 1,
+      quantity: 1,
+      rate: 0,
+      glass_rate: 0,
+      addons_rate: 0,
+      glass_amount: 0,
+      addons_amount: 0,
+      effective_rate: 0,
+      selected_addons: [],
+      comments: '',
+      amount: 0,
+      stock: 9999,
+      size: 'General: General Item',
+      cost_price: 0
+    };
+    setProductTableData(prev => [newProduct, ...prev]);
+    setActiveRowId(newProduct.id);
+    showSnackbar('General product row added. Enter name and price directly in the grid.', 'success');
+  };
+
   const removeRowAddon = (rowId, addonId) => {
     setProductTableData(prev => prev.map(p => {
       if (p.id !== rowId) return p;
@@ -2231,17 +2289,24 @@ function SalesPageContent() {
     const pcs = parseInt(productFormData.pieces, 10) || 1;
 
     let sizeStr = '';
+    const isGeneral = formSelectedProduct.is_general || formSelectedProduct.pro_title?.toLowerCase().includes('general product') || formSelectedProduct.pro_id === 3;
+    const itemTitle = isGeneral && productFormData.comments ? productFormData.comments : formSelectedProduct.pro_title;
+
     if (w && h) {
       sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]`;
     }
     if (productFormData.comments) {
       sizeStr = sizeStr ? `${sizeStr} - ${productFormData.comments}` : productFormData.comments;
     }
+    if (isGeneral && !sizeStr) {
+      sizeStr = `General: ${itemTitle}`;
+    }
 
     const newProduct = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       pro_id: formSelectedProduct.pro_id,
-      pro_title: formSelectedProduct.pro_title,
+      pro_title: itemTitle,
+      is_general: isGeneral,
       storeid: store.storeid,
       store_name: store.store_name,
       width_in: w || '',
@@ -2549,11 +2614,14 @@ function SalesPageContent() {
     const deliveryCharges = parseFloat(paymentData.deliveryCharges) || 0;
     const transportTotal = calculateTransportTotal();
     const totalDelivery = Math.max(deliveryCharges, transportTotal);
+    const fitterTotal = calculateFitterTotal();
+    const fittingCharges = parseFloat(paymentData.fittingCharges) || 0;
+    const totalFitting = Math.max(fittingCharges, fitterTotal);
     const discount = parseFloat(paymentData.discount) || 0;
     if (billType === 'SALE_RETURN') {
-      return Number((productTotal - labour - totalDelivery - discount).toFixed(0));
+      return Number((productTotal - labour - totalDelivery - totalFitting - discount).toFixed(0));
     }
-    return Number((productTotal + labour + totalDelivery - discount).toFixed(0));
+    return Number((productTotal + labour + totalDelivery + totalFitting - discount).toFixed(0));
   };
 
   // Calculate balance (grand total - total cash received only; advance is shown for info only)
@@ -3147,10 +3215,24 @@ function SalesPageContent() {
         bill_price_type: billPriceType,
         cutter_id: selectedCutterId || null,
         cutter_name: selectedCutter?.cutter_name || null,
+        dc_no: paymentData.dcNo || null,
+        fitting_charges: Math.max(parseFloat(paymentData.fittingCharges) || 0, calculateFitterTotal()),
+        fitter_details: fitterOptions.map(fitter => ({
+          account_id: fitter.accountId,
+          amount: parseFloat(fitter.amount) || 0,
+          description: fitter.description || 'Fitting charges'
+        })),
+        fitter_name: fitterOptions.map(f => f.accountName).join(', ') || null,
         reference: (() => {
           let refStr = paymentData.notes ? `${paymentData.notes} [${billPriceType}]` : `[${billPriceType}]`;
           if (selectedCutter?.cutter_name) {
             refStr += ` [Cutter: ${selectedCutter.cutter_name}]`;
+          }
+          if (fitterOptions.length > 0) {
+            refStr += ` [Fitter: ${fitterOptions.map(f => f.accountName).join(', ')}]`;
+          }
+          if (paymentData.dcNo) {
+            refStr += ` [DC: ${paymentData.dcNo}]`;
           }
           return refStr;
         })(),
@@ -3164,7 +3246,7 @@ function SalesPageContent() {
           calc_height: product.calc_height || null,
           pro_id: product.pro_id,
           vehicle_no: null,
-          size: product.size || null,
+          size: product.is_general ? `General: ${product.pro_title}` : (product.size || null),
           qnty: product.quantity,
           unit: 'PCS', // Default unit
           unit_rate: product.effective_rate || product.rate,
@@ -3588,6 +3670,11 @@ function SalesPageContent() {
           return t?.cus_type_title ? norm(t.cus_type_title) : '';
         };
 
+        const isFitterLabel = (n) => {
+          if (!n) return false;
+          return n.includes('fitter') || n.includes('fitting');
+        };
+
         // Transport only: must have Transport/Transporter on category or type, and no Cargo on either field
         const transportAccountsData = accountsData.filter((account) => {
           const cat = getCategoryTitle(account);
@@ -3596,8 +3683,17 @@ function SalesPageContent() {
           return isTransportLabel(cat) || isTransportLabel(typ);
         });
 
+        // Fitter accounts: type or category or name has Fitter
+        const fitterAccountsData = accountsData.filter((account) => {
+          const cat = getCategoryTitle(account);
+          const typ = getTypeTitle(account);
+          const name = (account.cus_name || '').toLowerCase();
+          return isFitterLabel(cat) || isFitterLabel(typ) || isFitterLabel(name);
+        });
+
         // Batch state updates to avoid multiple re-renders
         setTransportAccounts(transportAccountsData);
+        setFitterAccounts(fitterAccountsData);
 
         // Update the current screen with the new transport accounts (synchronous)
         if (currentScreenIndex >= 0 && screenStack[currentScreenIndex]) {
@@ -3724,6 +3820,43 @@ function SalesPageContent() {
       return sum + amount;
     }, 0);
     return total;
+  };
+
+  const handleAddFitter = () => {
+    if (!newFitter.accountId) {
+      showSnackbar('Please select a fitter account', 'error');
+      return;
+    }
+    const amt = parseFloat(newFitter.amount) || 0;
+    if (amt <= 0) {
+      showSnackbar('Please enter a valid fitter amount', 'error');
+      return;
+    }
+    const selectedAccount = fitterAccounts.find(account => account.cus_id === parseInt(newFitter.accountId)) || customers.find(c => c.cus_id === parseInt(newFitter.accountId));
+
+    const fitter = {
+      id: Date.now(),
+      accountId: newFitter.accountId,
+      accountName: selectedAccount ? selectedAccount.cus_name : 'Fitter Account',
+      amount: amt,
+      description: `Fitting Charges - ${selectedAccount?.cus_name || 'Fitter'}`
+    };
+
+    setFitterOptions(prev => [...prev, fitter]);
+    setNewFitter({ amount: '', accountId: '' });
+    showSnackbar('Fitter option added', 'success');
+  };
+
+  const handleRemoveFitter = (fitterId) => {
+    setFitterOptions(prev => prev.filter(f => f.id !== fitterId));
+    showSnackbar('Fitter option removed', 'success');
+  };
+
+  const calculateFitterTotal = () => {
+    return fitterOptions.reduce((sum, fitter) => {
+      const amount = parseFloat(fitter.amount) || 0;
+      return sum + amount;
+    }, 0);
   };
 
   // Customer creation functions
@@ -6921,6 +7054,20 @@ function SalesPageContent() {
                     onFocus={(e) => e.target.select()}
                   />
                 </Box>
+                <Box sx={SALE_ENTRY_CELL_SX}>
+                  <Typography sx={SALE_ENTRY_LABEL_SX}>
+                    DC NUMBER
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="e.g. DC-101"
+                    sx={SALE_ENTRY_CONTROL_SX}
+                    value={paymentData.dcNo || ''}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, dcNo: e.target.value }))}
+                    onFocus={(e) => e.target.select()}
+                  />
+                </Box>
               </Box>
 
 
@@ -6952,15 +7099,26 @@ function SalesPageContent() {
                         </Tooltip>
                       )}
                     </Box>
-                    <Button
-                      size="small"
-                      variant="text"
-                      startIcon={<AddIcon sx={{ fontSize: 13 }} />}
-                      onClick={() => setShowAddProductPopup(true)}
-                      sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
-                    >
-                      + Add Product
-                    </Button>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                        onClick={handleAddGeneralItem}
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#d97706', textTransform: 'none' }}
+                      >
+                        + General Item
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                        onClick={() => setShowAddProductPopup(true)}
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                      >
+                        + Add Product
+                      </Button>
+                    </Box>
                   </Box>
                   <Autocomplete
                     size="small"
@@ -7554,7 +7712,34 @@ function SalesPageContent() {
                                 }}
                               />
                             </TableCell>
-                            <TableCell sx={{ py: 1, fontWeight: 700 }}>{product.pro_title}</TableCell>
+                            <TableCell sx={{ py: 0.5, fontWeight: 700 }}>
+                              {product.is_general || product.pro_id === 3 || product.pro_title === 'General Product' ? (
+                                <TextField
+                                  size="small"
+                                  fullWidth
+                                  value={product.pro_title || ''}
+                                  placeholder="Product Name..."
+                                  onChange={(e) => updateRowTitle(product.id, e.target.value)}
+                                  onFocus={(e) => {
+                                    e.target.select();
+                                    setActiveRowId(product.id);
+                                  }}
+                                  sx={{
+                                    minWidth: 150,
+                                    '& .MuiInputBase-input': {
+                                      padding: '4px 8px',
+                                      fontWeight: 700,
+                                      fontSize: '0.85rem',
+                                      bgcolor: 'rgba(255,255,255,0.95)',
+                                      border: '1.5px solid #f59e0b',
+                                      borderRadius: '4px'
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                product.pro_title
+                              )}
+                            </TableCell>
                             <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
                               {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
                             </TableCell>
@@ -7944,6 +8129,89 @@ function SalesPageContent() {
                     </Typography>
                   </Box>
                 )}
+
+                {/* Fitter Options Section */}
+                <Box sx={{ mt: 2.5, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                  <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    🔧 Fitter Options
+                  </Typography>
+
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={6} md={5}>
+                      <Autocomplete
+                        size="small"
+                        options={fitterAccounts.length > 0 ? fitterAccounts : customers}
+                        getOptionLabel={(option) => `${option.cus_name} (${option.customer_type?.cus_type_title || option.cus_type_name || 'Account'})`}
+                        value={(fitterAccounts.length > 0 ? fitterAccounts : customers).find(account => account.cus_id === parseInt(newFitter.accountId)) || null}
+                        onChange={(event, newValue) => {
+                          setNewFitter(prev => ({
+                            ...prev,
+                            accountId: newValue ? newValue.cus_id : '',
+                            accountName: newValue ? newValue.cus_name : '',
+                          }));
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            placeholder="Select Fitter Account"
+                            sx={{ bgcolor: 'white' }}
+                          />
+                        )}
+                      />
+                    </Grid>
+                    <Grid item xs={8} sm={4} md={3}>
+                      <TextField
+                        size="small"
+                        type="number"
+                        fullWidth
+                        placeholder="Fitter Amount (PKR)"
+                        value={newFitter.amount || ''}
+                        onChange={(e) => setNewFitter(prev => ({ ...prev, amount: e.target.value }))}
+                        sx={{ bgcolor: 'white' }}
+                        inputProps={{ min: 0 }}
+                      />
+                    </Grid>
+                    <Grid item xs={4} sm={2} md={2}>
+                      <Button
+                        variant="contained"
+                        onClick={handleAddFitter}
+                        sx={{
+                          bgcolor: '#0284c7',
+                          color: 'white',
+                          fontWeight: 700,
+                          textTransform: 'none',
+                          '&:hover': { bgcolor: '#0369a1' }
+                        }}
+                      >
+                        + Add Fitter
+                      </Button>
+                    </Grid>
+                  </Grid>
+
+                  {/* Fitter Options Display */}
+                  {fitterOptions.length > 0 && (
+                    <Box sx={{ mt: 1.5 }}>
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                        Added Fitters ({fitterOptions.length}):
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {fitterOptions.map((fitter) => (
+                          <Chip
+                            key={fitter.id}
+                            label={`${fitter.accountName}: PKR ${fmtAmt(fitter.amount)}`}
+                            onDelete={() => handleRemoveFitter(fitter.id)}
+                            color="info"
+                            variant="filled"
+                            sx={{ fontWeight: 700 }}
+                          />
+                        ))}
+                      </Box>
+                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold', color: '#0284c7' }}>
+                        Fitter Total: PKR {fmtAmt(calculateFitterTotal())}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
               </Box>
 
               {/* Payment Details */}

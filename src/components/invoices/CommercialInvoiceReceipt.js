@@ -60,8 +60,23 @@ export function parseInvoiceLineItem(detail) {
     }
   }
 
+  let itemName = detail.product?.pro_title || detail.pro_title || detail.product_name || 'Glass Item';
+  const genMatch = sizeStr.match(/^(?:General:\s*|\[General:\s*)([^\]\n]+)\]?/i);
+  if (genMatch) {
+    const rawGen = genMatch[1].trim();
+    if (rawGen.includes(' - ') && (!jobDesc || jobDesc === '-')) {
+      const parts = rawGen.split(' - ');
+      itemName = parts[0].trim();
+      jobDesc = parts.slice(1).join(' - ').trim();
+    } else {
+      itemName = rawGen;
+    }
+  } else if ((itemName === 'General Product' || itemName === 'General Item') && detail.comments) {
+    itemName = detail.comments;
+  }
+
   return {
-    itemName: detail.product?.pro_title || detail.pro_title || detail.product_name || 'Glass Item',
+    itemName: itemName,
     jobDesc: jobDesc || '-',
     width: width ? fmtNum(width) : '-',
     height: height ? fmtNum(height) : '-',
@@ -127,21 +142,33 @@ export default function CommercialInvoiceReceipt({
   const totalItemsValue = lines.reduce((sum, item) => sum + (item.amount || 0), 0);
 
   // Extract Cutter / Fitter
+  const fitterMatch = String(bill.reference || bill.notes || '').match(/\[Fitter:\s*([^\]]+)\]/i);
+  const fitterName = bill.fitter_name || (fitterMatch ? fitterMatch[1].trim() : '') || (Array.isArray(bill.fitter_details) && bill.fitter_details[0]?.accountName) || '';
   const cutterMatch = String(bill.reference || bill.notes || '').match(/\[Cutter:\s*([^\]]+)\]/i);
   const cutterName = bill.cutter_name || (cutterMatch ? cutterMatch[1].trim() : '-');
+  const displayFitter = fitterName || cutterName;
+
+  // Extract DC No
+  const dcMatch = String(bill.reference || bill.notes || '').match(/\[DC:\s*([^\]]+)\]/i);
+  const dcNo = bill.dc_no || (dcMatch ? dcMatch[1].trim() : '') || bill.vehicle_no || '-';
 
   // Clean Remarks
-  let remarks = String(bill.notes || bill.reference || '').replace(/\[Cutter:[^\]]+\]/gi, '').trim();
+  let remarks = String(bill.notes || bill.reference || '')
+    .replace(/\[Cutter:[^\]]+\]/gi, '')
+    .replace(/\[Fitter:[^\]]+\]/gi, '')
+    .replace(/\[DC:[^\]]+\]/gi, '')
+    .replace(/\[Retail\]|\[Whole sale\]/gi, '')
+    .trim();
   if (!remarks) remarks = '-';
 
   // Invoice Numbers
   const invoiceNo = bill.sale_id || bill.order_id || bill.bill_number || bill.return_id || '—';
   const qNo = bill.loaded_order_id || bill.order_id || '0';
-  const dcNo = bill.dc_no || bill.vehicle_no || '-';
 
   // Financial values
   const discount = parseFloat(bill.discount || 0);
   const carriage = parseFloat(bill.shipping_amount || bill.delivery_charges || 0);
+  const fittingCharges = parseFloat(bill.fitting_charges || bill.labour_charges || 0) || (Array.isArray(bill.fitter_details) ? bill.fitter_details.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0) : 0);
   const billValue = parseFloat(bill.total_amount || 0);
   
   const payment1 = parseFloat(bill.cash_payment || (bill.payment && !bill.bank_payment ? bill.payment : 0) || 0);
@@ -284,7 +311,7 @@ export default function CommercialInvoiceReceipt({
           <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline' }}>
             <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#222' }}>FITTER:</Typography>
             <Typography sx={{ fontSize: '0.825rem', fontWeight: 700, color: '#000' }}>
-              {cutterName}
+              {displayFitter}
             </Typography>
           </Box>
 
@@ -731,6 +758,12 @@ export default function CommercialInvoiceReceipt({
                 <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 700 }}>Carriage:</td>
                 <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 600 }}>{fmtAmt(carriage)}</td>
               </tr>
+              {fittingCharges > 0 && (
+                <tr>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 700 }}>Fitting:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 600 }}>{fmtAmt(fittingCharges)}</td>
+                </tr>
+              )}
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', fontWeight: 800 }}>Bill Value:</td>
                 <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', textAlign: 'right', fontWeight: 800 }}>{fmtAmt(billValue)}</td>
