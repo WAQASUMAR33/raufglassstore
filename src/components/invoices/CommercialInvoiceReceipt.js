@@ -21,8 +21,11 @@ const fmtNum = (val) => {
   return n.toFixed(2);
 };
 
-// Parse line item details (width, height, pcs, job desc)
-export function parseInvoiceLineItem(detail) {
+// Cache addons in memory across renders
+let cachedAddons = null;
+
+// Parse line item details (width, height, pcs, job desc) and expand any ad-ons into their own rows
+export function expandInvoiceLineItems(detail, availableAddons = []) {
   let width = detail.calc_width ?? detail.width_in ?? '';
   let height = detail.calc_height ?? detail.height_in ?? '';
   let pcs = detail.pieces ?? detail.qnty_pcs ?? '';
@@ -46,18 +49,6 @@ export function parseInvoiceLineItem(detail) {
   }
   if (!pcs) pcs = 1;
 
-  let addonsList = [];
-  if (Array.isArray(detail.selected_addons) && detail.selected_addons.length > 0) {
-    addonsList = detail.selected_addons.map(a => a.name || a.addon?.name).filter(Boolean);
-  }
-  const addonMatch = sizeStr.match(/\[(?:Ad-?Ons?|Addons?):\s*([^\]]+)\]/i);
-  if (addonMatch) {
-    const fromSize = addonMatch[1].split(',').map(s => s.trim()).filter(Boolean);
-    if (addonsList.length === 0) {
-      addonsList = fromSize;
-    }
-  }
-
   if (!jobDesc && sizeStr) {
     const cleanSize = sizeStr.replace(/\[(?:Ad-?Ons?|Addons?):\s*[^\]]+\]/i, '').trim();
     const commentMatch = cleanSize.match(/\]\s*-\s*(.+)$/) || cleanSize.match(/^-\s*(.+)$/);
@@ -65,10 +56,8 @@ export function parseInvoiceLineItem(detail) {
       jobDesc = commentMatch[1].trim();
     }
   }
-
-  if (addonsList.length > 0) {
-    const addonNames = addonsList.join(', ');
-    jobDesc = jobDesc && jobDesc !== '-' ? `${jobDesc} (Ad-Ons: ${addonNames})` : `Ad-Ons: ${addonNames}`;
+  if (jobDesc) {
+    jobDesc = jobDesc.replace(/\s*\((?:Ad-?Ons?|Addons?):\s*[^)]+\)/i, '').trim();
   }
 
   let itemName = detail.product?.pro_title || detail.pro_title || detail.product_name || 'Glass Item';
@@ -86,17 +75,118 @@ export function parseInvoiceLineItem(detail) {
     itemName = detail.comments;
   }
 
-  return {
+  const detailQty = parseFloat(detail.qnty || 0);
+  const detailRate = parseFloat(detail.unit_rate ?? detail.rate ?? 0);
+  const detailTotalAmount = parseFloat(detail.total_amount ?? detail.amount ?? 0);
+
+  let parsedAddons = [];
+  if (Array.isArray(detail.selected_addons) && detail.selected_addons.length > 0) {
+    parsedAddons = detail.selected_addons.map(a => {
+      const name = a.name || a.addon?.name;
+      const rate = parseFloat(a.sale_price || a.addon?.sale_price || a.rate || 0);
+      return { name, rate };
+    }).filter(a => a.name);
+  }
+
+  const addonMatch = sizeStr.match(/\[(?:Ad-?Ons?|Addons?):\s*([^\]]+)\]/i);
+  if (addonMatch && parsedAddons.length === 0) {
+    const rawTokens = addonMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+    parsedAddons = rawTokens.map(token => {
+      const rateMatch = token.match(/^(.*?)(?:\s*[@:]\s*|\s*\((?:Rs\.?\s*|Rate:\s*)?)([0-9.]+)\)?$/i);
+      if (rateMatch) {
+        return {
+          name: rateMatch[1].trim(),
+          rate: parseFloat(rateMatch[2]) || 0
+        };
+      }
+      const cleanTokenName = token.replace(/\s*\(.*?\)/, '').trim();
+      const catalogMatch = (availableAddons || []).find(
+        cat => cat.name?.toLowerCase() === cleanTokenName.toLowerCase() ||
+               cat.short_code?.toLowerCase() === cleanTokenName.toLowerCase()
+      );
+      return {
+        name: cleanTokenName,
+        rate: catalogMatch ? parseFloat(catalogMatch.sale_price || 0) : 0
+      };
+    }).filter(a => a.name);
+  } else if (parsedAddons.length > 0 && availableAddons?.length > 0) {
+    parsedAddons = parsedAddons.map(a => {
+      if (a.rate > 0) return a;
+      const catalogMatch = availableAddons.find(
+        cat => cat.name?.toLowerCase() === a.name?.toLowerCase() ||
+               cat.short_code?.toLowerCase() === a.name?.toLowerCase()
+      );
+      return {
+        name: a.name,
+        rate: catalogMatch ? parseFloat(catalogMatch.sale_price || 0) : a.rate
+      };
+    });
+  }
+
+  if (parsedAddons.length > 0) {
+    const totalAddonsRate = parsedAddons.reduce((sum, a) => sum + (a.rate || 0), 0);
+    const glassRate = detail.glass_rate !== undefined && parseFloat(detail.glass_rate) > 0
+      ? parseFloat(detail.glass_rate)
+      : Math.max(0, detailRate - totalAddonsRate);
+
+    const glassAmount = detail.glass_amount !== undefined && parseFloat(detail.glass_amount) > 0
+      ? parseFloat(detail.glass_amount)
+      : Number((detailQty * glassRate).toFixed(2));
+
+    const parentLine = {
+      itemName: itemName,
+      jobDesc: jobDesc || '-',
+      width: width ? fmtNum(width) : '-',
+      height: height ? fmtNum(height) : '-',
+      pcs: Number(pcs) || 1,
+      qtySqFt: detailQty,
+      rate: glassRate,
+      amount: glassAmount,
+      isAddon: false,
+    };
+
+    const addonLines = parsedAddons.map(a => {
+      const aRate = a.rate || 0;
+      const aAmount = Number((detailQty * aRate).toFixed(2));
+      const displayName = /ad-?on/i.test(a.name) ? a.name : `${a.name} (Ad-On)`;
+      return {
+        itemName: displayName,
+        jobDesc: '-',
+        width: '-',
+        height: '-',
+        pcs: '-',
+        qtySqFt: detailQty,
+        rate: aRate,
+        amount: aAmount,
+        isAddon: true,
+      };
+    });
+
+    const totalLinesAmount = glassAmount + addonLines.reduce((s, a) => s + a.amount, 0);
+    const diff = Number((detailTotalAmount - totalLinesAmount).toFixed(2));
+    if (Math.abs(diff) > 0 && Math.abs(diff) < 2) {
+      parentLine.amount = Number((parentLine.amount + diff).toFixed(2));
+    }
+
+    return [parentLine, ...addonLines];
+  }
+
+  return [{
     itemName: itemName,
     jobDesc: jobDesc || '-',
-    addonsList: addonsList,
     width: width ? fmtNum(width) : '-',
     height: height ? fmtNum(height) : '-',
     pcs: Number(pcs) || 1,
-    qtySqFt: parseFloat(detail.qnty || 0),
-    rate: parseFloat(detail.unit_rate ?? detail.rate ?? 0),
-    amount: parseFloat(detail.total_amount ?? detail.amount ?? 0),
-  };
+    qtySqFt: detailQty,
+    rate: detailRate,
+    amount: detailTotalAmount,
+    isAddon: false,
+  }];
+}
+
+export function parseInvoiceLineItem(detail, availableAddons = []) {
+  const items = expandInvoiceLineItems(detail, availableAddons);
+  return items[0];
 }
 
 // Format Date as DD-MMM-YY (e.g. 18-Oct-26)
@@ -144,13 +234,29 @@ export default function CommercialInvoiceReceipt({
       : 'Commercial Invoice'
   );
 
+  const [availableAddons, setAvailableAddons] = React.useState(cachedAddons || []);
+
+  React.useEffect(() => {
+    if (!cachedAddons) {
+      fetch('/api/addons?status=ACTIVE')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            cachedAddons = data;
+            setAvailableAddons(data);
+          }
+        })
+        .catch(err => console.error('Failed to load addons for invoice:', err));
+    }
+  }, []);
+
   // Parse lines
   const rawDetails = Array.isArray(bill.sale_details) ? bill.sale_details : [];
-  const lines = rawDetails.map(d => parseInvoiceLineItem(d));
+  const lines = rawDetails.flatMap(d => expandInvoiceLineItems(d, availableAddons));
 
   // Totals calculation
-  const totalPcs = lines.reduce((sum, item) => sum + (item.pcs || 0), 0);
-  const totalSqFt = lines.reduce((sum, item) => sum + (item.qtySqFt || 0), 0);
+  const totalPcs = lines.reduce((sum, item) => sum + (typeof item.pcs === 'number' ? item.pcs : 0), 0);
+  const totalSqFt = lines.filter(item => !item.isAddon).reduce((sum, item) => sum + (item.qtySqFt || 0), 0);
   const totalItemsValue = lines.reduce((sum, item) => sum + (item.amount || 0), 0);
 
   // Extract Cutter / Fitter
@@ -527,11 +633,6 @@ export default function CommercialInvoiceReceipt({
                     }}
                   >
                     {item.itemName}
-                    {item.addonsList && item.addonsList.length > 0 && (
-                      <div style={{ fontSize: '0.72rem', color: '#047857', fontWeight: 700, marginTop: '2px' }}>
-                        Ad-Ons: {item.addonsList.join(', ')}
-                      </div>
-                    )}
                   </td>
                   <td
                     style={{

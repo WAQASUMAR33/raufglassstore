@@ -106,7 +106,7 @@ import ProductFormModal from '@/components/products/ProductFormModal';
 import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
-import CommercialInvoiceReceipt from '@/components/invoices/CommercialInvoiceReceipt';
+import CommercialInvoiceReceipt, { expandInvoiceLineItems } from '@/components/invoices/CommercialInvoiceReceipt';
 import {
   fetchSalesForReturnInvoicePicker,
   normalizeReturnForReceipt,
@@ -190,6 +190,8 @@ function buildSaleReceiptBill({
       selected_addons: product.selected_addons || [],
       addons_rate: product.addons_rate || 0,
       addons_amount: product.addons_amount || 0,
+      glass_rate: product.glass_rate || product.rate,
+      glass_amount: product.glass_amount !== undefined ? product.glass_amount : (parseFloat(product.quantity || 0) * parseFloat(product.glass_rate || product.rate || 0)),
       product: { pro_title: product.pro_title || 'N/A' },
     })),
     labour: parseFloat(paymentData.labour) || 0,
@@ -2071,15 +2073,19 @@ function SalesPageContent() {
       const addonsAmount = Number((qty * addonsTotal).toFixed(0));
       const lineAmount = Number((qty * effectiveRate).toFixed(0));
 
-      const addonNames = (selectedAddonList || []).map(a => a.name || a.addon?.name).filter(Boolean);
+      const addonItems = (selectedAddonList || []).map(a => {
+        const name = a.name || a.addon?.name;
+        const rate = parseFloat(a.sale_price || a.addon?.sale_price || a.rate || 0);
+        return rate > 0 ? `${name} @ ${rate}` : name;
+      }).filter(Boolean);
       let updatedSize = p.size || '';
       updatedSize = updatedSize.replace(/\s*\[(?:Ad-?Ons?|Addons?):\s*[^\]]+\]/i, '').trim();
-      if (addonNames.length > 0) {
+      if (addonItems.length > 0) {
         if (updatedSize.includes(' - ')) {
           const parts = updatedSize.split(' - ');
-          updatedSize = `${parts[0]} [Ad-Ons: ${addonNames.join(', ')}] - ${parts.slice(1).join(' - ')}`;
+          updatedSize = `${parts[0]} [Ad-Ons: ${addonItems.join(', ')}] - ${parts.slice(1).join(' - ')}`;
         } else {
-          updatedSize = `${updatedSize} [Ad-Ons: ${addonNames.join(', ')}]`.trim();
+          updatedSize = `${updatedSize} [Ad-Ons: ${addonItems.join(', ')}]`.trim();
         }
       }
 
@@ -2263,15 +2269,19 @@ function SalesPageContent() {
       const addonsAmount = Number((qty * addonsTotal).toFixed(0));
       const effectiveRate = glassRate + addonsTotal;
 
-      const addonNames = newSelected.map(a => a.name || a.addon?.name).filter(Boolean);
+      const addonItems = newSelected.map(a => {
+        const name = a.name || a.addon?.name;
+        const rate = parseFloat(a.sale_price || a.addon?.sale_price || a.rate || 0);
+        return rate > 0 ? `${name} @ ${rate}` : name;
+      }).filter(Boolean);
       let updatedSize = p.size || '';
       updatedSize = updatedSize.replace(/\s*\[(?:Ad-?Ons?|Addons?):\s*[^\]]+\]/i, '').trim();
-      if (addonNames.length > 0) {
+      if (addonItems.length > 0) {
         if (updatedSize.includes(' - ')) {
           const parts = updatedSize.split(' - ');
-          updatedSize = `${parts[0]} [Ad-Ons: ${addonNames.join(', ')}] - ${parts.slice(1).join(' - ')}`;
+          updatedSize = `${parts[0]} [Ad-Ons: ${addonItems.join(', ')}] - ${parts.slice(1).join(' - ')}`;
         } else {
-          updatedSize = `${updatedSize} [Ad-Ons: ${addonNames.join(', ')}]`.trim();
+          updatedSize = `${updatedSize} [Ad-Ons: ${addonItems.join(', ')}]`.trim();
         }
       }
 
@@ -2329,8 +2339,12 @@ function SalesPageContent() {
     const isGeneral = formSelectedProduct.is_general || formSelectedProduct.pro_title?.toLowerCase().includes('general product') || formSelectedProduct.pro_id === 3;
     const itemTitle = isGeneral && productFormData.comments ? productFormData.comments : formSelectedProduct.pro_title;
 
-    const addonNames = (productFormData.selected_addons || []).map(a => a.name || a.addon?.name).filter(Boolean);
-    const addonsSummary = addonNames.length > 0 ? ` [Ad-Ons: ${addonNames.join(', ')}]` : '';
+    const addonItems = (productFormData.selected_addons || []).map(a => {
+      const name = a.name || a.addon?.name;
+      const rate = parseFloat(a.sale_price || a.addon?.sale_price || a.rate || 0);
+      return rate > 0 ? `${name} @ ${rate}` : name;
+    }).filter(Boolean);
+    const addonsSummary = addonItems.length > 0 ? ` [Ad-Ons: ${addonItems.join(', ')}]` : '';
 
     if (w && h) {
       sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]${addonsSummary}`;
@@ -12646,21 +12660,21 @@ function SalesPageContent() {
             {/* Items List */}
             <Box sx={{ borderBottom: '1px dashed #000', pb: 0.75, mb: 0.75 }}>
               {activeBillData.sale_details && activeBillData.sale_details.length > 0 ? (
-                getSaleDetailsInAddOrder(activeBillData.sale_details).map((d, i) => (
-                  <Box key={d.sale_detail_id || i} sx={{ mb: 0.75 }}>
+                getSaleDetailsInAddOrder(activeBillData.sale_details).flatMap(d => expandInvoiceLineItems(d, allAddons || [])).map((item, i) => (
+                  <Box key={i} sx={{ mb: 0.75 }}>
                     <Typography sx={{ fontSize: '11px', fontWeight: 'bold', color: '#000', wordBreak: 'break-word' }}>
-                      {d.product?.pro_title || 'Item'}{d.size && String(d.size).trim() !== '' ? ` (Size: ${d.size})` : ''}
+                      {item.itemName}{item.width && item.width !== '-' && item.height && item.height !== '-' ? ` (${item.width}"×${item.height}")` : ''}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', color: '#000' }}>
                       <Box sx={{ flex: 1 }} />
                       <Typography sx={{ fontSize: '11px', width: '35px', textAlign: 'center', color: '#000' }}>
-                        {fmtRateQty(d.qnty)}
+                        {item.qtySqFt ? fmtRateQty(item.qtySqFt) : (item.pcs && item.pcs !== '-' ? fmtRateQty(item.pcs) : '1')}
                       </Typography>
                       <Typography sx={{ fontSize: '11px', fontWeight: 'bold', width: '50px', textAlign: 'right', color: '#000' }}>
-                        {fmtRateQty(d.unit_rate)}
+                        {fmtRateQty(item.rate)}
                       </Typography>
                       <Typography sx={{ fontSize: '11px', fontWeight: 'bold', width: '55px', textAlign: 'right', color: '#000' }}>
-                        {fmtAmt(d.total_amount)}
+                        {fmtAmt(item.amount)}
                       </Typography>
                     </Box>
                   </Box>

@@ -1456,14 +1456,25 @@ function QuotationsPageContent() {
     const isGeneral = formSelectedProduct.is_general || formSelectedProduct.pro_title?.toLowerCase().includes('general product') || formSelectedProduct.pro_id === 3;
     const itemTitle = isGeneral && productFormData.comments ? productFormData.comments : formSelectedProduct.pro_title;
 
+    const addonItems = (productFormData.selected_addons || []).map(a => {
+      const name = a.name || a.addon?.name;
+      const rate = parseFloat(a.sale_price || a.addon?.sale_price || a.rate || 0);
+      return rate > 0 ? `${name} @ ${rate}` : name;
+    }).filter(Boolean);
+    const addonsSummary = addonItems.length > 0 ? ` [Ad-Ons: ${addonItems.join(', ')}]` : '';
+
     if (w && h) {
-      sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]`;
+      sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]${addonsSummary}`;
+    } else if (addonsSummary) {
+      sizeStr = addonsSummary.trim();
     }
     if (productFormData.comments) {
       sizeStr = sizeStr ? `${sizeStr} - ${productFormData.comments}` : productFormData.comments;
     }
     if (isGeneral && !sizeStr) {
-      sizeStr = `General: ${itemTitle}`;
+      sizeStr = `General: ${itemTitle}${addonsSummary}`;
+    } else if (isGeneral && addonsSummary && !sizeStr.includes('Ad-Ons:')) {
+      sizeStr += addonsSummary;
     }
 
     const qty = parseFloat(productFormData.quantity) || 0;
