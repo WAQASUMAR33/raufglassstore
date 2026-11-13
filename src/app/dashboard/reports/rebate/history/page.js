@@ -150,7 +150,7 @@ function RebateHistoryContent() {
 
   const handleExport = () => {
     if (!selectedSupplier || !monthlyData) return;
-    let csv = 'Ittefaq Iron and Cement Store\nRebate History\n';
+    let csv = 'Zain Traders Mandi Bahauddin\nRebate History\n';
     csv += `Supplier: ${selectedSupplier.cus_name}\n\n`;
     csv += 'Month,Bills,Products,Total Qty,Purchase Amount,Rebate Paid,Status,Paid Date\n';
     filteredRows.forEach((row) => {

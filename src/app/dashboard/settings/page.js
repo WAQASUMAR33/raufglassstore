@@ -754,7 +754,7 @@ export default function SettingsPage() {
                         fullWidth
                         size="small"
                         label="Store Name Header"
-                        defaultValue="Ittefaq Iron & Cement Store"
+                        defaultValue="Zain Traders Mandi Bahauddin"
                         disabled
                         helperText="Configured in main company profile"
                       />

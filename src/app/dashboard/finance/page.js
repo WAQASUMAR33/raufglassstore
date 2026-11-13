@@ -1332,7 +1332,7 @@ function FinancePageContent() {
     fmtAmt,
     formatDatePK,
     formatTimePK,
-    phoneLine: `Ph:- ${(COMPANY.phones || ['0300-7560306']).join(', ')}`,
+    phoneLine: `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}`,
     getInvoiceNet,
     getInvoiceRemainingDue,
     getSupplierBalanceAfterBill,
@@ -2943,9 +2943,10 @@ function FinancePageContent() {
       });
       tempEl.innerHTML = `
         <div style="text-align:center;padding-bottom:14px;border-bottom:2px solid #000;margin-bottom:16px;">
-          <h2 style="margin:0;font-size:20px;direction:rtl;">اتفاق آئرن اینڈ سیمنٹ سٹور</h2>
-          <p style="margin:4px 0;direction:rtl;">گجرات سرگودھا روڈ، پاہڑیانوالی</p>
-          <p style="margin:4px 0;">Ph:- 0346-7560306, 0300-7560306</p>
+          <h2 style="margin:0;font-size:20px;font-weight:800;">Zain Traders Mandi Bahauddin</h2>
+          <p style="margin:4px 0;direction:rtl;font-size:16px;">زین ٹریڈرز منڈی بہاؤالدین</p>
+          <p style="margin:4px 0;font-size:12px;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
+          <p style="margin:4px 0;font-weight:bold;">Ph:- 0302-2133218, 0315-4533218</p>
           <h3 style="margin:10px 0 0 0;color:${accentColor};letter-spacing:1px;">${isPay ? 'PAYMENT VOUCHER' : 'RECEIPT VOUCHER'}</h3>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
@@ -3756,9 +3757,10 @@ function FinancePageContent() {
   .print-footer .sig-line{border-top:1px solid #000;padding-top:6px;font-size:11px;color:#555}
 </style></head><body>
 <div class="header">
-  <h1>اتفاق آئرن اینڈ سیمنٹ سٹور</h1>
-  <p style="direction:rtl">گجرات سرگودھا روڈ، پاہڑیانوالی</p>
-  <p>Ph:- 0346-7560306, 0300-7560306</p>
+  <h1>Zain Traders Mandi Bahauddin</h1>
+  <p style="direction:rtl;font-size:16px;margin:2px 0;">زین ٹریڈرز منڈی بہاؤالدین</p>
+  <p style="margin:2px 0;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
+  <p style="font-weight:bold;margin:2px 0;">Ph:- 0302-2133218, 0315-4533218</p>
   <div class="ledger-title">GENERAL LEDGER</div>
 </div>
 <div class="meta">
@@ -5690,9 +5692,10 @@ function FinancePageContent() {
             <Box id="payment-receipt-preview" sx={{ bgcolor: 'white', p: 3 }}>
               {/* Header */}
               <Box sx={{ textAlign: 'center', pb: 2, borderBottom: '2px solid #000', mb: 2 }}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', direction: 'rtl', fontFamily: 'Arial' }}>اتفاق آئرن اینڈ سیمنٹ سٹور</Typography>
-                <Typography variant="body2" sx={{ direction: 'rtl' }}>گجرات سرگودھا روڈ، پاہڑیانوالی</Typography>
-                <Typography variant="body2">Ph:- 0346-7560306, 0300-7560306</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Zain Traders Mandi Bahauddin</Typography>
+                <Typography variant="body1" sx={{ direction: 'rtl', my: 0.5 }}>زین ٹریڈرز منڈی بہاؤالدین</Typography>
+                <Typography variant="body2">Phalia Road , Near Aljannat Petrol pump M.B.Din.</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Ph:- 0302-2133218, 0315-4533218</Typography>
                 <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1, letterSpacing: 1 }}>
                   {paymentReceiptData.type === 'PAY' ? 'PAYMENT VOUCHER' : 'RECEIPT VOUCHER'}
                 </Typography>
@@ -5849,9 +5852,10 @@ function FinancePageContent() {
 <div class="header-bar"><h2>${d.type === 'PAY' ? 'Payment Receipt' : 'Receipt - Payment Received'}</h2><span>PAY-${d.paymentId}</span></div>
 <div style="border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;padding:0 20px 20px">
   <div class="company-box">
-    <div class="name-urdu">اتفاق آئرن اینڈ سیمنٹ سٹور</div>
-    <div class="address">گجرات سرگودھا روڈ، پاہڑیانوالی</div>
-    <div class="phone">Ph:- 0346-7560306, 0300-7560306</div>
+    <div class="name-urdu" style="font-size:18px;font-weight:bold;">Zain Traders Mandi Bahauddin</div>
+    <div style="font-size:15px;direction:rtl;margin:2px 0;">زین ٹریڈرز منڈی بہاؤالدین</div>
+    <div class="address">Phalia Road , Near Aljannat Petrol pump M.B.Din.</div>
+    <div class="phone">Ph:- 0302-2133218, 0315-4533218</div>
     <div class="voucher-type">${d.type === 'PAY' ? 'Payment Voucher' : 'Receipt Voucher'}</div>
   </div>
   <div class="meta">
@@ -5979,19 +5983,19 @@ function FinancePageContent() {
                   fontSize: { xs: '1.5rem', md: '2rem' },
                   direction: 'rtl'
                 }}>
-                  اتفاق آئرن اینڈ سیمنٹ سٹور
+                  زین ٹریڈرز منڈی بہاؤالدین
                 </Typography>
                 <Typography variant="body2" sx={{
                   mb: 1,
                   fontSize: { xs: '0.75rem', md: '0.9rem' },
                   direction: 'rtl'
                 }}>
-                  گجرات سرگودھا روڈ، پاہڑیانوالی
+                  Phalia Road , Near Aljannat Petrol pump M.B.Din.
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
                   <span style={{ fontSize: '1rem', color: '#25D366', marginRight: '4px' }}>📞</span>
                   <Typography variant="body2">
-                    Ph:- 0346-7560306, 0300-7560306
+                    Ph:- 0302-2133218, 0315-4533218
                   </Typography>
                 </Box>
                 <Typography variant="h6" sx={{
@@ -6283,19 +6287,19 @@ function FinancePageContent() {
                   fontSize: { xs: '1.5rem', md: '2rem' },
                   direction: 'rtl'
                 }}>
-                  اتفاق آئرن اینڈ سیمنٹ سٹور
+                  زین ٹریڈرز منڈی بہاؤالدین
                 </Typography>
                 <Typography variant="body2" sx={{
                   mb: 1,
                   fontSize: { xs: '0.75rem', md: '0.9rem' },
                   direction: 'rtl'
                 }}>
-                  گجرات سرگودھا روڈ، پاہڑیانوالی
+                  Phalia Road , Near Aljannat Petrol pump M.B.Din.
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
                   <span style={{ fontSize: '1rem', color: '#25D366', marginRight: '4px' }}>📞</span>
                   <Typography variant="body2">
-                    Ph:- 0346-7560306, 0300-7560306
+                    Ph:- 0302-2133218, 0315-4533218
                   </Typography>
                 </Box>
                 <Typography variant="h6" sx={{
@@ -6605,19 +6609,19 @@ function FinancePageContent() {
                   fontSize: { xs: '1.5rem', md: '2rem' },
                   direction: 'rtl'
                 }}>
-                  اتفاق آئرن اینڈ سیمنٹ سٹور
+                  زین ٹریڈرز منڈی بہاؤالدین
                 </Typography>
                 <Typography variant="body2" sx={{
                   mb: 1,
                   fontSize: { xs: '0.75rem', md: '0.9rem' },
                   direction: 'rtl'
                 }}>
-                  گجرات سرگودھا روڈ، پاہڑیانوالی
+                  Phalia Road , Near Aljannat Petrol pump M.B.Din.
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
                   <span style={{ fontSize: '1rem', color: '#25D366', marginRight: '4px' }}>📞</span>
                   <Typography variant="body2">
-                    Ph:- 0346-7560306, 0300-7560306
+                    Ph:- 0302-2133218, 0315-4533218
                   </Typography>
                 </Box>
                 <Typography variant="h6" sx={{
@@ -7097,13 +7101,13 @@ function FinancePageContent() {
             {/* Header */}
             <Box sx={{ textAlign: 'center', pb: 1, borderBottom: '2px solid #000' }}>
               <Typography sx={{ fontSize: '15px', fontWeight: '900', fontFamily: 'Arial, sans-serif', direction: 'rtl', color: '#000' }}>
-                اتفاق آئرن اینڈ سیمنٹ سٹور
+                زین ٹریڈرز منڈی بہاؤالدین
               </Typography>
               <Typography sx={{ fontSize: '11px', direction: 'rtl', mt: 0.25, color: '#000' }}>
-                گجرات سرگودھا روڈ، پاہڑیانوالی
+                Phalia Road , Near Aljannat Petrol pump M.B.Din.
               </Typography>
               <Typography sx={{ fontSize: '11px', fontWeight: 'bold', mt: 0.25, color: '#000' }}>
-                Ph: 0346-7560306, 0300-7560306
+                Ph: 0302-2133218, 0315-4533218
               </Typography>
               <Typography
                 sx={{

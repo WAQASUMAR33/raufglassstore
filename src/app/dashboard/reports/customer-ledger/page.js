@@ -105,9 +105,9 @@ export default function CustomerLedgerReport() {
   const handleExport = () => {
     if (!reportData) return;
 
-    let csv = 'Ittefaq Iron and Cement Store\n';
-    csv += 'Address: Parianwali\n';
-    csv += 'Phone: +92 346 7560306\n\n';
+    let csv = 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
     csv += 'Customer Ledger Report\n';
     csv += `Customer: ${reportData.customer?.cus_name}\n`;
     csv += `From: ${formatDatePK(startDate)} To: ${formatDatePK(endDate)}\n`;
@@ -251,9 +251,9 @@ export default function CustomerLedgerReport() {
             {/* Print Header */}
             <div className="hidden print:block mb-6 border-b-2 border-gray-800 pb-4">
               <div className="text-center">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">Ittefaq Iron and Cement Store</h1>
-                <p className="text-gray-700 text-lg">Address: Parianwali</p>
-                <p className="text-gray-700 text-lg">Phone: +92 346 7560306</p>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">Zain Traders Mandi Bahauddin</h1>
+                <p className="text-gray-700 text-lg">Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
+                <p className="text-gray-700 text-lg">Phone: 0302-2133218, 0315-4533218</p>
                 <div className="mt-4 pt-4 border-t border-gray-300">
                   <h2 className="text-2xl font-semibold text-gray-800">Customer Ledger Report</h2>
                   <p className="text-gray-600 mt-2">Customer: {reportData.customer?.cus_name}</p>
@@ -403,8 +403,8 @@ export default function CustomerLedgerReport() {
             {/* Print Footer */}
             <div className="hidden print:block mt-8 pt-4 border-t-2 border-gray-800">
               <div className="text-center">
-                <p className="text-gray-700 font-semibold">Ittefaq Iron and Cement Store</p>
-                <p className="text-gray-600 text-sm">Address: Parianwali | Phone: +92 346 7560306</p>
+                <p className="text-gray-700 font-semibold">Zain Traders Mandi Bahauddin</p>
+                <p className="text-gray-600 text-sm">Address: Phalia Road , Near Aljannat Petrol pump M.B.Din. | Phone: 0302-2133218, 0315-4533218</p>
                 <p className="text-gray-500 text-xs mt-2">
                   This is a computer-generated report. No signature required.
                 </p>

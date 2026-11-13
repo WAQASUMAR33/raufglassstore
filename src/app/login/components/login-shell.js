@@ -90,10 +90,10 @@ export default function LoginShell({
 
         <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
           <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
-            <MapPin size={14} /> Gujrat Sargodha Road, Pahrian Wali
+            <MapPin size={14} /> Phalia Road , Near Aljannat Petrol pump M.B.Din.
           </p>
           <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
-            <Phone size={14} /> 0346-7560306 · 0300-7560306
+            <Phone size={14} /> 0302-2133218 · 0315-4533218
           </p>
         </div>
       </div>

@@ -207,18 +207,18 @@ export default function CommercialInvoiceReceipt({
               sx={{
                 fontSize: '1.25rem',
                 fontWeight: 900,
-                letterSpacing: '0.05em',
+                letterSpacing: '0.04em',
                 lineHeight: 1.15,
                 color: '#000000',
               }}
             >
-              ZAIN TRADERS
+              ZAIN TRADERS MANDI BAHAUDDIN
             </Typography>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333333', lineHeight: 1.2 }}>
-              Sargodha
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333333', lineHeight: 1.2, mt: 0.25 }}>
+              Phalia Road , Near Aljannat Petrol pump M.B.Din.
             </Typography>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#444444', lineHeight: 1.25, mt: 0.25 }}>
-              0483-712161, 0483-712160, 0321-8681824
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#000000', lineHeight: 1.25, mt: 0.25 }}>
+              Ph: 0302-2133218, 0315-4533218
             </Typography>
           </Box>
         </Box>

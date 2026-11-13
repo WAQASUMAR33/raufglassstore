@@ -378,10 +378,10 @@ export default function StockReport() {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
-    doc.text('ITTEFAQ IRON STORE', pageWidth / 2, 36, { align: 'center' });
+    doc.text('ZAIN TRADERS MANDI BAHAUDDIN', pageWidth / 2, 36, { align: 'center' });
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Parianwali, Pakistan', pageWidth / 2, 52, { align: 'center' });
+    doc.text('Phalia Road , Near Aljannat Petrol pump M.B.Din.', pageWidth / 2, 52, { align: 'center' });
 
     doc.setFillColor(30, 41, 59);
     doc.rect(30, 62, pageWidth - 60, 22, 'F');
@@ -652,7 +652,7 @@ export default function StockReport() {
       const ph = doc.internal.pageSize.getHeight();
       const pw = doc.internal.pageSize.getWidth();
       doc.text(`Page ${i} of ${pageCount}`, pw - 40, ph - 14, { align: 'right' });
-      doc.text('Ittefaq Iron Store — Stock Report', 30, ph - 14);
+      doc.text('Zain Traders Mandi Bahauddin — Stock Report', 30, ph - 14);
     }
 
     return doc;

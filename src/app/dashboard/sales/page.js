@@ -115,7 +115,7 @@ import {
   getLinkedOriginalSaleId,
 } from './components/sale-utils';
 
-const INVOICE_STORE_PHONE_LINE = `Ph:- ${(COMPANY.phones || ['0300-7560306']).filter(Boolean).join(', ')}`;
+const INVOICE_STORE_PHONE_LINE = `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).filter(Boolean).join(', ')}`;
 
 // Sale-page "below cost" check must use cost rate (pro_cost_price), never purchase/crate.
 const getProductCostPrice = (product) => {
@@ -4374,7 +4374,7 @@ function SalesPageContent() {
       let phone = resolveBillWhatsAppPhone(bill, customPhone);
       if (!phone) {
         const manual = window.prompt(
-          'Customer phone is missing or invalid.\nEnter WhatsApp number (e.g. 0300-7560306):',
+          'Customer phone is missing or invalid.\nEnter WhatsApp number (e.g. 0302-2133218):',
           formatCustomerPhoneDisplay(bill?.customer) !== 'N/A' ? formatCustomerPhoneDisplay(bill?.customer) : ''
         );
         if (!manual?.trim()) {
@@ -4670,8 +4670,9 @@ function SalesPageContent() {
 </style></head><body>
   <div class="page">
     <header class="company-header">
-      <div class="urdu-name" style="font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Urdu Typesetting',serif !important;">اتفاق آئرن اینڈ سیمنٹ سٹور</div>
-      <div class="urdu-address">گجرات سرگودھا روڈ، پاہڑیانوالی</div>
+      <div class="company-name" style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${COMPANY.name || 'Zain Traders Mandi Bahauddin'}</div>
+      <div class="urdu-name" style="font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Urdu Typesetting',serif !important; font-size: 16px; margin-bottom: 2px;">${COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}</div>
+      <div class="urdu-address" style="font-size: 11px; color: #475569; margin-bottom: 2px;">${COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'}</div>
       <div class="phone">${INVOICE_STORE_PHONE_LINE.replace('Ph:- ', 'Ph: ')}</div>
       <div class="doc-title">Sales List Report</div>
     </header>
@@ -9920,10 +9921,15 @@ function SalesPageContent() {
                 }}
               >
                 <Box sx={{ textAlign: 'center', pb: 1, borderBottom: '1px solid #000' }}>
-                  <Typography sx={{ fontWeight: 900, fontSize: '20px', fontFamily: 'Arial, sans-serif', direction: 'rtl', color: '#000' }}>
-                    اتفاق آئرن اینڈ سیمنٹ سٹور
+                  <Typography sx={{ fontSize: '15px', fontWeight: 900, color: '#000', mb: 0.25 }}>
+                    {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
                   </Typography>
-                  <Typography sx={{ fontSize: '11px', fontWeight: 'bold', color: '#16a34a !important' }}>گجرات سرگودھا روڈ، پاہڑیانوالی</Typography>
+                  <Typography className="nastaliq-text" sx={{ fontSize: '15px', fontWeight: 'bold', fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif !important', color: '#000', direction: 'rtl', mb: 0.25 }}>
+                    {COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}
+                  </Typography>
+                  <Typography sx={{ fontSize: '10px', fontWeight: 'bold', color: '#334155' }}>
+                    {COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'}
+                  </Typography>
                   <Typography className="invoice-store-phone" sx={{ fontSize: '13px', fontWeight: 'bold' }}>{INVOICE_STORE_PHONE_LINE.replace('Ph:- ', 'Ph: ')}</Typography>
                   <Typography
                     sx={{
@@ -12237,11 +12243,14 @@ function SalesPageContent() {
           >
             {/* Header */}
             <Box sx={{ textAlign: 'center', pb: 1, borderBottom: '2px solid #000' }}>
-              <Typography sx={{ fontWeight: 900, fontSize: '20px', fontFamily: 'Arial, sans-serif', direction: 'rtl', color: '#000', mb: 0.75 }}>
-                اتفاق آئرن اینڈ سیمنٹ سٹور
+              <Typography sx={{ fontWeight: 900, fontSize: '16px', color: '#000', mb: 0.5 }}>
+                {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
               </Typography>
-              <Typography sx={{ fontSize: '11px', direction: 'rtl', mt: 0.75, mb: 0.5, color: '#16a34a !important', fontWeight: 'bold' }}>
-                گجرات سرگودھا روڈ، پاہڑیانوالی
+              <Typography sx={{ fontWeight: 800, fontSize: '17px', fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif', direction: 'rtl', color: '#000', mb: 0.5 }}>
+                {COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}
+              </Typography>
+              <Typography sx={{ fontSize: '10.5px', color: '#000', mt: 0.25, mb: 0.25, fontWeight: 600 }}>
+                {COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'}
               </Typography>
               <Typography className="invoice-store-phone" sx={{ fontSize: '14px', fontWeight: 'bold', mt: 0.25, color: '#000' }}>
                 {INVOICE_STORE_PHONE_LINE.replace('Ph:- ', 'Ph: ')}

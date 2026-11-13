@@ -166,9 +166,9 @@ export default function SalesByDateReport() {
 
     // Create CSV content with header
     let csv = ''; 
-    csv += 'Ittefaq Iron and Cement Store\n';
-    csv += 'Address: Parianwali\n';
-    csv += 'Phone: +92 346 7560306\n';
+    csv += 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n';
     csv += '\n';
     csv += 'Sales Report (By Date)\n';
     csv += `From: ${formatDatePK(startDate)} To: ${formatDatePK(endDate)}\n`;
@@ -245,7 +245,7 @@ export default function SalesByDateReport() {
           <div class="company">
             <h2 style="margin:0;font-size:20px">اتفاق آئرن اینڈ سیمنٹ سٹور</h2>
             <div>گجرات سرگودھا روڈ، پاہڑیانوالی</div>
-            <div>Ph: 0346-7560306, 0300-7560306</div>
+            <div>Ph: 0302-2133218, 0315-4533218</div>
             <div style="margin-top:6px;font-weight:bold;font-size:18px">SALE INVOICE</div>
           </div>
 
@@ -462,9 +462,9 @@ export default function SalesByDateReport() {
             {/* Print Header - Only show on print */}
             <div className="hidden print:block mb-6 border-b-2 border-gray-800 pb-4">
               <div className="text-center">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">Ittefaq Iron and Cement Store</h1>
-                <p className="text-gray-700 text-lg">Address: Parianwali</p>
-                <p className="text-gray-700 text-lg">Phone: +92 346 7560306</p>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">Zain Traders Mandi Bahauddin</h1>
+                <p className="text-gray-700 text-lg">Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
+                <p className="text-gray-700 text-lg">Phone: 0302-2133218, 0315-4533218</p>
                 <div className="mt-4 pt-4 border-t border-gray-300">
                   <h2 className="text-2xl font-semibold text-gray-800">Sales Report (By Date)</h2>
                   <p className="text-gray-600 mt-2">
@@ -514,9 +514,9 @@ export default function SalesByDateReport() {
                 {selectedSale ? (
                   <Box sx={{ width: '100%', bgcolor: 'white' }}>
                     <Box sx={{ textAlign: 'center', py: 2, borderBottom: '2px solid #000' }}>
-                      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>Ittefaq Iron and Cement Store</Typography>
-                      <Typography variant="body2" sx={{ mb: 0.5 }}>Address: Parianwali</Typography>
-                      <Typography variant="body2">Phone: +92 346 7560306</Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>Zain Traders Mandi Bahauddin</Typography>
+                      <Typography variant="body2" sx={{ mb: 0.5 }}>Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.</Typography>
+                      <Typography variant="body2">Phone: 0302-2133218, 0315-4533218</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>SALE INVOICE</Typography>
                     </Box>
 
@@ -906,8 +906,8 @@ export default function SalesByDateReport() {
             {/* Print Footer - Only show on print */}
             <div className="hidden print:block mt-8 pt-4 border-t-2 border-gray-800">
               <div className="text-center">
-                <p className="text-gray-700 font-semibold">Ittefaq Iron and Cement Store</p>
-                <p className="text-gray-600 text-sm">Address: Parianwali | Phone: +92 346 7560306</p>
+                <p className="text-gray-700 font-semibold">Zain Traders Mandi Bahauddin</p>
+                <p className="text-gray-600 text-sm">Address: Phalia Road , Near Aljannat Petrol pump M.B.Din. | Phone: 0302-2133218, 0315-4533218</p>
                 <p className="text-gray-500 text-xs mt-2">
                   This is a computer-generated report. No signature required.
                 </p>

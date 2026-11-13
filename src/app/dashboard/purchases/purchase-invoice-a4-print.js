@@ -352,10 +352,10 @@ function renderMetaHtml(bill, ctx) {
 }
 
 function renderFullHeaderHtml(ctx) {
-  const phone = ctx.phoneLine || `Ph:- ${(COMPANY.phones || ['0300-7560306']).join(', ')}`;
+  const phone = ctx.phoneLine || `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}`;
   return `<div class="pi-header-full">
     <p class="pi-ur">${esc(COMPANY.nameUr)}</p>
-    <p class="pi-addr">گجرات سرگودھا روڈ، پاہڑیانوالی</p>
+    <p class="pi-addr">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
     <p class="pi-phone">${esc(phone)}</p>
     <p class="pi-title">Purchase Invoice</p>
   </div>`;
@@ -606,7 +606,7 @@ export function PurchaseInvoiceA4Document({ bill, ctx }) {
   const allDetails = bill.purchase_details || [];
   const totalPages = pages.length;
   const createdBy = typeof ctx.createdByFor === 'function' ? ctx.createdByFor(bill) : '—';
-  const phone = ctx.phoneLine || `Ph:- ${(COMPANY.phones || ['0300-7560306']).join(', ')}`;
+  const phone = ctx.phoneLine || `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}`;
 
   return (
     <>
@@ -625,7 +625,7 @@ export function PurchaseInvoiceA4Document({ bill, ctx }) {
               {isFirst ? (
                 <div className="pi-header-full">
                   <p className="pi-ur">{COMPANY.nameUr}</p>
-                  <p className="pi-addr">گجرات سرگودھا روڈ، پاہڑیانوالی</p>
+                  <p className="pi-addr">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
                   <p className="pi-phone">{phone}</p>
                   <p className="pi-title">Purchase Invoice</p>
                 </div>

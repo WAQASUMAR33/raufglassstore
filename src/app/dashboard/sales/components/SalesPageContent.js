@@ -3171,7 +3171,7 @@ export default function SalesPageContent() {
       let phone = resolveBillWhatsAppPhone(bill, customPhone);
       if (!phone) {
         const manual = window.prompt(
-          'Customer phone is missing or invalid.\nEnter WhatsApp number (e.g. 0300-7560306):',
+          'Customer phone is missing or invalid.\nEnter WhatsApp number (e.g. 0302-2133218):',
           formatCustomerPhoneDisplay(bill?.customer) !== 'N/A' ? formatCustomerPhoneDisplay(bill?.customer) : ''
         );
         if (!manual?.trim()) {
@@ -3467,8 +3467,9 @@ export default function SalesPageContent() {
 </style></head><body>
   <div class="page">
     <header class="company-header">
-      <div class="urdu-name" style="font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Urdu Typesetting',serif !important;">Ø§ØªÙØ§Ù‚ Ø¢Ø¦Ø±Ù† Ø§ÛŒÙ†Úˆ Ø³ÛŒÙ…Ù†Ù¹ Ø³Ù¹ÙˆØ±</div>
-      <div class="urdu-address">Ú¯Ø¬Ø±Ø§Øª Ø³Ø±Ú¯ÙˆØ¯Ú¾Ø§ Ø±ÙˆÚˆØŒ Ù¾Ø§ÛÚ‘ÛŒØ§Ù†ÙˆØ§Ù„ÛŒ</div>
+      <div class="company-name" style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${COMPANY.name || 'Zain Traders Mandi Bahauddin'}</div>
+      <div class="urdu-name" style="font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Urdu Typesetting',serif !important; font-size: 16px; margin-bottom: 2px;">${COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}</div>
+      <div class="urdu-address" style="font-size: 11px; color: #475569; margin-bottom: 2px;">${COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'}</div>
       <div class="phone">${INVOICE_STORE_PHONE_LINE.replace('Ph:- ', 'Ph: ')}</div>
       <div class="doc-title">Sales List Report</div>
     </header>

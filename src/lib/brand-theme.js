@@ -5,14 +5,14 @@
  */
 
 export const COMPANY = {
-  name: 'Zain Traders',
+  name: 'Zain Traders Mandi Bahauddin',
   nameShort: 'Zain Traders',
   nameSub: 'Glass & Aluminium',
-  nameUr: 'زین ٹریڈرز',
+  nameUr: 'زین ٹریڈرز منڈی بہاؤالدین',
   tagline: 'Glass, Mirror & Aluminium Solutions',
-  address: 'Sargodha',
-  addressUr: 'سرگودھا',
-  phones: ['0483-712161', '0483-712160', '0321-8681824'],
+  address: 'Phalia Road , Near Aljannat Petrol pump M.B.Din.',
+  addressUr: 'پھالیہ روڈ، نزد الجنت پٹرول پمپ، منڈی بہاؤالدین',
+  phones: ['0302-2133218', '0315-4533218'],
 };
 
 export const POWERED_BY = {

@@ -108,34 +108,34 @@ export default function SaleViewBillDialog() {
                 bgcolor: '#ffffff',
                 mb: 1
               }}>
-                <Typography className="nastaliq-text" variant="h4" sx={{
+                <Typography variant="h4" sx={{
+                  fontWeight: 900,
+                  mb: 0.5,
+                  fontSize: { xs: '1.4rem', md: '1.8rem' },
+                  color: '#0f172a',
+                  letterSpacing: '0.03em',
+                }}>
+                  {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
+                </Typography>
+                <Typography className="nastaliq-text" sx={{
                   fontWeight: 'bold',
-                  mb: 1.25,
+                  mb: 1,
                   fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif !important',
-                  fontSize: { xs: '1.8rem', md: '2.4rem' },
+                  fontSize: { xs: '1.3rem', md: '1.6rem' },
                   direction: 'rtl',
                   color: '#0f172a',
-                  lineHeight: 1.8,
-                  display: 'inline-flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: 1.25
+                  lineHeight: 1.5,
                 }}>
-                  <Box component="span" className="word-ittefaq" sx={{ display: 'inline-block' }}>اتفاق</Box>
-                  <Box component="span" className="word-iron" sx={{ display: 'inline-block' }}>آئرن</Box>
-                  <Box component="span" className="word-and" sx={{ display: 'inline-block' }}>اینڈ</Box>
-                  <Box component="span" className="word-cement" sx={{ display: 'inline-block' }}>سیمنٹ</Box>
-                  <Box component="span" className="word-store" sx={{ display: 'inline-block' }}>سٹور</Box>
+                  {COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}
                 </Typography>
                 <Typography variant="body2" sx={{
-                  mt: 0.75,
-                  mb: 1.5,
+                  mt: 0.5,
+                  mb: 0.5,
                   fontSize: '0.95rem',
-                  direction: 'rtl',
-                  color: '#16a34a !important',
-                  fontWeight: 700
+                  color: '#334155 !important',
+                  fontWeight: 600
                 }}>
-                  گجرات سرگودھا روڈ، پاہڑیانوالی
+                  {COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'}
                 </Typography>
                 <Typography
                   className="invoice-store-phone"

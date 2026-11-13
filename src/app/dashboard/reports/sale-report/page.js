@@ -275,9 +275,9 @@ export default function SaleReport() {
         <body>
           <div style="width:148mm;margin:0 auto">
           <div class="company">
-            <h2 style="margin:0;font-size:20px">Ittefaq Iron and Cement Store</h2>
-            <div>Parianwali</div>
-            <div>Ph: 0346-7560306</div>
+            <h2 style="margin:0;font-size:20px">Zain Traders Mandi Bahauddin</h2>
+            <div>Phalia Road , Near Aljannat Petrol pump M.B.Din.</div>
+            <div>Ph: 0302-2133218</div>
             <div style="margin-top:6px;font-weight:bold;font-size:18px">SALE INVOICE</div>
           </div>
 

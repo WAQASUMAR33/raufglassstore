@@ -477,15 +477,18 @@ export default function ItemSaleReport() {
 
                     {/* Company Header */}
                     <div style={{ textAlign: 'center', paddingBottom: 16, borderBottom: '2px solid #000' }}>
-                      <div style={{ fontSize: 22, fontWeight: 700, direction: 'rtl', fontFamily: 'serif', marginBottom: 4 }}>
-                        اتفاق آئرن اینڈ سیمنٹ سٹور
+                      <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>
+                        Zain Traders Mandi Bahauddin
                       </div>
-                      <div style={{ fontSize: 13, direction: 'rtl', marginBottom: 4 }}>
-                        گجرات سرگودھا روڈ، پاہڑیانوالی
+                      <div style={{ fontSize: 18, direction: 'rtl', fontFamily: 'serif', marginBottom: 4 }}>
+                        زین ٹریڈرز منڈی بہاؤالدین
+                      </div>
+                      <div style={{ fontSize: 13, marginBottom: 4 }}>
+                        Phalia Road , Near Aljannat Petrol pump M.B.Din.
                       </div>
                       <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
                         <span style={{ color: '#25D366' }}>📞</span>
-                        Ph:- 0346-7560306, 0300-7560306
+                        Ph:- 0302-2133218, 0315-4533218
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginTop: 8, color: isSaleReturn ? '#d32f2f' : '#000' }}>
                         {isSale ? 'SALE INVOICE' : isSaleReturn ? 'SALE RETURN INVOICE' : isPurchase ? 'PURCHASE INVOICE' : 'PURCHASE RETURN'}

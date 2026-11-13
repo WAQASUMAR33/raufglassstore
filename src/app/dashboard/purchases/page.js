@@ -2099,7 +2099,7 @@ function PurchasesPageContent() {
     fmtAmt,
     formatDatePK,
     formatTimePK,
-    phoneLine: `Ph:- ${(COMPANY.phones || ['0300-7560306']).join(', ')}`,
+    phoneLine: `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}`,
     getInvoiceNet,
     getInvoiceRemainingDue,
     getSupplierBalanceAfterBill,

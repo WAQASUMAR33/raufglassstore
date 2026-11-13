@@ -106,9 +106,9 @@ export default function SupplierLedgerReport() {
   const handleExport = () => {
     if (!reportData) return;
 
-    let csv = 'Ittefaq Iron and Cement Store\n';
-    csv += 'Address: Parianwali\n';
-    csv += 'Phone: +92 346 7560306\n\n';
+    let csv = 'Zain Traders Mandi Bahauddin\n';
+    csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
+    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
     csv += 'Supplier Ledger Report\n';
     csv += `Supplier: ${reportData.supplier?.cus_name}\n`;
     csv += `From: ${formatDatePK(startDate)} To: ${formatDatePK(endDate)}\n`;
