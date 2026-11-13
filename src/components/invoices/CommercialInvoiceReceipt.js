@@ -46,18 +46,29 @@ export function parseInvoiceLineItem(detail) {
   }
   if (!pcs) pcs = 1;
 
+  let addonsList = [];
+  if (Array.isArray(detail.selected_addons) && detail.selected_addons.length > 0) {
+    addonsList = detail.selected_addons.map(a => a.name || a.addon?.name).filter(Boolean);
+  }
+  const addonMatch = sizeStr.match(/\[(?:Ad-?Ons?|Addons?):\s*([^\]]+)\]/i);
+  if (addonMatch) {
+    const fromSize = addonMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+    if (addonsList.length === 0) {
+      addonsList = fromSize;
+    }
+  }
+
   if (!jobDesc && sizeStr) {
-    const commentMatch = sizeStr.match(/\]\s*-\s*(.+)$/);
+    const cleanSize = sizeStr.replace(/\[(?:Ad-?Ons?|Addons?):\s*[^\]]+\]/i, '').trim();
+    const commentMatch = cleanSize.match(/\]\s*-\s*(.+)$/) || cleanSize.match(/^-\s*(.+)$/);
     if (commentMatch) {
       jobDesc = commentMatch[1].trim();
     }
   }
 
-  if (Array.isArray(detail.selected_addons) && detail.selected_addons.length > 0) {
-    const addonNames = detail.selected_addons.map(a => a.name || a.addon?.name).filter(Boolean).join(', ');
-    if (addonNames) {
-      jobDesc = jobDesc && jobDesc !== '-' ? `${jobDesc} (${addonNames})` : addonNames;
-    }
+  if (addonsList.length > 0) {
+    const addonNames = addonsList.join(', ');
+    jobDesc = jobDesc && jobDesc !== '-' ? `${jobDesc} (Ad-Ons: ${addonNames})` : `Ad-Ons: ${addonNames}`;
   }
 
   let itemName = detail.product?.pro_title || detail.pro_title || detail.product_name || 'Glass Item';
@@ -78,6 +89,7 @@ export function parseInvoiceLineItem(detail) {
   return {
     itemName: itemName,
     jobDesc: jobDesc || '-',
+    addonsList: addonsList,
     width: width ? fmtNum(width) : '-',
     height: height ? fmtNum(height) : '-',
     pcs: Number(pcs) || 1,
@@ -177,7 +189,8 @@ export default function CommercialInvoiceReceipt({
   // Financial values
   const discount = parseFloat(bill.discount || 0);
   const carriage = parseFloat(bill.shipping_amount || bill.delivery_charges || 0);
-  const fittingCharges = parseFloat(bill.fitting_charges || bill.labour_charges || 0) || (Array.isArray(bill.fitter_details) ? bill.fitter_details.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0) : 0);
+  const labourCharges = parseFloat(bill.labour_charges || bill.labour || 0);
+  const fittingCharges = parseFloat(bill.fitting_charges || 0) || (Array.isArray(bill.fitter_details) ? bill.fitter_details.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0) : 0);
   const billValue = parseFloat(bill.total_amount || 0);
   
   const payment1 = parseFloat(bill.cash_payment || (bill.payment && !bill.bank_payment ? bill.payment : 0) || 0);
@@ -514,6 +527,11 @@ export default function CommercialInvoiceReceipt({
                     }}
                   >
                     {item.itemName}
+                    {item.addonsList && item.addonsList.length > 0 && (
+                      <div style={{ fontSize: '0.72rem', color: '#047857', fontWeight: 700, marginTop: '2px' }}>
+                        Ad-Ons: {item.addonsList.join(', ')}
+                      </div>
+                    )}
                   </td>
                   <td
                     style={{
@@ -767,6 +785,12 @@ export default function CommercialInvoiceReceipt({
                 <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 700 }}>Carriage:</td>
                 <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 600 }}>{fmtAmt(carriage)}</td>
               </tr>
+              {labourCharges > 0 && (
+                <tr>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 700 }}>Labour:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 600 }}>{fmtAmt(labourCharges)}</td>
+                </tr>
+              )}
               {fittingCharges > 0 && (
                 <tr>
                   <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 700 }}>Fitting:</td>

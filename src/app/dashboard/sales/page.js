@@ -187,6 +187,9 @@ function buildSaleReceiptBill({
       total_amount: product.amount,
       size: product.size || null,
       comments: product.comments || '',
+      selected_addons: product.selected_addons || [],
+      addons_rate: product.addons_rate || 0,
+      addons_amount: product.addons_amount || 0,
       product: { pro_title: product.pro_title || 'N/A' },
     })),
     labour: parseFloat(paymentData.labour) || 0,
@@ -2068,8 +2071,21 @@ function SalesPageContent() {
       const addonsAmount = Number((qty * addonsTotal).toFixed(0));
       const lineAmount = Number((qty * effectiveRate).toFixed(0));
 
+      const addonNames = (selectedAddonList || []).map(a => a.name || a.addon?.name).filter(Boolean);
+      let updatedSize = p.size || '';
+      updatedSize = updatedSize.replace(/\s*\[(?:Ad-?Ons?|Addons?):\s*[^\]]+\]/i, '').trim();
+      if (addonNames.length > 0) {
+        if (updatedSize.includes(' - ')) {
+          const parts = updatedSize.split(' - ');
+          updatedSize = `${parts[0]} [Ad-Ons: ${addonNames.join(', ')}] - ${parts.slice(1).join(' - ')}`;
+        } else {
+          updatedSize = `${updatedSize} [Ad-Ons: ${addonNames.join(', ')}]`.trim();
+        }
+      }
+
       return {
         ...p,
+        size: updatedSize,
         selected_addons: selectedAddonList,
         addons_rate: addonsTotal,
         glass_amount: glassAmount,
@@ -2246,8 +2262,22 @@ function SalesPageContent() {
       const glassAmount = Number((qty * glassRate).toFixed(0));
       const addonsAmount = Number((qty * addonsTotal).toFixed(0));
       const effectiveRate = glassRate + addonsTotal;
+
+      const addonNames = newSelected.map(a => a.name || a.addon?.name).filter(Boolean);
+      let updatedSize = p.size || '';
+      updatedSize = updatedSize.replace(/\s*\[(?:Ad-?Ons?|Addons?):\s*[^\]]+\]/i, '').trim();
+      if (addonNames.length > 0) {
+        if (updatedSize.includes(' - ')) {
+          const parts = updatedSize.split(' - ');
+          updatedSize = `${parts[0]} [Ad-Ons: ${addonNames.join(', ')}] - ${parts.slice(1).join(' - ')}`;
+        } else {
+          updatedSize = `${updatedSize} [Ad-Ons: ${addonNames.join(', ')}]`.trim();
+        }
+      }
+
       return {
         ...p,
+        size: updatedSize,
         selected_addons: newSelected,
         addons_rate: addonsTotal,
         glass_amount: glassAmount,
@@ -2299,14 +2329,21 @@ function SalesPageContent() {
     const isGeneral = formSelectedProduct.is_general || formSelectedProduct.pro_title?.toLowerCase().includes('general product') || formSelectedProduct.pro_id === 3;
     const itemTitle = isGeneral && productFormData.comments ? productFormData.comments : formSelectedProduct.pro_title;
 
+    const addonNames = (productFormData.selected_addons || []).map(a => a.name || a.addon?.name).filter(Boolean);
+    const addonsSummary = addonNames.length > 0 ? ` [Ad-Ons: ${addonNames.join(', ')}]` : '';
+
     if (w && h) {
-      sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]`;
+      sizeStr = `${w}"×${h}" (Avail: ${cW}"×${cH}") [${pcs} pcs]${addonsSummary}`;
+    } else if (addonsSummary) {
+      sizeStr = addonsSummary.trim();
     }
     if (productFormData.comments) {
       sizeStr = sizeStr ? `${sizeStr} - ${productFormData.comments}` : productFormData.comments;
     }
     if (isGeneral && !sizeStr) {
-      sizeStr = `General: ${itemTitle}`;
+      sizeStr = `General: ${itemTitle}${addonsSummary}`;
+    } else if (isGeneral && addonsSummary && !sizeStr.includes('Ad-Ons:')) {
+      sizeStr += addonsSummary;
     }
 
     const newProduct = {
