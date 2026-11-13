@@ -145,8 +145,17 @@ export default function CommercialInvoiceReceipt({
   const fitterMatch = String(bill.reference || bill.notes || '').match(/\[Fitter:\s*([^\]]+)\]/i);
   const fitterName = bill.fitter_name || (fitterMatch ? fitterMatch[1].trim() : '') || (Array.isArray(bill.fitter_details) && bill.fitter_details[0]?.accountName) || '';
   const cutterMatch = String(bill.reference || bill.notes || '').match(/\[Cutter:\s*([^\]]+)\]/i);
-  const cutterName = bill.cutter_name || (cutterMatch ? cutterMatch[1].trim() : '-');
-  const displayFitter = fitterName || cutterName;
+  let rawCutter = bill.cutter_name || (cutterMatch ? cutterMatch[1].trim() : '');
+  let cutterCharges = parseFloat(bill.cutter_amount || bill.cutter_charges || 0);
+  if (rawCutter) {
+    const amtM = rawCutter.match(/\(Rs\.?\s*([0-9.]+)\)/i);
+    if (amtM) {
+      if (!cutterCharges) cutterCharges = parseFloat(amtM[1]) || 0;
+      rawCutter = rawCutter.replace(/\(Rs\.?\s*[0-9.]+\)/i, '').trim();
+    }
+  }
+  const cutterName = rawCutter || '-';
+  const displayFitter = fitterName && rawCutter ? `${fitterName} (Cutter: ${rawCutter})` : (fitterName || rawCutter || '-');
 
   // Extract DC No
   const dcMatch = String(bill.reference || bill.notes || '').match(/\[DC:\s*([^\]]+)\]/i);
@@ -762,6 +771,12 @@ export default function CommercialInvoiceReceipt({
                 <tr>
                   <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 700 }}>Fitting:</td>
                   <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 600 }}>{fmtAmt(fittingCharges)}</td>
+                </tr>
+              )}
+              {cutterCharges > 0 && (
+                <tr>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 700 }}>Cutter:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 600 }}>{fmtAmt(cutterCharges)}</td>
                 </tr>
               )}
               <tr style={{ backgroundColor: '#f8fafc' }}>
