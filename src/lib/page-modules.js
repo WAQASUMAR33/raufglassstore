@@ -55,9 +55,9 @@ export const SYSTEM_PAGES = [
   { id: 'bank-accounts', name: 'Bank Accounts', section: 'Quick Access', path: '/dashboard/bank-accounts' },
   { id: 'ledger', name: 'Ledger', section: 'Quick Access', path: '/dashboard/finance' },
 
-  { id: 'customercategory', name: 'Account Categories', section: 'Accounts', path: '/dashboard/customercategory' },
-  { id: 'customer-types', name: 'Account Types', section: 'Accounts', path: '/dashboard/customer-types', adminOnly: true },
   { id: 'customers', name: 'Accounts', section: 'Accounts', path: '/dashboard/customers' },
+  { id: 'customer-types', name: 'Account Type', section: 'Accounts', path: '/dashboard/customer-types' },
+  { id: 'customercategory', name: 'Account Category Management', section: 'Accounts', path: '/dashboard/customercategory' },
 
   { id: 'categories', name: 'Category Management', section: 'Products', path: '/dashboard/categories' },
   { id: 'sub-categories', name: 'Sub Category Management', section: 'Products', path: '/dashboard/subcategories' },
@@ -255,6 +255,10 @@ export function normalizeAllowedModules(raw) {
   if (pages.includes('products') && !pages.includes('addons')) {
     pages.push('addons');
   }
+  if (pages.includes('customers') || pages.includes('accounts')) {
+    if (!pages.includes('customercategory')) pages.push('customercategory');
+    if (!pages.includes('customer-types')) pages.push('customer-types');
+  }
   const hasAnyAnalytics = DASHBOARD_ANALYTICS_CHILD_WIDGET_IDS.some((id) => pages.includes(id));
   if (hasAnyAnalytics) {
     ['dashboard-top-customers-sale', 'dashboard-top-products-sale'].forEach((id) => {
@@ -271,6 +275,9 @@ export function hasPageAccess(allowed, pageId) {
   }
   if (pageId === 'addons') {
     return expanded.includes('addons') || expanded.includes('products');
+  }
+  if (pageId === 'customercategory' || pageId === 'customer-types') {
+    return expanded.includes(pageId) || expanded.includes('customers') || expanded.includes('accounts');
   }
   return expanded.includes(pageId);
 }

@@ -276,6 +276,12 @@ export function canAccessMenuItem(user, item) {
     return hasPageAccess(allowed, 'addons') || hasPageAccess(allowed, 'products');
   }
 
+  if (pageId === 'customer-types' || pageId === 'customercategory') {
+    const role = resolveStaffRole(user);
+    if (isAdminRole(role) || isSuperAdminRole(role)) return true;
+    return hasPageAccess(allowed, pageId) || hasPageAccess(allowed, 'customers') || hasPageAccess(allowed, 'accounts');
+  }
+
   return hasPageAccess(allowed, pageId);
 }
 

@@ -212,9 +212,9 @@ export default function Sidebar({
     { id: 'ledger', name: 'Ledger', icon: DescriptionIcon, category: 'main' },
     { id: 'activity-logs', name: 'User Activity Logs', icon: ListAltIcon, category: 'main' },
 
-    { id: 'customercategory', name: 'Account Categories', icon: LabelIcon, category: 'customer-management', parent: 'Accounts' },
-    { id: 'customer-types', name: 'Account Types', icon: LabelIcon, category: 'customer-management', parent: 'Accounts', adminOnly: true },
     { id: 'customers', name: 'Accounts', icon: PeopleIcon, category: 'customer-management', parent: 'Accounts' },
+    { id: 'customer-types', name: 'Account Type', icon: LabelIcon, category: 'customer-management', parent: 'Accounts' },
+    { id: 'customercategory', name: 'Account Category Management', icon: FolderOpenIcon, category: 'customer-management', parent: 'Accounts' },
 
     { id: 'categories', name: 'Category Management', icon: FolderIcon, category: 'product-management', parent: 'Product Management' },
     { id: 'sub-categories', name: 'Sub Category Management', icon: FolderOpenIcon, category: 'product-management', parent: 'Product Management' },
@@ -314,6 +314,7 @@ export default function Sidebar({
     // Order matters: check more specific paths first
     const pathMappings = [
       { path: '/dashboard/usermanagement', id: 'usermanagement', category: 'system' },
+      { path: '/dashboard/customer-types', id: 'customer-types', category: 'customer-management' },
       { path: '/dashboard/customercategory', id: 'customercategory', category: 'customer-management' },
       { path: '/dashboard/customers', id: 'customers', category: 'customer-management' },
       { path: '/dashboard/categories', id: 'categories', category: 'product-management' },
