@@ -2095,10 +2095,10 @@ function PurchasesPageContent() {
     return Number((net - payment).toFixed(2));
   };
 
-  /** Supplier payable: balance is negative when we owe. After this purchase: previous − unpaid portion of this bill. */
+  /** Supplier payable: new purchase balance is added to existing balance (e.g. 5000 + 5000 = 10000). */
   const getSupplierBalanceAfterBill = (bill) => {
     const prev = parseFloat(bill?.previous_customer_balance ?? bill?.customer?.cus_balance ?? 0);
-    return Number((prev - getInvoiceRemainingDue(bill)).toFixed(2));
+    return Number((prev + getInvoiceRemainingDue(bill)).toFixed(2));
   };
 
   const purchasePrintCtx = useMemo(() => ({

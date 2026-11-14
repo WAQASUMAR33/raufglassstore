@@ -1146,7 +1146,7 @@ const getInvoiceRemainingDue = (bill) => {
 
 const getSupplierBalanceAfterBill = (bill) => {
   const prev = parseFloat(bill?.previous_customer_balance ?? bill?.customer?.cus_balance ?? 0);
-  return Number((prev - getInvoiceRemainingDue(bill)).toFixed(2));
+  return Number((prev + getInvoiceRemainingDue(bill)).toFixed(2));
 };
 
 function FinancePageContent() {

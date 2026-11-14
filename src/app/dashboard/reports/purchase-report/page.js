@@ -25,7 +25,7 @@ const getInvoiceNet = (bill) => {
 const getInvoiceRemainingDue = (bill) => getInvoiceNet(bill) - parseFloat(bill?.payment || 0);
 const getSupplierBalanceAfterBill = (bill) => {
   const prev = parseFloat(bill?.previous_customer_balance ?? bill?.customer?.cus_balance ?? 0);
-  return Number((prev - getInvoiceRemainingDue(bill)).toFixed(2));
+  return Number((prev + getInvoiceRemainingDue(bill)).toFixed(2));
 };
 
 export default function PurchaseReport() {
