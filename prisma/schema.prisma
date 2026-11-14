@@ -550,6 +550,7 @@ model Purchase {
   payment_type      PaymentType
   vehicle_no        String?
   invoice_number    String?          @db.VarChar(255)
+  dc_no             String?          @db.VarChar(255)
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   updated_by        Int?

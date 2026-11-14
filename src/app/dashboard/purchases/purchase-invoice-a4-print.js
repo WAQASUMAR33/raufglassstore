@@ -340,6 +340,8 @@ function renderMetaHtml(bill, ctx) {
       <p class="pi-meta-row"><span class="pi-meta-label">Customer:</span><span class="pi-meta-value">${esc(bill.customer?.cus_name || 'N/A')}</span></p>
       <p class="pi-meta-row"><span class="pi-meta-label">Phone:</span><span class="pi-meta-value">${esc(bill.customer?.cus_phone_no || 'N/A')}</span></p>
       <p class="pi-meta-row"><span class="pi-meta-label">Address:</span><span class="pi-meta-value">${esc(bill.customer?.cus_address || 'N/A')}</span></p>
+      ${bill.vehicle_no ? `<p class="pi-meta-row"><span class="pi-meta-label">Vehicle:</span><span class="pi-meta-value">${esc(bill.vehicle_no)}</span></p>` : ''}
+      ${bill.dc_no ? `<p class="pi-meta-row"><span class="pi-meta-label">DC No.:</span><span class="pi-meta-value">${esc(bill.dc_no)}</span></p>` : ''}
     </div>
     <div class="pi-meta-col pi-meta-right">
       <p class="pi-meta-row"><span class="pi-meta-label">Invoice No:</span><span class="pi-meta-value">#${esc(bill.pur_id)}</span></p>
@@ -641,6 +643,8 @@ export function PurchaseInvoiceA4Document({ bill, ctx }) {
                     <p className="pi-meta-row"><span className="pi-meta-label">Customer:</span><span className="pi-meta-value">{bill.customer?.cus_name || 'N/A'}</span></p>
                     <p className="pi-meta-row"><span className="pi-meta-label">Phone:</span><span className="pi-meta-value">{bill.customer?.cus_phone_no || 'N/A'}</span></p>
                     <p className="pi-meta-row"><span className="pi-meta-label">Address:</span><span className="pi-meta-value">{bill.customer?.cus_address || 'N/A'}</span></p>
+                    {bill.vehicle_no && <p className="pi-meta-row"><span className="pi-meta-label">Vehicle:</span><span className="pi-meta-value">{bill.vehicle_no}</span></p>}
+                    {bill.dc_no && <p className="pi-meta-row"><span className="pi-meta-label">DC No.:</span><span className="pi-meta-value">{bill.dc_no}</span></p>}
                   </div>
                   <div className="pi-meta-col pi-meta-right">
                     <p className="pi-meta-row"><span className="pi-meta-label">Invoice No:</span><span className="pi-meta-value">#{bill.pur_id}</span></p>

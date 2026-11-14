@@ -821,6 +821,7 @@ function PurchasesPageContent() {
       payment_type: 'CASH',
       vehicle_no: '',
       invoice_number: '',
+      dc_no: '',
       date: getTodayDateStr(),
       purchase_details: []
     },
@@ -1222,6 +1223,7 @@ function PurchasesPageContent() {
     payment_type: 'CASH',
     vehicle_no: '',
     invoice_number: '',
+    dc_no: '',
     purchase_details: []
   });
 
@@ -1262,7 +1264,8 @@ function PurchasesPageContent() {
       (formData.purchase_details?.length ?? 0) > 0 ||
       !!formSelectedCustomer ||
       !!formData.vehicle_no ||
-      !!formData.invoice_number;
+      !!formData.invoice_number ||
+      !!formData.dc_no;
     if (!hasContent) {
       localStorage.removeItem(DRAFT_KEY);
       setHasDraft(false);
@@ -1463,6 +1466,7 @@ function PurchasesPageContent() {
         payment_type: 'CASH',
         vehicle_no: '',
         invoice_number: '',
+        dc_no: '',
         date: getTodayDateStr(),
         purchase_details: []
       },
@@ -1792,6 +1796,8 @@ function PurchasesPageContent() {
     const matchesSearch = term === '' ||
       purchase.customer?.cus_name?.toLowerCase().includes(term) ||
       purchase.vehicle_no?.toLowerCase().includes(term) ||
+      purchase.dc_no?.toLowerCase().includes(term) ||
+      purchase.invoice_number?.toLowerCase().includes(term) ||
       String(purchase.pur_id).includes(term) ||
       purchase.reference?.toLowerCase().includes(term);
     const matchesCustomer = !selectedCustomer || purchase.cus_id === selectedCustomer;
@@ -2367,6 +2373,7 @@ function PurchasesPageContent() {
           bank_payment: bankPayment,
           vehicle_no: formData.vehicle_no,
           invoice_number: formData.invoice_number,
+          dc_no: formData.dc_no || null,
           updated_by: currentUser?.user_id,
           purchase_details: slimPurchaseDetailsForApi(formData.purchase_details),
         }
@@ -2596,6 +2603,7 @@ function PurchasesPageContent() {
       payment_type: (cashPayment > 0 && bankPayment > 0) ? 'SPLIT' : purchase.payment_type,
       vehicle_no: purchase.vehicle_no || '',
       invoice_number: purchase.invoice_number || '',
+      dc_no: purchase.dc_no || '',
       purchase_details: (purchase.purchase_details || []).map((detail) => ({
         ...detail,
         store_id: detail.store_id || purchase.store_id?.toString() || '',
@@ -3656,7 +3664,7 @@ function PurchasesPageContent() {
                       { label: 'Total / Unload / Fare', align: 'left' },
                       { label: 'Payment', align: 'right' },
                       { label: 'Type', align: 'center' },
-                      { label: 'Vehicle', align: 'left' },
+                      { label: 'Vehicle / DC', align: 'left' },
                       { label: 'Date', align: 'center' },
                       { label: 'Updated By', align: 'left' },
                       { label: 'Actions', align: 'center' },
@@ -3737,8 +3745,13 @@ function PurchasesPageContent() {
                               }}
                             />
                           </TableCell>
-                          <TableCell sx={{ color: '#64748b', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {purchase.vehicle_no || '—'}
+                          <TableCell sx={{ color: '#64748b', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <Box sx={{ fontWeight: 600, color: '#1e293b' }}>{purchase.vehicle_no || '—'}</Box>
+                            {purchase.dc_no && (
+                              <Typography component="span" sx={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>
+                                DC: {purchase.dc_no}
+                              </Typography>
+                            )}
                           </TableCell>
                           <TableCell align="center" sx={{ color: '#64748b', whiteSpace: 'nowrap' }}>
                             {formatDatePK(purchase?.created_at) || '—'}
@@ -4111,13 +4124,20 @@ function PurchasesPageContent() {
               <Box sx={{ px: 3, pt: 2, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
                 <Box sx={
                   purchaseType === 'return'
-                    ? PURCHASE_ENTRY_ROW1_RETURN_SX
+                    ? {
+                        ...PURCHASE_ENTRY_ROW1_RETURN_SX,
+                        gridTemplateColumns: {
+                          xs: '1fr',
+                          sm: 'repeat(2, minmax(0, 1fr))',
+                          md: 'minmax(0, 1.8fr) minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1fr)',
+                        },
+                      }
                     : {
                         ...PURCHASE_ENTRY_ROW1_SX,
                         gridTemplateColumns: {
                           xs: '1fr',
                           sm: 'repeat(2, minmax(0, 1fr))',
-                          md: 'minmax(0, 2.2fr) minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr)',
+                          md: 'minmax(0, 2fr) minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr)',
                         },
                       }
                 }>
@@ -4344,6 +4364,21 @@ function PurchasesPageContent() {
                       placeholder={purchaseType === 'new' ? 'Enter invoice number' : 'Enter return invoice number'}
                       value={formData.invoice_number || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, invoice_number: e.target.value }))}
+                      onFocus={(e) => e.target.select()}
+                      sx={PURCHASE_ENTRY_CONTROL_SX}
+                    />
+                  </Box>
+
+                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                    <Typography sx={PURCHASE_ENTRY_LABEL_SX}>
+                      DC NUMBER
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="e.g. DC-101"
+                      value={formData.dc_no || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dc_no: e.target.value }))}
                       onFocus={(e) => e.target.select()}
                       sx={PURCHASE_ENTRY_CONTROL_SX}
                     />
