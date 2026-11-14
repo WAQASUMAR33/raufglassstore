@@ -332,19 +332,26 @@ function isCustomerAccount(customer, customerCategories = []) {
   }
 
   const normCat = (catTitle || '').trim().toLowerCase();
-  const typeTitle = (customer.customer_type?.cus_type_title || customer.cus_type_title || '').trim().toLowerCase();
-  const isNonCustomerLabel = (label) => (
-    label.includes('bank') ||
-    label.includes('transport') ||
-    label.includes('transporter') ||
-    label.includes('cargo') ||
-    label.includes('vendor') ||
-    label.includes('supplier')
+  const isCustomerCategory = (
+    normCat === 'customer' ||
+    normCat === 'walkin customer' ||
+    normCat === 'walk in customer' ||
+    normCat === 'walk-in customer' ||
+    normCat === 'walkincustomer'
   );
-  if (normCat && isNonCustomerLabel(normCat)) return false;
-  if (typeTitle && isNonCustomerLabel(typeTitle)) return false;
+  if (isCustomerCategory) return true;
 
-  return true;
+  // Also match category ID if category list or known category IDs: ID 4 is "Customer", ID 5 is "Walkin Customer"
+  const catId = Number(customer.cus_category ?? customer.customer_category?.cus_cat_id);
+  if (catId === 4 || catId === 5) return true;
+
+  // Fallback for default walk-in customer account
+  const custName = (customer.cus_name || '').trim().toLowerCase();
+  if (custName === 'walkincustomer' || custName === 'walk in customer' || custName === 'walk-in customer' || Number(customer.cus_id) === 1) {
+    return true;
+  }
+
+  return false;
 }
 
 function matchesCustomerType(customer, selectedType) {
@@ -3749,12 +3756,10 @@ function SalesPageContent() {
           return isTransportLabel(cat) || isTransportLabel(typ);
         });
 
-        // Fitter accounts: type or category or name has Fitter
+        // Fitter accounts: category is Fitter only
         const fitterAccountsData = accountsData.filter((account) => {
           const cat = getCategoryTitle(account);
-          const typ = getTypeTitle(account);
-          const name = (account.cus_name || '').toLowerCase();
-          return isFitterLabel(cat) || isFitterLabel(typ) || isFitterLabel(name);
+          return isFitterLabel(cat);
         });
 
         // Batch state updates to avoid multiple re-renders
@@ -8208,9 +8213,10 @@ function SalesPageContent() {
                           size="small"
                           fullWidth
                           sx={{ minWidth: 300, flex: 1 }}
-                          options={fitterAccounts.length > 0 ? fitterAccounts : customers}
+                          options={fitterAccounts}
                           getOptionLabel={(option) => `${option.cus_name} (${option.customer_type?.cus_type_title || option.cus_type_name || 'Account'})`}
-                          value={(fitterAccounts.length > 0 ? fitterAccounts : customers).find(account => account.cus_id === parseInt(newFitter.accountId)) || null}
+                          value={fitterAccounts.find(account => account.cus_id === parseInt(newFitter.accountId)) || null}
+                          noOptionsText="No fitter accounts found"
                           onChange={(event, newValue) => {
                             setNewFitter(prev => ({
                               ...prev,

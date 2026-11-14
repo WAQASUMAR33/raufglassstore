@@ -278,19 +278,26 @@ function isCustomerAccount(customer, customerCategories = []) {
   }
 
   const normCat = (catTitle || '').trim().toLowerCase();
-  if (normCat) {
-    const isNonCustomerCat = (
-      normCat.includes('bank') ||
-      normCat.includes('transport') ||
-      normCat.includes('transporter') ||
-      normCat.includes('cargo') ||
-      normCat.includes('vendor') ||
-      normCat.includes('supplier')
-    );
-    if (isNonCustomerCat) return false;
+  const isCustomerCategory = (
+    normCat === 'customer' ||
+    normCat === 'walkin customer' ||
+    normCat === 'walk in customer' ||
+    normCat === 'walk-in customer' ||
+    normCat === 'walkincustomer'
+  );
+  if (isCustomerCategory) return true;
+
+  // Also match category ID if category list or known category IDs: ID 4 is "Customer", ID 5 is "Walkin Customer"
+  const catId = Number(customer.cus_category ?? customer.customer_category?.cus_cat_id);
+  if (catId === 4 || catId === 5) return true;
+
+  // Fallback for default walk-in customer account
+  const custName = (customer.cus_name || '').trim().toLowerCase();
+  if (custName === 'walkincustomer' || custName === 'walk in customer' || custName === 'walk-in customer' || Number(customer.cus_id) === 1) {
+    return true;
   }
 
-  return true;
+  return false;
 }
 
 function matchesCustomerType(customer, selectedType) {
