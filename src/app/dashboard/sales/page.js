@@ -173,6 +173,7 @@ function buildSaleReceiptBill({
     previous_customer_balance: prevBalance,
     bank_title: selectedBankAccount?.cus_name || null,
     shipping_amount: totalShippingAmount,
+    loader_amount: totalShippingAmount,
     bill_type: billType || 'BILL',
     bill_price_type: billPriceType,
     reference: paymentData.notes || null,
@@ -200,6 +201,7 @@ function buildSaleReceiptBill({
     cutter_charges: parseFloat(paymentData.cutterAmount) || 0,
     cutter_name: paymentData.cutterName || null,
     fitting_charges: parseFloat(paymentData.fittingCharges) || 0,
+    fitter_amount: parseFloat(paymentData.fittingCharges) || 0,
     dc_no: paymentData.dcNo || null,
     notes: paymentData.notes || '',
   };
