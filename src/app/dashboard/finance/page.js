@@ -2724,7 +2724,7 @@ function FinancePageContent() {
       const previousBalance = parseFloat(customer?.cus_balance || 0);
       const bankAcc = bankAccounts.find(b => b.cus_id === parseInt(formData.bank_account));
       const cashAcc = cashAccounts.find(c => c.cus_id === parseInt(formData.cash_account));
-      const estimatedRemaining = previousBalance - totalAmount;
+      const estimatedRemaining = previousBalance + totalAmount;
 
       setPaymentStatus({ loading: true, error: null });
 
@@ -2830,7 +2830,7 @@ function FinancePageContent() {
       const previousBalance = parseFloat(customer?.cus_balance || 0);
       const bankAcc = bankAccounts.find(b => b.cus_id === parseInt(formData.bank_account));
       const cashAcc = cashAccounts.find(c => c.cus_id === parseInt(formData.cash_account));
-      const estimatedRemaining = previousBalance + totalAmount;
+      const estimatedRemaining = previousBalance - totalAmount;
 
       setPaymentStatus({ loading: true, error: null });
 
@@ -2947,7 +2947,7 @@ function FinancePageContent() {
           <p style="margin:4px 0;direction:rtl;font-size:16px;">زین ٹریڈرز منڈی بہاؤالدین</p>
           <p style="margin:4px 0;font-size:12px;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
           <p style="margin:4px 0;font-weight:bold;">Ph:- 0302-2133218, 0315-4533218</p>
-          <h3 style="margin:10px 0 0 0;color:${accentColor};letter-spacing:1px;">${isPay ? 'PAYMENT VOUCHER' : 'RECEIPT VOUCHER'}</h3>
+          <h3 style="margin:10px 0 0 0;color:${accentColor};letter-spacing:1px;">${isPay ? 'DEBIT VOUCHER' : 'CREDIT VOUCHER'}</h3>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
           <div>
@@ -4350,7 +4350,7 @@ function FinancePageContent() {
                 <Box sx={{ ...LEDGER_UI.ledgerSplitCluster, justifyContent: { xs: 'center', md: 'flex-start' } }}>
                   <Button size="small" variant="contained" startIcon={<ArrowUp size={15} />} onClick={handlePayPayment}
                     sx={{ ...LEDGER_UI.toolbarBtn, bgcolor: BRAND.primary.pink, color: '#fff', boxShadow: 'none', '&:hover': { bgcolor: '#e0074c' } }}>
-                    Pay Amount
+                    Debit Amount Form
                   </Button>
                 </Box>
 
@@ -4372,7 +4372,7 @@ function FinancePageContent() {
                 <Box sx={{ ...LEDGER_UI.ledgerSplitCluster, justifyContent: { xs: 'center', md: 'flex-end' } }}>
                   <Button size="small" variant="contained" startIcon={<ArrowDown size={15} />} onClick={handleReceivePayment}
                     sx={{ ...LEDGER_UI.toolbarBtn, bgcolor: BRAND.supporting.green, color: '#fff', boxShadow: 'none', '&:hover': { bgcolor: '#00b872' } }}>
-                    Receive Amount
+                    Credit Amount Form
                   </Button>
                   <Button size="small" variant="outlined" disabled={isDownloadingLedgerPdf || finalLedgerEntries.length === 0}
                     startIcon={isDownloadingLedgerPdf ? <CircularProgress size={14} color="inherit" /> : <Download size={15} />}
@@ -5075,7 +5075,7 @@ function FinancePageContent() {
             <Grid container spacing={2} sx={{ mb: 3 }}>
               <Grid item xs={12} sm={4}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, mb: 1, display: 'block' }}>
-                  Pay Amount
+                  Debit Amount
                 </Typography>
                 <TextField
                   fullWidth
@@ -5093,7 +5093,7 @@ function FinancePageContent() {
               </Grid>
               <Grid item xs={12} sm={4}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, mb: 1, display: 'block' }}>
-                  Receive Amount
+                  Credit Amount
                 </Typography>
                 <TextField
                   fullWidth
@@ -5681,7 +5681,7 @@ function FinancePageContent() {
           bgcolor: paymentReceiptData?.type === 'PAY' ? '#ef4444' : '#16a34a',
           color: 'white', fontWeight: 800, display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
-          {paymentReceiptData?.type === 'PAY' ? 'Payment Receipt' : 'Receipt - Payment Received'}
+          {paymentReceiptData?.type === 'PAY' ? 'Debit Voucher' : 'Credit Voucher'}
           <Typography variant="body2" sx={{ bgcolor: 'rgba(255,255,255,0.2)', px: 1.5, py: 0.5, borderRadius: 1, fontWeight: 600 }}>
             {paymentReceiptData?.paymentId != null ? `PAY-${paymentReceiptData.paymentId}` : 'PAY-NEW'}
           </Typography>
@@ -5697,7 +5697,7 @@ function FinancePageContent() {
                 <Typography variant="body2">Phalia Road , Near Aljannat Petrol pump M.B.Din.</Typography>
                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Ph:- 0302-2133218, 0315-4533218</Typography>
                 <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1, letterSpacing: 1 }}>
-                  {paymentReceiptData.type === 'PAY' ? 'PAYMENT VOUCHER' : 'RECEIPT VOUCHER'}
+                  {paymentReceiptData.type === 'PAY' ? 'DEBIT VOUCHER' : 'CREDIT VOUCHER'}
                 </Typography>
               </Box>
 
@@ -5849,14 +5849,14 @@ function FinancePageContent() {
   .sig-line{border-top:1px solid #000;padding-top:6px;font-size:12px;color:#555}
   @media print{body{padding:10px}@page{margin:10mm}}
 </style></head><body>
-<div class="header-bar"><h2>${d.type === 'PAY' ? 'Payment Receipt' : 'Receipt - Payment Received'}</h2><span>PAY-${d.paymentId}</span></div>
+<div class="header-bar"><h2>${d.type === 'PAY' ? 'Debit Voucher' : 'Credit Voucher'}</h2><span>PAY-${d.paymentId}</span></div>
 <div style="border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;padding:0 20px 20px">
   <div class="company-box">
     <div class="name-urdu" style="font-size:18px;font-weight:bold;">Zain Traders Mandi Bahauddin</div>
     <div style="font-size:15px;direction:rtl;margin:2px 0;">زین ٹریڈرز منڈی بہاؤالدین</div>
     <div class="address">Phalia Road , Near Aljannat Petrol pump M.B.Din.</div>
     <div class="phone">Ph:- 0302-2133218, 0315-4533218</div>
-    <div class="voucher-type">${d.type === 'PAY' ? 'Payment Voucher' : 'Receipt Voucher'}</div>
+    <div class="voucher-type">${d.type === 'PAY' ? 'Debit Voucher' : 'Credit Voucher'}</div>
   </div>
   <div class="meta">
     <div>

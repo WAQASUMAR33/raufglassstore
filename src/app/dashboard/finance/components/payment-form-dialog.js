@@ -90,7 +90,7 @@ function PaymentFormDialog({
   );
 
   const balanceAfter = useMemo(
-    () => (isReceive ? currentBalance - totalPreview : currentBalance + totalPreview),
+    () => (isReceive ? currentBalance + totalPreview : currentBalance - totalPreview),
     [isReceive, currentBalance, totalPreview]
   );
 
@@ -147,10 +147,10 @@ function PaymentFormDialog({
         wordsColor: '#16a34a',
         btnBg: '#10b981',
         btnHover: '#059669',
-        title: isEditing ? 'Edit Receipt Transaction' : 'Receive Amount Form',
-        confirm: isEditing ? 'Update Receipt' : 'Confirm Receipt',
-        afterLabel: 'After Receive Amount',
-        afterHint: 'Receive Amount credits the selected account (balance decreases by the entered amount).',
+        title: isEditing ? 'Edit Credit Transaction' : 'Credit Amount Form',
+        confirm: isEditing ? 'Update Credit' : 'Confirm Credit',
+        afterLabel: 'After Credit Amount',
+        afterHint: 'Credit Amount adds the entered amount to the selected account balance.',
       }
     : {
         headerBg: '#ef4444',
@@ -164,10 +164,10 @@ function PaymentFormDialog({
         wordsColor: '#dc2626',
         btnBg: '#ef4444',
         btnHover: '#dc2626',
-        title: isEditing ? 'Edit Payment Transaction' : 'Pay Amount Form',
-        confirm: isEditing ? 'Update Payment' : 'Confirm Payment',
-        afterLabel: 'After Pay Amount',
-        afterHint: 'Pay Amount debits the selected account (balance increases by the entered amount).',
+        title: isEditing ? 'Edit Debit Transaction' : 'Debit Amount Form',
+        confirm: isEditing ? 'Update Debit' : 'Confirm Debit',
+        afterLabel: 'After Debit Amount',
+        afterHint: 'Debit Amount deducts the entered amount from the selected account balance.',
       };
 
   const handleDialogClose = () => {

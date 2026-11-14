@@ -294,31 +294,14 @@ export async function POST(request) {
       let mainCreditAmount = 0;
       let trnxTypeToUse = '';
 
-      if (mainAccountIsBankOrCash) {
-        if (payment_type === 'RECEIVE') {
-          // Bank/Cash receiving money gets a DEBIT entry
-          mainDebitAmount = parseFloat(total_amount);
-          mainCreditAmount = 0;
-          trnxTypeToUse = 'DEBIT';
-        } else {
-          // Bank/Cash paying money gets a CREDIT entry
-          mainDebitAmount = 0;
-          mainCreditAmount = parseFloat(total_amount);
-          trnxTypeToUse = 'CREDIT';
-        }
+      if (payment_type === 'RECEIVE') {
+        mainDebitAmount = parseFloat(total_amount);
+        mainCreditAmount = 0;
+        trnxTypeToUse = 'DEBIT';
       } else {
-        // Customer or Supplier (non-cash/bank)
-        if (payment_type === 'RECEIVE') {
-          // Receiving money from customer/supplier gets a CREDIT entry
-          mainDebitAmount = 0;
-          mainCreditAmount = parseFloat(total_amount);
-          trnxTypeToUse = 'CREDIT';
-        } else {
-          // Paying money to customer/supplier gets a DEBIT entry
-          mainDebitAmount = parseFloat(total_amount);
-          mainCreditAmount = 0;
-          trnxTypeToUse = 'DEBIT';
-        }
+        mainDebitAmount = 0;
+        mainCreditAmount = parseFloat(total_amount);
+        trnxTypeToUse = 'CREDIT';
       }
 
       const mainAccountEntry = createLedgerEntry({
@@ -336,33 +319,14 @@ export async function POST(request) {
         updated_by: validatedCreatedBy
       });
 
-      // Apply custom payment requirement
       if (payment_type === 'RECEIVE') {
-        const isMainBankOrCash = bankCashCategoryIds.has(categoryMap[parseInt(account_id)]);
-        if (isMainBankOrCash) {
-          // Cash/Bank account receives payment: debit column, balance increases
-          mainAccountEntry.debit_amount = parseFloat(total_amount);
-          mainAccountEntry.credit_amount = 0;
-          mainAccountEntry.closing_balance = mainAccountEntry.opening_balance + parseFloat(total_amount);
-        } else {
-          // Customer/Supplier account paying us: credit column, balance decreases
-          mainAccountEntry.debit_amount = 0;
-          mainAccountEntry.credit_amount = parseFloat(total_amount);
-          mainAccountEntry.closing_balance = mainAccountEntry.opening_balance - parseFloat(total_amount);
-        }
+        mainAccountEntry.debit_amount = parseFloat(total_amount);
+        mainAccountEntry.credit_amount = 0;
+        mainAccountEntry.closing_balance = mainAccountEntry.opening_balance + parseFloat(total_amount);
       } else if (payment_type === 'PAY') {
-        const isMainBankOrCash = bankCashCategoryIds.has(categoryMap[parseInt(account_id)]);
-        if (isMainBankOrCash) {
-          // Cash/Bank account paying out: credit column, balance decreases
-          mainAccountEntry.debit_amount = 0;
-          mainAccountEntry.credit_amount = parseFloat(total_amount);
-          mainAccountEntry.closing_balance = mainAccountEntry.opening_balance - parseFloat(total_amount);
-        } else {
-          // Customer/Supplier account receiving payment from us: debit column, balance increases
-          mainAccountEntry.debit_amount = parseFloat(total_amount);
-          mainAccountEntry.credit_amount = 0;
-          mainAccountEntry.closing_balance = mainAccountEntry.opening_balance + parseFloat(total_amount);
-        }
+        mainAccountEntry.debit_amount = 0;
+        mainAccountEntry.credit_amount = parseFloat(total_amount);
+        mainAccountEntry.closing_balance = mainAccountEntry.opening_balance - parseFloat(total_amount);
       }
 
       ledgerEntries.push({
@@ -828,11 +792,11 @@ export async function DELETE(request) {
 
       let newBalance = parseFloat(currentCustomer.cus_balance || 0);
       if (payment.payment_type === 'RECEIVE') {
-        // RECEIVE (Receive Amount) subtracted balance (credited customer) → reverse by adding back
-        newBalance += parseFloat(payment.net_amount);
-      } else {
-        // PAY (Pay Amount) added balance (debited customer) → reverse by subtracting
+        // RECEIVE added balance → reverse by subtracting
         newBalance -= parseFloat(payment.net_amount);
+      } else {
+        // PAY deducted balance → reverse by adding back
+        newBalance += parseFloat(payment.net_amount);
       }
 
       await tx.customer.update({

@@ -142,24 +142,14 @@ export async function persistPaymentLedger(tx, ctx) {
   let mainCreditAmount = 0;
   let trnxTypeToUse = '';
 
-  if (mainAccountIsBankOrCash) {
-    if (payment_type === 'RECEIVE') {
-      mainDebitAmount = parseFloat(total_amount);
-      mainCreditAmount = 0;
-      trnxTypeToUse = 'DEBIT';
-    } else {
-      mainDebitAmount = 0;
-      mainCreditAmount = parseFloat(total_amount);
-      trnxTypeToUse = 'CREDIT';
-    }
-  } else if (payment_type === 'RECEIVE') {
-    mainDebitAmount = 0;
-    mainCreditAmount = parseFloat(total_amount);
-    trnxTypeToUse = 'CREDIT';
-  } else {
+  if (payment_type === 'RECEIVE') {
     mainDebitAmount = parseFloat(total_amount);
     mainCreditAmount = 0;
     trnxTypeToUse = 'DEBIT';
+  } else {
+    mainDebitAmount = 0;
+    mainCreditAmount = parseFloat(total_amount);
+    trnxTypeToUse = 'CREDIT';
   }
 
   const mainAccountEntry = createLedgerEntry({
@@ -179,27 +169,13 @@ export async function persistPaymentLedger(tx, ctx) {
   });
 
   if (payment_type === 'RECEIVE') {
-    const isMainBankOrCash = bankCashCategoryIds.has(categoryMap[parseInt(account_id)]);
-    if (isMainBankOrCash) {
-      mainAccountEntry.debit_amount = parseFloat(total_amount);
-      mainAccountEntry.credit_amount = 0;
-      mainAccountEntry.closing_balance = mainAccountEntry.opening_balance + parseFloat(total_amount);
-    } else {
-      mainAccountEntry.debit_amount = 0;
-      mainAccountEntry.credit_amount = parseFloat(total_amount);
-      mainAccountEntry.closing_balance = mainAccountEntry.opening_balance - parseFloat(total_amount);
-    }
+    mainAccountEntry.debit_amount = parseFloat(total_amount);
+    mainAccountEntry.credit_amount = 0;
+    mainAccountEntry.closing_balance = mainAccountEntry.opening_balance + parseFloat(total_amount);
   } else if (payment_type === 'PAY') {
-    const isMainBankOrCash = bankCashCategoryIds.has(categoryMap[parseInt(account_id)]);
-    if (isMainBankOrCash) {
-      mainAccountEntry.debit_amount = 0;
-      mainAccountEntry.credit_amount = parseFloat(total_amount);
-      mainAccountEntry.closing_balance = mainAccountEntry.opening_balance - parseFloat(total_amount);
-    } else {
-      mainAccountEntry.debit_amount = parseFloat(total_amount);
-      mainAccountEntry.credit_amount = 0;
-      mainAccountEntry.closing_balance = mainAccountEntry.opening_balance + parseFloat(total_amount);
-    }
+    mainAccountEntry.debit_amount = 0;
+    mainAccountEntry.credit_amount = parseFloat(total_amount);
+    mainAccountEntry.closing_balance = mainAccountEntry.opening_balance - parseFloat(total_amount);
   }
 
   ledgerEntries.push({
