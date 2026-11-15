@@ -123,55 +123,8 @@ export function expandInvoiceLineItems(detail, availableAddons = []) {
     });
   }
 
-  if (parsedAddons.length > 0) {
-    const totalAddonsRate = parsedAddons.reduce((sum, a) => sum + (a.rate || 0), 0);
-    const glassRate = detail.glass_rate !== undefined && parseFloat(detail.glass_rate) > 0
-      ? parseFloat(detail.glass_rate)
-      : Math.max(0, detailRate - totalAddonsRate);
-
-    const glassAmount = detail.glass_amount !== undefined && parseFloat(detail.glass_amount) > 0
-      ? parseFloat(detail.glass_amount)
-      : Number((detailQty * glassRate).toFixed(2));
-
-    const parentLine = {
-      itemName: itemName,
-      jobDesc: jobDesc || '-',
-      width: width ? fmtNum(width) : '-',
-      height: height ? fmtNum(height) : '-',
-      pcs: Number(pcs) || 1,
-      qtySqFt: detailQty,
-      rate: glassRate,
-      amount: glassAmount,
-      isAddon: false,
-    };
-
-    const addonLines = parsedAddons.map(a => {
-      const aRate = a.rate || 0;
-      const aAmount = Number((detailQty * aRate).toFixed(2));
-      const displayName = /ad-?on/i.test(a.name) ? a.name : `${a.name} (Ad-On)`;
-      return {
-        itemName: displayName,
-        jobDesc: '-',
-        width: '-',
-        height: '-',
-        pcs: '-',
-        qtySqFt: detailQty,
-        rate: aRate,
-        amount: aAmount,
-        isAddon: true,
-      };
-    });
-
-    const totalLinesAmount = glassAmount + addonLines.reduce((s, a) => s + a.amount, 0);
-    const diff = Number((detailTotalAmount - totalLinesAmount).toFixed(2));
-    if (Math.abs(diff) > 0 && Math.abs(diff) < 2) {
-      parentLine.amount = Number((parentLine.amount + diff).toFixed(2));
-    }
-
-    return [parentLine, ...addonLines];
-  }
-
   return [{
+    pro_id: detail.pro_id,
     itemName: itemName,
     jobDesc: jobDesc || '-',
     width: width ? fmtNum(width) : '-',
@@ -180,6 +133,7 @@ export function expandInvoiceLineItems(detail, availableAddons = []) {
     qtySqFt: detailQty,
     rate: detailRate,
     amount: detailTotalAmount,
+    addons: parsedAddons,
     isAddon: false,
   }];
 }
@@ -435,9 +389,16 @@ export default function CommercialInvoiceReceipt({
           </Box>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>PHONE:</Typography>
+            <Typography sx={{ fontSize: '0.825rem', fontWeight: 500, color: '#000' }}>
+              {bill.customer?.cus_phone_no || bill.customer?.phone || bill.customer_phone || '-'}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline' }}>
             <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>ADDRESS:</Typography>
             <Typography sx={{ fontSize: '0.825rem', fontWeight: 400, color: '#111' }}>
-              {[bill.customer?.cus_address, bill.customer?.city?.city_name].filter(Boolean).join(', ') || '-'}
+              {[bill.customer?.cus_address, bill.customer?.city?.city_name].filter(Boolean).join(', ') || bill.customer?.cus_address || '-'}
             </Typography>
           </Box>
 
@@ -627,7 +588,12 @@ export default function CommercialInvoiceReceipt({
 
           <tbody>
             {lines.length > 0 ? (
-              lines.map((item, index) => (
+              lines.map((item, index) => {
+                const isRepeatedProduct = index > 0 && (
+                  (item.pro_id && item.pro_id === lines[index - 1]?.pro_id) ||
+                  (item.itemName && item.itemName === lines[index - 1]?.itemName)
+                );
+                return (
                 <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
                   <td
                     style={{
@@ -637,7 +603,14 @@ export default function CommercialInvoiceReceipt({
                       color: '#000',
                     }}
                   >
-                    {item.itemName}
+                    {!isRepeatedProduct ? (
+                      <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.itemName}</span>
+                    ) : null}
+                    {item.addons && item.addons.length > 0 && (
+                      <div style={{ fontSize: '0.72rem', color: '#475569', fontStyle: 'italic', marginTop: '2px' }}>
+                        Ad-Ons: {item.addons.map(a => `${a.name}${a.rate ? ` (${fmtAmt(a.rate)})` : ''}`).join(', ')}
+                      </div>
+                    )}
                   </td>
                   <td
                     style={{
@@ -710,7 +683,8 @@ export default function CommercialInvoiceReceipt({
                     {fmtAmt(item.amount)}
                   </td>
                 </tr>
-              ))
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={8} style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
@@ -907,12 +881,10 @@ export default function CommercialInvoiceReceipt({
                   <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cutterCharges)}</td>
                 </tr>
               )}
-              {hardwareCharges > 0 && (
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Hardware Amount:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
-                </tr>
-              )}
+              <tr>
+                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Hardware Amount:</td>
+                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
+              </tr>
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', fontWeight: 700 }}>Bill Value:</td>
                 <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>{fmtAmt(billValue)}</td>

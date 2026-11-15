@@ -2,15 +2,17 @@
 
 import { useCallback, useRef, useState } from 'react';
 
+/**
+ * usePinAuth hook
+ * Biometric / PIN authentication for payment and actions is disabled per user requirements.
+ * requireAuth resolves immediately to true so that no PIN/biometric dialog is shown.
+ */
 export function usePinAuth() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const resolveRef = useRef(null);
 
   const requireAuth = useCallback(() => {
-    return new Promise((resolve) => {
-      resolveRef.current = resolve;
-      setDialogOpen(true);
-    });
+    return Promise.resolve(true);
   }, []);
 
   const handleAuthSuccess = useCallback(() => {
@@ -31,7 +33,7 @@ export function usePinAuth() {
 
   return {
     requireAuth,
-    authDialogOpen: dialogOpen,
+    authDialogOpen: false,
     handleAuthSuccess,
     handleAuthCancel,
   };

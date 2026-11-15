@@ -806,12 +806,13 @@ const LEDGER_UI = {
 const LedgerTableColGroup = () => (
   <colgroup>
     <col style={{ width: '4%' }} />
+    <col style={{ width: '9%' }} />
+    <col style={{ width: '15%' }} />
+    <col style={{ width: '23%' }} />
     <col style={{ width: '10%' }} />
-    <col style={{ width: '14%' }} />
-    <col style={{ width: '28%' }} />
+    <col style={{ width: '10%' }} />
     <col style={{ width: '11%' }} />
-    <col style={{ width: '11%' }} />
-    <col style={{ width: '12%' }} />
+    <col style={{ width: '8%' }} />
     <col style={{ width: '10%' }} />
   </colgroup>
 );
@@ -841,6 +842,9 @@ const LedgerTableHeaderRow = () => (
     </TableCell>
     <TableCell sx={{ textAlign: 'center', borderTop: 'none !important' }}>
       Type
+    </TableCell>
+    <TableCell sx={{ textAlign: 'center', borderTop: 'none !important' }}>
+      Created By
     </TableCell>
   </TableRow>
 );
@@ -1201,6 +1205,17 @@ function FinancePageContent() {
   const [endDate, setEndDate] = useState(() => getTodayKarachiDateKey());
   const [ledgerDatePreset, setLedgerDatePreset] = useState('today');
   const [selectedLedgerType, setSelectedLedgerType] = useState('');
+  const [selectedCreatedBy, setSelectedCreatedBy] = useState('');
+
+  const ledgerUsersList = useMemo(() => {
+    const map = new Map();
+    for (const e of ledgerEntries) {
+      if (e.updated_by_user?.full_name) {
+        map.set(e.updated_by_user.full_name, e.updated_by_user);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
+  }, [ledgerEntries]);
   const [staticDataLoaded, setStaticDataLoaded] = useState(false);
   /** All Accounts: default recent rows; Clear shows full ledger */
   const [allAccountsFullLedger, setAllAccountsFullLedger] = useState(false);
@@ -2322,6 +2337,7 @@ function FinancePageContent() {
     const matchesCustomer = !selectedCustomer || entry.cus_id == selectedCustomer;
     const matchesCategory = !selectedCategory || entry.customer?.cus_category == selectedCategory;
     const matchesSubCategory = !selectedSubCategory || entry.customer?.cus_type == selectedSubCategory;
+    const matchesCreatedBy = !selectedCreatedBy || entry.updated_by_user?.full_name === selectedCreatedBy;
     const matchesLedgerType = !selectedLedgerType || 
       (entry.ledger_type && entry.ledger_type.toLowerCase() === selectedLedgerType.toLowerCase()) ||
       (!entry.ledger_type && selectedLedgerType.toLowerCase() === (entry.trnx_type || '').toLowerCase());
@@ -2336,7 +2352,7 @@ function FinancePageContent() {
 
     if (allAccountsRecentViewIds && !allAccountsRecentViewIds.has(entry.l_id)) return false;
 
-    return matchesSearch && matchesCustomer && matchesCategory && matchesSubCategory && matchesLedgerType && matchesDate && matchesAmount;
+    return matchesSearch && matchesCustomer && matchesCategory && matchesSubCategory && matchesLedgerType && matchesDate && matchesAmount && matchesCreatedBy;
   }), [
     ledgerEntries,
     searchTerm,
@@ -2345,6 +2361,7 @@ function FinancePageContent() {
     selectedCategory,
     selectedSubCategory,
     selectedLedgerType,
+    selectedCreatedBy,
     startDate,
     endDate,
     allAccountsRecentViewIds,
@@ -4293,6 +4310,17 @@ function FinancePageContent() {
                     <MenuItem value="Adjustment">Adjustment</MenuItem>
                   </Select>
                 </FormControl>
+                <FormControl fullWidth size="small" sx={LEDGER_FILTER_FIELD_SX}>
+                  <InputLabel>Created By</InputLabel>
+                  <Select value={selectedCreatedBy} onChange={(e) => setSelectedCreatedBy(e.target.value)} label="Created By">
+                    <MenuItem value="">All Users</MenuItem>
+                    {ledgerUsersList.map(u => (
+                      <MenuItem key={u.user_id || u.full_name} value={u.full_name}>
+                        {u.full_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Box>
             </Box>
           )}
@@ -4772,6 +4800,9 @@ function FinancePageContent() {
                                 );
                               })()}
                             </TableCell>
+                            <TableCell sx={{ bgcolor: rowStyle.bg, textAlign: 'center', fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>
+                              {entry.updated_by_user?.full_name || '—'}
+                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -4799,8 +4830,9 @@ function FinancePageContent() {
                              {finalLedgerEntries.length > 0 ? fmtAmt(ledgerViewSummary.lastClosing) : '—'}
                            </Typography>
                          </TableCell>
-                         <TableCell />
-                      </TableRow>
+                         <TableCell sx={{ textAlign: 'center' }}>—</TableCell>
+                          <TableCell sx={{ textAlign: 'center' }}>—</TableCell>
+                       </TableRow>
                     </TableBody>
                   </Table>
                 </TableContainer>

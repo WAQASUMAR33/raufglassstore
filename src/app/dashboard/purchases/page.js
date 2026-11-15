@@ -116,6 +116,9 @@ import {
 import ProductFormModal from '@/components/products/ProductFormModal';
 
 const EMPTY_PRODUCT_FORM_DATA = {
+  width: '',
+  height: '',
+  pcs: '1',
   qnty: '1',
   unit_rate: '',
   crate: '',
@@ -123,6 +126,9 @@ const EMPTY_PRODUCT_FORM_DATA = {
 };
 
 const normalizeProductFormData = (data) => ({
+  width: data?.width ?? '',
+  height: data?.height ?? '',
+  pcs: data?.pcs ?? '1',
   qnty: data?.qnty ?? EMPTY_PRODUCT_FORM_DATA.qnty,
   unit_rate: data?.unit_rate ?? '',
   crate: data?.crate ?? '',
@@ -490,9 +496,9 @@ const PURCHASE_ENTRY_ROW2_SX = {
   gridTemplateColumns: {
     xs: '1fr 1fr',
     sm: 'repeat(3, minmax(0, 1fr))',
-    md: 'minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 0.55fr) minmax(0, 0.65fr) minmax(0, 0.65fr) minmax(0, 0.65fr) minmax(0, 0.6fr) minmax(0, 0.55fr) 44px',
+    md: 'minmax(0, 1.8fr) minmax(0, 0.9fr) minmax(0, 0.45fr) minmax(0, 0.45fr) minmax(0, 0.4fr) minmax(0, 0.55fr) minmax(0, 0.65fr) minmax(0, 0.65fr) minmax(0, 0.65fr) minmax(0, 0.6fr) minmax(0, 0.5fr) 44px',
   },
-  gap: { xs: 1.5, md: 1.75 },
+  gap: { xs: 1.25, md: 1.25 },
   alignItems: 'end',
   width: '100%',
   mb: 2,
@@ -1913,6 +1919,20 @@ function PurchasesPageContent() {
     });
   };
 
+  const handleDimensionChange = (field, val) => {
+    setProductFormData(prev => {
+      const updated = { ...prev, [field]: val };
+      const w = parseFloat(field === 'width' ? val : prev.width) || 0;
+      const h = parseFloat(field === 'height' ? val : prev.height) || 0;
+      const pcs = parseFloat(field === 'pcs' ? val : prev.pcs) || 1;
+      if (w > 0 && h > 0) {
+        const calcQty = Number((w * h * pcs).toFixed(2));
+        updated.qnty = String(calcQty);
+      }
+      return updated;
+    });
+  };
+
   // Add product to purchase list
   const addProductToPurchase = () => {
     if (!selectedProduct) return;
@@ -1931,6 +1951,9 @@ function PurchasesPageContent() {
       pro_id: selectedProduct.pro_id,
       product_id: selectedProduct.pro_id, // Add product_id for console logging
       store_id: formData.store_id, // Add store_id to each product detail
+      width: productFormData.width || '',
+      height: productFormData.height || '',
+      pcs: productFormData.pcs || '1',
       qnty: productFormData.qnty, // Changed from 'quantity' to 'qnty' to match table
       unit: selectedProduct.pro_unit,
       rate: productFormData.unit_rate,
@@ -4617,7 +4640,52 @@ function PurchasesPageContent() {
                   </Box>
 
                   <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>QTY</Typography>
+                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>WIDTH</Typography>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        type="number"
+                        placeholder="W"
+                        value={productFormData.width ?? ''}
+                        onChange={(e) => handleDimensionChange('width', e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        inputProps={{ min: 0, step: 'any' }}
+                        sx={PURCHASE_ENTRY_CONTROL_SX}
+                      />
+                  </Box>
+
+                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>HEIGHT</Typography>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        type="number"
+                        placeholder="H"
+                        value={productFormData.height ?? ''}
+                        onChange={(e) => handleDimensionChange('height', e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        inputProps={{ min: 0, step: 'any' }}
+                        sx={PURCHASE_ENTRY_CONTROL_SX}
+                      />
+                  </Box>
+
+                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>PCS</Typography>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        type="number"
+                        placeholder="1"
+                        value={productFormData.pcs ?? ''}
+                        onChange={(e) => handleDimensionChange('pcs', e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        inputProps={{ min: 1, step: '1' }}
+                        sx={PURCHASE_ENTRY_CONTROL_SX}
+                      />
+                  </Box>
+
+                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>QTY (FT)</Typography>
                       <TextField
                         fullWidth
                         size="small"
@@ -4824,7 +4892,10 @@ function PurchasesPageContent() {
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>S. No</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Product</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Store</TableCell>
-                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Qty</TableCell>
+                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Width</TableCell>
+                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Height</TableCell>
+                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Pcs</TableCell>
+                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Qty (Ft)</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>PURCHASE RATE</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>COST RATE</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Sale Rate</TableCell>
@@ -4863,6 +4934,96 @@ function PurchasesPageContent() {
                                 <TableCell>
                                   <TextField
                                     type="number"
+                                    value={detail.width || ''}
+                                    placeholder="W"
+                                    onChange={(e) => {
+                                      const newW = e.target.value;
+                                      setFormData(prev => {
+                                        const baseUpdated = prev.purchase_details.map((d, i) => {
+                                          if (i !== index) return d;
+                                          const w = parseFloat(newW) || 0;
+                                          const h = parseFloat(d.height) || 0;
+                                          const pcs = parseFloat(d.pcs) || 1;
+                                          const newQuantity = (w > 0 && h > 0) ? String(Number((w * h * pcs).toFixed(2))) : d.qnty;
+                                          return {
+                                            ...d,
+                                            width: newW,
+                                            qnty: newQuantity,
+                                            total_amount: (parseFloat(newQuantity) * parseFloat(d.crate || d.unit_rate || 0)).toFixed(2)
+                                          };
+                                        });
+                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
+                                        return { ...prev, purchase_details: updatedDetails };
+                                      });
+                                    }}
+                                    inputProps={{ min: 0, step: "any" }}
+                                    size="small"
+                                    sx={{ width: 65 }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    type="number"
+                                    value={detail.height || ''}
+                                    placeholder="H"
+                                    onChange={(e) => {
+                                      const newH = e.target.value;
+                                      setFormData(prev => {
+                                        const baseUpdated = prev.purchase_details.map((d, i) => {
+                                          if (i !== index) return d;
+                                          const w = parseFloat(d.width) || 0;
+                                          const h = parseFloat(newH) || 0;
+                                          const pcs = parseFloat(d.pcs) || 1;
+                                          const newQuantity = (w > 0 && h > 0) ? String(Number((w * h * pcs).toFixed(2))) : d.qnty;
+                                          return {
+                                            ...d,
+                                            height: newH,
+                                            qnty: newQuantity,
+                                            total_amount: (parseFloat(newQuantity) * parseFloat(d.crate || d.unit_rate || 0)).toFixed(2)
+                                          };
+                                        });
+                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
+                                        return { ...prev, purchase_details: updatedDetails };
+                                      });
+                                    }}
+                                    inputProps={{ min: 0, step: "any" }}
+                                    size="small"
+                                    sx={{ width: 65 }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    type="number"
+                                    value={detail.pcs || ''}
+                                    placeholder="1"
+                                    onChange={(e) => {
+                                      const newPcs = e.target.value;
+                                      setFormData(prev => {
+                                        const baseUpdated = prev.purchase_details.map((d, i) => {
+                                          if (i !== index) return d;
+                                          const w = parseFloat(d.width) || 0;
+                                          const h = parseFloat(d.height) || 0;
+                                          const pcs = parseFloat(newPcs) || 1;
+                                          const newQuantity = (w > 0 && h > 0) ? String(Number((w * h * pcs).toFixed(2))) : d.qnty;
+                                          return {
+                                            ...d,
+                                            pcs: newPcs,
+                                            qnty: newQuantity,
+                                            total_amount: (parseFloat(newQuantity) * parseFloat(d.crate || d.unit_rate || 0)).toFixed(2)
+                                          };
+                                        });
+                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
+                                        return { ...prev, purchase_details: updatedDetails };
+                                      });
+                                    }}
+                                    inputProps={{ min: 1, step: "1" }}
+                                    size="small"
+                                    sx={{ width: 60 }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    type="number"
                                     value={detail.qnty}
                                     onChange={(e) => {
                                       const newQuantity = e.target.value;
@@ -4882,7 +5043,7 @@ function PurchasesPageContent() {
                                     }}
                                     inputProps={{ min: 0, step: "any" }}
                                     size="small"
-                                    sx={{ width: 80 }}
+                                    sx={{ width: 75 }}
                                   />
                                 </TableCell>
                                 <TableCell>

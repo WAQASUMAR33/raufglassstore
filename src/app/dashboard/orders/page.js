@@ -1793,6 +1793,29 @@ function OrdersPageContent() {
     });
   };
 
+  const [lastChargedRate, setLastChargedRate] = useState(null);
+
+  useEffect(() => {
+    const cusId = formSelectedCustomer?.cus_id;
+    const proId = formSelectedProduct?.pro_id;
+    if (!cusId || !proId) {
+      setLastChargedRate(null);
+      return;
+    }
+    let isMounted = true;
+    fetch(`/api/sales/last-rate?cus_id=${cusId}&pro_id=${proId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted) {
+          setLastChargedRate(data?.last_rate ?? null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setLastChargedRate(null);
+      });
+    return () => { isMounted = false; };
+  }, [formSelectedCustomer?.cus_id, formSelectedProduct?.pro_id]);
+
   // Handle product selection
   const handleProductSelect = (selectedProduct) => {
     console.log('🔍 Product selected:', selectedProduct);
@@ -4106,16 +4129,7 @@ function OrdersPageContent() {
                         >
                           + Add Product
                         </Button>
-                        <Button
-                          size="small"
-                          variant="text"
-                          startIcon={<AddIcon sx={{ fontSize: 13 }} />}
-                          onClick={handleAddGeneralItem}
-                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#0284c7', textTransform: 'none' }}
-                          title="Add a custom general product row directly to table"
-                        >
-                          + General Item
-                        </Button>
+
                       </Box>
                     </Box>
                     <Autocomplete
@@ -4331,23 +4345,43 @@ function OrdersPageContent() {
 
                 {/* SALE RATE */}
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
                       <Typography sx={ORDER_ENTRY_LABEL_SX}>
                         SALE RATE
                       </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: '0.68rem',
-                          fontWeight: 800,
-                          color: billPriceType === 'Whole sale' ? '#b45309' : '#1d4ed8',
-                          bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#e0f2fe',
-                          px: 0.6,
-                          py: 0.1,
-                          borderRadius: '4px',
-                        }}
-                      >
-                        {billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {lastChargedRate != null && (
+                          <Chip
+                            size="small"
+                            label={`Last: ${lastChargedRate}`}
+                            onClick={() => handleRateChange(String(lastChargedRate))}
+                            sx={{
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              height: 20,
+                              cursor: 'pointer',
+                              bgcolor: '#ecfdf5',
+                              color: '#047857',
+                              border: '1px solid #a7f3d0',
+                              '&:hover': { bgcolor: '#d1fae5' }
+                            }}
+                            title="Click to apply last sale rate charged to this customer"
+                          />
+                        )}
+                        <Typography
+                          sx={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            color: billPriceType === 'Whole sale' ? '#b45309' : '#1d4ed8',
+                            bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#e0f2fe',
+                            px: 0.6,
+                            py: 0.1,
+                            borderRadius: '4px',
+                          }}
+                        >
+                          {billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}
+                        </Typography>
+                      </Box>
                     </Box>
                     <TextField
                       fullWidth
@@ -4713,33 +4747,47 @@ function OrdersPageContent() {
                               />
                             </TableCell>
                             <TableCell sx={{ py: 1, fontWeight: 700 }}>
-                              {(product.is_general || product.pro_id === 3 || product.pro_title?.toLowerCase().includes('general product')) ? (
-                                <TextField
-                                  size="small"
-                                  value={product.pro_title || ''}
-                                  placeholder="Enter custom product name..."
-                                  onChange={(e) => updateRowTitle(product.id, e.target.value)}
-                                  onFocus={(e) => {
-                                    e.target.select();
-                                    setActiveRowId(product.id);
-                                  }}
-                                  sx={{
-                                    width: '100%',
-                                    minWidth: 150,
-                                    '& .MuiInputBase-input': {
-                                      padding: '4px 8px',
-                                      fontWeight: 700,
-                                      fontSize: '0.875rem',
-                                      color: '#0284c7',
-                                      bgcolor: 'rgba(255,255,255,0.9)',
-                                      border: '1px solid #38bdf8',
-                                      borderRadius: '4px'
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                product.pro_title
-                              )}
+                              {(() => {
+                                const isRepeated = index > 0 && (
+                                  (product.pro_id && product.pro_id === productTableData[index - 1]?.pro_id) ||
+                                  (product.pro_title && product.pro_title === productTableData[index - 1]?.pro_title)
+                                );
+                                if (isRepeated) {
+                                  return (
+                                    <Typography variant="body2" sx={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '0.8rem' }}>
+                                      "
+                                    </Typography>
+                                  );
+                                }
+                                if (product.is_general || product.pro_id === 3 || product.pro_title?.toLowerCase().includes('general product')) {
+                                  return (
+                                    <TextField
+                                      size="small"
+                                      value={product.pro_title || ''}
+                                      placeholder="Enter custom product name..."
+                                      onChange={(e) => updateRowTitle(product.id, e.target.value)}
+                                      onFocus={(e) => {
+                                        e.target.select();
+                                        setActiveRowId(product.id);
+                                      }}
+                                      sx={{
+                                        width: '100%',
+                                        minWidth: 150,
+                                        '& .MuiInputBase-input': {
+                                          padding: '4px 8px',
+                                          fontWeight: 700,
+                                          fontSize: '0.875rem',
+                                          color: '#0284c7',
+                                          bgcolor: 'rgba(255,255,255,0.9)',
+                                          border: '1px solid #38bdf8',
+                                          borderRadius: '4px'
+                                        }
+                                      }}
+                                    />
+                                  );
+                                }
+                                return product.pro_title;
+                              })()}
                             </TableCell>
                             <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
                               {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}

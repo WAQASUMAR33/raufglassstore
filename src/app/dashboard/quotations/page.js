@@ -2345,16 +2345,7 @@ function QuotationsPageContent() {
                       >
                         + Add Product
                       </Button>
-                      <Button
-                        size="small"
-                        variant="text"
-                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
-                        onClick={handleAddGeneralItem}
-                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#5e6eed', textTransform: 'none' }}
-                        title="Add a custom general product row directly to table"
-                      >
-                        + General Item
-                      </Button>
+
                     </Box>
                   </Box>
                   <Autocomplete
