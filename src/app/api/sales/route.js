@@ -670,6 +670,36 @@ export async function GET(request) {
           }
         });
 
+        // Fetch fitter details from ledger
+        const fitterLedgerEntries = await prisma.ledger.findMany({
+          where: {
+            bill_no: id.toString(),
+            trnx_type: { in: ['SALE', 'CREDIT'] },
+            credit_amount: { gt: 0 },
+            cus_id: { not: sale.cus_id },
+            details: { contains: 'Fitting' }
+          },
+          include: {
+            customer: {
+              select: {
+                cus_id: true,
+                cus_name: true
+              }
+            }
+          }
+        });
+
+        // Fetch hardware details from ledger
+        const hardwareLedgerEntries = await prisma.ledger.findMany({
+          where: {
+            bill_no: id.toString(),
+            trnx_type: { in: ['SALE', 'CREDIT'] },
+            credit_amount: { gt: 0 },
+            cus_id: { not: sale.cus_id },
+            details: { contains: 'Hardware' }
+          }
+        });
+
         const splitCreditAccountIds = (sale.split_payments || [])
           .map(sp => sp.credit_account_id)
           .filter(Boolean);
@@ -681,6 +711,17 @@ export async function GET(request) {
             amount: parseFloat(entry.credit_amount),
             account: entry.customer
           }));
+
+        const fitterDetails = fitterLedgerEntries
+          .filter(entry => !splitCreditAccountIds.includes(entry.cus_id))
+          .map(entry => ({
+            account_id: entry.cus_id,
+            amount: parseFloat(entry.credit_amount),
+            account: entry.customer
+          }));
+
+        const hardwareAmount = hardwareLedgerEntries.reduce((sum, e) => sum + parseFloat(e.credit_amount || 0), 0);
+        const fitterTotalAmount = fitterDetails.reduce((sum, f) => sum + f.amount, 0);
 
         let previousCustomerBalance = 0;
         try {
@@ -699,6 +740,10 @@ export async function GET(request) {
           notes: sale.notes || sale.reference || null,
           bill_number: sale.bill_number ?? null,
           transport_details: transportDetails,
+          fitter_details: fitterDetails,
+          fitter_amount: fitterTotalAmount,
+          fitting_charges: fitterTotalAmount,
+          hardware_amount: hardwareAmount,
           previous_customer_balance: previousCustomerBalance,
           previous_balance: previousCustomerBalance
         };
@@ -790,6 +835,32 @@ export async function GET(request) {
               AND l.trnx_type IN ('SALE', 'CREDIT')
               AND l.credit_amount > 0
               AND l.cus_id != ${sale[0].cus_id}
+              AND l.details LIKE '%Transport%'
+          `;
+
+          // Fetch fitter details from ledger for fallback path
+          const fitterLedgerEntries = await prisma.$queryRaw`
+            SELECT l.*, c.cus_name
+            FROM ledger l
+            LEFT JOIN customers c ON l.cus_id = c.cus_id
+            WHERE l.bill_no = ${id.toString()}
+              AND l.branch_id = ${branchId}
+              AND l.trnx_type IN ('SALE', 'CREDIT')
+              AND l.credit_amount > 0
+              AND l.cus_id != ${sale[0].cus_id}
+              AND l.details LIKE '%Fitting%'
+          `;
+
+          // Fetch hardware details from ledger for fallback path
+          const hardwareLedgerEntries = await prisma.$queryRaw`
+            SELECT l.*
+            FROM ledger l
+            WHERE l.bill_no = ${id.toString()}
+              AND l.branch_id = ${branchId}
+              AND l.trnx_type IN ('SALE', 'CREDIT')
+              AND l.credit_amount > 0
+              AND l.cus_id != ${sale[0].cus_id}
+              AND l.details LIKE '%Hardware%'
           `;
 
           const splitCreditAccountIdsFallback = (transformedSplitPayments || [])
@@ -806,6 +877,20 @@ export async function GET(request) {
                 cus_name: entry.cus_name
               }
             }));
+
+          const fitterDetailsFallback = fitterLedgerEntries
+            .filter(entry => !splitCreditAccountIdsFallback.includes(entry.cus_id))
+            .map(entry => ({
+              account_id: entry.cus_id,
+              amount: parseFloat(entry.credit_amount || 0),
+              account: {
+                cus_id: entry.cus_id,
+                cus_name: entry.cus_name
+              }
+            }));
+
+          const hardwareAmountFallback = hardwareLedgerEntries.reduce((sum, e) => sum + parseFloat(e.credit_amount || 0), 0);
+          const fitterTotalAmountFallback = fitterDetailsFallback.reduce((sum, f) => sum + f.amount, 0);
 
           let previousCustomerBalance = 0;
           try {
@@ -834,6 +919,10 @@ export async function GET(request) {
             sale_details: saleDetails || [],
             split_payments: transformedSplitPayments || [],
             transport_details: transportDetailsFallback,
+            fitter_details: fitterDetailsFallback,
+            fitter_amount: fitterTotalAmountFallback,
+            fitting_charges: fitterTotalAmountFallback,
+            hardware_amount: hardwareAmountFallback,
             previous_customer_balance: previousCustomerBalance,
             previous_balance: previousCustomerBalance
           };
@@ -1324,6 +1413,8 @@ export async function POST(request) {
       sale_details,
       transport_details,
       fitter_details,
+      fitting_charges = 0,
+      hardware_amount = 0,
       dc_no,
       split_payments,
       is_loaded_order, // Flag to indicate if this is a loaded order
@@ -1429,6 +1520,20 @@ export async function POST(request) {
       }
       if (fitter_details?.length) {
         fitter_details.forEach((fd) => { if (fd.account_id) targetAccountIds.add(parseInt(fd.account_id)); });
+      }
+      let hardwareAccount = null;
+      if (parseFloat(hardware_amount || 0) > 0) {
+        hardwareAccount = await tx.customer.findFirst({
+          where: {
+            OR: [
+              { cus_name: 'Hardware' },
+              { customer_category: { cus_cat_title: 'Hardware' } }
+            ]
+          }
+        });
+        if (hardwareAccount) {
+          targetAccountIds.add(hardwareAccount.cus_id);
+        }
       }
       if (split_payments?.length) {
         split_payments.forEach((sp) => {
@@ -1941,7 +2046,10 @@ export async function POST(request) {
         // 5b. Fitter account entries — credit each fitter account for fitting charges
         if (fitter_details && fitter_details.length > 0) {
           for (const fd of fitter_details) {
-            const fitterAmount = parseFloat(fd.amount) || 0;
+            let fitterAmount = parseFloat(fd.amount) || 0;
+            if (fitterAmount <= 0 && parseFloat(fitting_charges || 0) > 0) {
+              fitterAmount = parseFloat(fitting_charges) / fitter_details.length;
+            }
             if (!fd.account_id || fitterAmount <= 0) continue;
 
             const fitterAccount = accountMap.get(parseInt(fd.account_id)) || await tx.customer.findUnique({ where: { cus_id: parseInt(fd.account_id) } });
@@ -1966,6 +2074,26 @@ export async function POST(request) {
 
             saleLog(`🔧 Fitter Entry: Account=${fitterAccount.cus_name}, Credit=${fitterAmount}, Closing=${fitterEntry.closing_balance}`);
           }
+        }
+
+        // 5c. Hardware account entry — credit hardware account for hardware charges
+        if (parseFloat(hardware_amount || 0) > 0 && hardwareAccount) {
+          const hwAmt = parseFloat(hardware_amount);
+          const hardwareEntry = createLedgerEntry({
+            cus_id: hardwareAccount.cus_id,
+            opening_balance: await getRunningBalanceForAccount(hardwareAccount.cus_id),
+            debit_amount: 0,
+            credit_amount: Number(hwAmt.toFixed(2)),
+            bill_no: sale.sale_id.toString(),
+            trnx_type: 'CREDIT',
+            details: `Hardware Charges - ${bill_type || 'BILL'} - ${customer?.cus_name || 'Customer'} (Credit)`,
+            payments: 0,
+            updated_by: validatedUpdatedBy
+          });
+
+          ledgerEntries.push(hardwareEntry);
+
+          saleLog(`🔨 Hardware Entry: Account=${hardwareAccount.cus_name}, Credit=${hwAmt}, Closing=${hardwareEntry.closing_balance}`);
         }
 
         // 6. Split Payment Entries (if any) - Skip entries for bank/cash accounts (already created separately)
@@ -2325,6 +2453,8 @@ export async function PUT(request) {
       sale_details,
       transport_details,
       fitter_details,
+      fitting_charges = 0,
+      hardware_amount = 0,
       dc_no,
       split_payments,
       updated_by,
@@ -2934,7 +3064,10 @@ export async function PUT(request) {
         // ── 4f-2. Fitter account entries ──
         if (fitter_details && fitter_details.length > 0) {
           for (const fd of fitter_details) {
-            const fitterAmount = parseFloat(fd.amount) || 0;
+            let fitterAmount = parseFloat(fd.amount) || 0;
+            if (fitterAmount <= 0 && parseFloat(fitting_charges || 0) > 0) {
+              fitterAmount = parseFloat(fitting_charges) / fitter_details.length;
+            }
             if (!fd.account_id || fitterAmount <= 0) continue;
 
             const fitterAccount = await tx.customer.findUnique({ where: { cus_id: parseInt(fd.account_id) } });
@@ -2954,8 +3087,39 @@ export async function PUT(request) {
               updated_by: validatedUpdatedBy
             });
             ledgerEntries.push(fitterEntry);
+            affectedCusIds.add(fitterAccount.cus_id);
 
             saleLog(`   🔧 Fitter Credit: Account=${fitterAccount.cus_name}, Amount=${fitterAmount}`);
+          }
+        }
+
+        // ── 4f-3. Hardware account entry ──
+        if (parseFloat(hardware_amount || 0) > 0) {
+          const hardwareAccount = await tx.customer.findFirst({
+            where: {
+              OR: [
+                { cus_name: 'Hardware' },
+                { customer_category: { cus_cat_title: 'Hardware' } }
+              ]
+            }
+          });
+          if (hardwareAccount) {
+            const hwAmt = parseFloat(hardware_amount);
+            const currentHwBalance = await getRunningBalanceForAccount(hardwareAccount.cus_id);
+            const hardwareEntry = createLedgerEntry({
+              cus_id: hardwareAccount.cus_id,
+              opening_balance: currentHwBalance,
+              debit_amount: 0,
+              credit_amount: Number(hwAmt.toFixed(2)),
+              bill_no: sale.sale_id.toString(),
+              trnx_type: 'CREDIT',
+              details: `Hardware Charges - ${bill_type || 'BILL'} - ${freshCustomer.cus_name} (Credit)`,
+              payments: 0,
+              updated_by: validatedUpdatedBy
+            });
+            ledgerEntries.push(hardwareEntry);
+            affectedCusIds.add(hardwareAccount.cus_id);
+            saleLog(`   🔨 Hardware Credit: Account=${hardwareAccount.cus_name}, Amount=${hwAmt}`);
           }
         }
 

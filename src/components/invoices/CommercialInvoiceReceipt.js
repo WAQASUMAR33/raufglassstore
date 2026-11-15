@@ -283,6 +283,7 @@ export default function CommercialInvoiceReceipt({
   let remarks = String(bill.notes || bill.reference || '')
     .replace(/\[Cutter:[^\]]+\]/gi, '')
     .replace(/\[Fitter:[^\]]+\]/gi, '')
+    .replace(/\[Hardware:[^\]]+\]/gi, '')
     .replace(/\[DC:[^\]]+\]/gi, '')
     .replace(/\[Retail\]|\[Whole sale\]/gi, '')
     .trim();
@@ -297,6 +298,8 @@ export default function CommercialInvoiceReceipt({
   const carriage = parseFloat(bill.loader_amount || bill.shipping_amount || bill.delivery_charges || 0);
   const labourCharges = parseFloat(bill.labour_charges || bill.labour || 0);
   const fittingCharges = parseFloat(bill.fitter_amount || bill.fitting_charges || 0) || (Array.isArray(bill.fitter_details) ? bill.fitter_details.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0) : 0);
+  const hwMatch = String(bill.reference || bill.notes || '').match(/\[Hardware:\s*(?:Rs\.\s*)?([0-9.]+)\]/i);
+  const hardwareCharges = parseFloat(bill.hardware_amount || 0) || (hwMatch ? parseFloat(hwMatch[1]) : 0);
   const billValue = parseFloat(bill.total_amount || 0);
   
   const cashPayment = parseFloat(bill.cash_payment || (bill.payment && !bill.bank_payment ? bill.payment : 0) || 0);
@@ -902,6 +905,12 @@ export default function CommercialInvoiceReceipt({
                 <tr>
                   <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cutter Amount:</td>
                   <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cutterCharges)}</td>
+                </tr>
+              )}
+              {hardwareCharges > 0 && (
+                <tr>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Hardware Amount:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
                 </tr>
               )}
               <tr style={{ backgroundColor: '#f8fafc' }}>

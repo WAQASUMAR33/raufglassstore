@@ -386,6 +386,7 @@ const EMPTY_PAYMENT_DATA = {
   cutterAmount: '',
   deliveryCharges: '',
   fittingCharges: '',
+  hardware: '',
   dcNo: '',
   notes: '',
   isLoadedOrder: false,
@@ -402,6 +403,7 @@ const normalizePaymentData = (data) => ({
   cutterAmount: data?.cutterAmount ?? EMPTY_PAYMENT_DATA.cutterAmount,
   deliveryCharges: data?.deliveryCharges ?? EMPTY_PAYMENT_DATA.deliveryCharges,
   fittingCharges: data?.fittingCharges ?? EMPTY_PAYMENT_DATA.fittingCharges,
+  hardware: data?.hardware ?? EMPTY_PAYMENT_DATA.hardware,
   dcNo: data?.dcNo ?? EMPTY_PAYMENT_DATA.dcNo,
   notes: data?.notes ?? EMPTY_PAYMENT_DATA.notes,
   isLoadedOrder: data?.isLoadedOrder ?? EMPTY_PAYMENT_DATA.isLoadedOrder,
@@ -1529,6 +1531,8 @@ function SalesPageContent() {
     setNewTransport({ amount: 0, accountId: '' });
     // Note: transportAccounts are global and should not be cleared
     setTransportOptions([]);
+    setNewFitter({ amount: '', accountId: '' });
+    setFitterOptions([]);
     setShowScreenIndicator(true);
     setTimeout(() => setShowScreenIndicator(false), 1000);
     showSnackbar('📋 Form cleared - ready for new entry', 'info');
@@ -2685,11 +2689,12 @@ function SalesPageContent() {
     const fitterTotal = calculateFitterTotal();
     const fittingCharges = parseFloat(paymentData.fittingCharges) || 0;
     const totalFitting = Math.max(fittingCharges, fitterTotal);
+    const hardwareAmount = parseFloat(paymentData.hardware) || 0;
     const discount = parseFloat(paymentData.discount) || 0;
     if (billType === 'SALE_RETURN') {
-      return Number((productTotal - labour - cutterAmount - totalDelivery - totalFitting - discount).toFixed(0));
+      return Number((productTotal - labour - cutterAmount - totalDelivery - totalFitting - hardwareAmount - discount).toFixed(0));
     }
-    return Number((productTotal + labour + cutterAmount + totalDelivery + totalFitting - discount).toFixed(0));
+    return Number((productTotal + labour + cutterAmount + totalDelivery + totalFitting + hardwareAmount - discount).toFixed(0));
   };
 
   // Calculate balance (grand total - total cash received only; advance is shown for info only)
@@ -2818,6 +2823,23 @@ function SalesPageContent() {
         setTransportOptions([]);
       }
 
+      // Map Fitter Options for loaded order
+      if (fullOrder.fitter_details && Array.isArray(fullOrder.fitter_details)) {
+        const mappedFitter = fullOrder.fitter_details.map((item, index) => {
+          const account = fitterAccounts.find(f => f.cus_id === item.account_id) || item.account;
+          return {
+            id: Date.now() + index + 200,
+            accountId: item.account_id,
+            accountName: account ? account.cus_name : 'Fitter Account',
+            amount: parseFloat(item.amount) || 0,
+            description: `Fitting Charges - ${account?.cus_name || 'Fitter'}`
+          };
+        });
+        setFitterOptions(mappedFitter);
+      } else {
+        setFitterOptions([]);
+      }
+
       // Set payment data
       const alreadyPaid = parseFloat(fullOrder.payment || 0);
       const labourCharges = parseFloat(fullOrder.labour_charges || fullOrder.labour || 0);
@@ -2836,6 +2858,8 @@ function SalesPageContent() {
         discount: parseFloat(fullOrder.discount || 0) || '', // Empty string if 0, so user knows they can edit
         labour: labourCharges > 0 ? labourCharges : '', // Only set if > 0, otherwise empty string
         deliveryCharges: parseFloat(fullOrder.shipping_amount || 0) || '', // Empty string if 0
+        fittingCharges: parseFloat(fullOrder.fitting_charges || fullOrder.fitter_amount || 0) || '',
+        hardware: parseFloat(fullOrder.hardware_amount || 0) || '',
         notes: fullOrder.reference ? `${fullOrder.reference} (Ref Order #${fullOrder.sale_id})` : `Ref Order #${fullOrder.sale_id}`,
         isLoadedOrder: true // Flag to indicate if this is a loaded order
       }));
@@ -2924,10 +2948,7 @@ function SalesPageContent() {
       showSnackbar('Please select a bank account for the bank payment', 'error');
       return;
     }
-    if ((parseFloat(paymentData.deliveryCharges) || 0) > 0 && transportOptions.length === 0) {
-      showSnackbar('Please select a transport account for the delivery charges', 'error');
-      return;
-    }
+// Delivery charges can be saved without transport account (assign later)
 
     // Check for profit/loss on every product in the bill (skip on returns)
     if (billType !== 'SALE_RETURN' && !bypassLossCheck) {
@@ -3287,11 +3308,20 @@ function SalesPageContent() {
         cutter_charges: parseFloat(paymentData.cutterAmount) || 0,
         dc_no: paymentData.dcNo || null,
         fitting_charges: Math.max(parseFloat(paymentData.fittingCharges) || 0, calculateFitterTotal()),
-        fitter_details: fitterOptions.map(fitter => ({
-          account_id: fitter.accountId,
-          amount: parseFloat(fitter.amount) || 0,
-          description: fitter.description || 'Fitting charges'
-        })),
+        hardware_amount: parseFloat(paymentData.hardware) || 0,
+        fitter_details: fitterOptions.map(fitter => {
+          const itemAmt = parseFloat(fitter.amount || 0);
+          const totalFit = Math.max(parseFloat(paymentData.fittingCharges) || 0, calculateFitterTotal());
+          let finalAmt = itemAmt;
+          if (finalAmt <= 0 && fitterOptions.length > 0 && totalFit > 0) {
+            finalAmt = totalFit / fitterOptions.length;
+          }
+          return {
+            account_id: fitter.accountId,
+            amount: finalAmt,
+            description: fitter.description || 'Fitting charges'
+          };
+        }),
         fitter_name: fitterOptions.map(f => f.accountName).join(', ') || null,
         reference: (() => {
           let refStr = paymentData.notes ? `${paymentData.notes} [${billPriceType}]` : `[${billPriceType}]`;
@@ -3303,6 +3333,10 @@ function SalesPageContent() {
           }
           if (fitterOptions.length > 0) {
             refStr += ` [Fitter: ${fitterOptions.map(f => f.accountName).join(', ')}]`;
+          }
+          const hwAmt = parseFloat(paymentData.hardware) || 0;
+          if (hwAmt > 0) {
+            refStr += ` [Hardware: Rs. ${hwAmt}]`;
           }
           if (paymentData.dcNo) {
             refStr += ` [DC: ${paymentData.dcNo}]`;
@@ -6185,10 +6219,44 @@ function SalesPageContent() {
         setNewTransport({ amount: 0, accountId: '' });
       }
 
+      // Map Fitter Options
+      let totalFitterAmount = 0;
+      if (fullSale.fitter_details && Array.isArray(fullSale.fitter_details)) {
+        const mappedFitter = fullSale.fitter_details.map((item, index) => {
+          const account = fitterAccounts.find(f => f.cus_id === item.account_id) || item.account;
+          const itemAmt = parseFloat(item.amount || 0);
+          totalFitterAmount += itemAmt;
+          return {
+            id: Date.now() + index + 200,
+            accountId: item.account_id,
+            accountName: account ? account.cus_name : 'Fitter Account',
+            amount: itemAmt,
+            description: `Fitting Charges - ${account?.cus_name || 'Fitter'}`
+          };
+        });
+        setFitterOptions(mappedFitter);
+
+        if (mappedFitter.length > 0) {
+          setNewFitter({
+            accountId: mappedFitter[0].accountId,
+            accountName: mappedFitter[0].accountName,
+            amount: mappedFitter[0].amount
+          });
+        } else {
+          setNewFitter({ amount: '', accountId: '' });
+        }
+      } else {
+        setFitterOptions([]);
+        setNewFitter({ amount: '', accountId: '' });
+      }
+
       // Payment data
       const cashAmt = parseFloat(fullSale.cash_payment || 0);
       const bankAmt = parseFloat(fullSale.bank_payment || 0);
       const fullShippingAmt = parseFloat(fullSale.shipping_amount || 0);
+      const rawFittingAmt = parseFloat(fullSale.fitting_charges || fullSale.fitter_amount || totalFitterAmount || 0);
+      const hwMatch = String(fullSale.reference || fullSale.notes || '').match(/\[Hardware:\s*(?:Rs\.?\s*)?([0-9.]+)\]/i);
+      const rawHardwareAmt = parseFloat(fullSale.hardware_amount || 0) || (hwMatch ? parseFloat(hwMatch[1]) : 0);
 
       setPaymentData(normalizePaymentData({
         cash: cashAmt > 0 ? cashAmt.toString() : '',
@@ -6199,6 +6267,8 @@ function SalesPageContent() {
         discount: fullSale.discount?.toString() || '',
         labour: fullSale.labour_charges?.toString() || '',
         deliveryCharges: fullShippingAmt > 0 ? fullShippingAmt.toString() : '',
+        fittingCharges: rawFittingAmt > 0 ? rawFittingAmt.toString() : '',
+        hardware: rawHardwareAmt > 0 ? rawHardwareAmt.toString() : '',
         notes: fullSale.reference || ''
       }));
 
@@ -8729,6 +8799,41 @@ function SalesPageContent() {
                         ({fitterOptions.map(f => f.accountName).join(', ')})
                       </Typography>
                     )}
+                  </Box>
+
+                  {/* HARDWARE (Fixed to Hardware account) */}
+                  <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary', minWidth: '140px' }}>
+                      HARDWARE
+                    </Typography>
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={paymentInputValue(paymentData.hardware)}
+                      onChange={(e) => handlePaymentDataChange('hardware', e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      inputProps={{ step: 'any' }}
+                      sx={{
+                        bgcolor: 'white',
+                        '& .MuiInputBase-input': {
+                          padding: '8px',
+                          fontWeight: 'bold',
+                          color: '#000000',
+                          WebkitTextFillColor: '#000000 !important'
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#000000',
+                          WebkitTextFillColor: '#000000 !important',
+                          fontWeight: 'bold',
+                          opacity: 1
+                        },
+                        flex: 1
+                      }}
+                      placeholder="0"
+                    />
+                    <Typography variant="body2" sx={{ color: '#059669', fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      (Hardware Account)
+                    </Typography>
                   </Box>
 
                   {/* DELIVERY CHARGES (total including transport) */}
@@ -12582,7 +12687,9 @@ function SalesPageContent() {
           return '';
         })();
         const fittingAmount = parseFloat(activeBillData.fitting_charges || 0);
-        const subtotalAmount = totalAmount - labourAmount - cutterAmount - shippingAmount - fittingAmount + discountAmount;
+        const hwThermalMatch = String(activeBillData.reference || activeBillData.notes || '').match(/\[Hardware:\s*(?:Rs\.?\s*)?([0-9.]+)\]/i);
+        const hardwareAmount = parseFloat(activeBillData.hardware_amount || 0) || (hwThermalMatch ? parseFloat(hwThermalMatch[1]) : 0);
+        const subtotalAmount = totalAmount - labourAmount - cutterAmount - shippingAmount - fittingAmount - hardwareAmount + discountAmount;
         const paidAmount = parseFloat(activeBillData.payment || 0);
         const balanceAmount = totalAmount - paidAmount;
 
@@ -12726,6 +12833,12 @@ function SalesPageContent() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography sx={{ fontSize: '11px', color: '#000' }}>Fitting Charges</Typography>
                   <Typography sx={{ fontSize: '11px', color: '#000' }}>+{fmtAmt(fittingAmount)}</Typography>
+                </Box>
+              )}
+              {hardwareAmount > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography sx={{ fontSize: '11px', color: '#000' }}>Hardware Charges</Typography>
+                  <Typography sx={{ fontSize: '11px', color: '#000' }}>+{fmtAmt(hardwareAmount)}</Typography>
                 </Box>
               )}
               <Box
