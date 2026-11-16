@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { initBranchScope } from '@/lib/branch-server';
 import { sumSaleReportSummary } from '@/lib/sale-report-amounts';
 import { isEmployeeExpense } from '@/lib/employee-expense-helper';
+import { getAssetsList } from '@/lib/assets-helper';
 
 
 // Helper to parse dates in Pakistan Standard Time (UTC+5)
@@ -1307,12 +1308,23 @@ async function getBalanceSheet() {
     }
   });
 
+  // Get fixed assets
+  let fixedAssets = [];
+  try {
+    fixedAssets = await getAssetsList(prisma, { status: 'ACTIVE' });
+  } catch (e) {
+    console.error('Error fetching fixed assets for balance sheet:', e);
+  }
+  const fixedAssetsValue = fixedAssets.reduce((sum, a) => sum + (parseFloat(a.current_value) || 0), 0);
+
   const summary = {
     // Assets
     totalReceivables: receivables.reduce((sum, c) => sum + parseFloat(c.cus_balance), 0),
     receivablesCount: receivables.length,
     stockValue,
-    totalAssets: receivables.reduce((sum, c) => sum + parseFloat(c.cus_balance), 0) + stockValue,
+    fixedAssetsValue,
+    fixedAssetsCount: fixedAssets.length,
+    totalAssets: receivables.reduce((sum, c) => sum + parseFloat(c.cus_balance), 0) + stockValue + fixedAssetsValue,
 
     // Liabilities
     totalPayables: Math.abs(payables.reduce((sum, c) => sum + parseFloat(c.cus_balance), 0)),
@@ -1327,11 +1339,11 @@ async function getBalanceSheet() {
     totalExpensesAmount: parseFloat(totalExpenses._sum.exp_amount || 0),
 
     // Net Worth
-    netWorth: (receivables.reduce((sum, c) => sum + parseFloat(c.cus_balance), 0) + stockValue) -
+    netWorth: (receivables.reduce((sum, c) => sum + parseFloat(c.cus_balance), 0) + stockValue + fixedAssetsValue) -
       Math.abs(payables.reduce((sum, c) => sum + parseFloat(c.cus_balance), 0))
   };
 
-  return NextResponse.json({ receivables, payables, products, summary });
+  return NextResponse.json({ receivables, payables, products, fixedAssets, summary });
 }
 
 function toMonthKey(date) {

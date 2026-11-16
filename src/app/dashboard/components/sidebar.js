@@ -123,6 +123,7 @@ const ROUTE_MAP = {
   'loaders': '/dashboard/loaders',
   'expense-titles': '/dashboard/expense-titles',
   'expenses': '/dashboard/expenses',
+  'assets': '/dashboard/assets',
   'journal': '/dashboard/journal',
   'internal-transfer': '/dashboard/internal-transfer',
   'bank-accounts': '/dashboard/bank-accounts',
@@ -224,6 +225,7 @@ export default function Sidebar({
 
     { id: 'expense-titles', name: 'Expense Titles', icon: LabelIcon, category: 'financial', parent: 'Finance' },
     { id: 'expenses', name: 'Expense Management', icon: AttachMoneyIcon, category: 'financial', parent: 'Finance' },
+    { id: 'assets', name: 'Fixed Assets', icon: TableChartIcon, category: 'financial', parent: 'Finance' },
     { id: 'journal', name: 'Journal Entries', icon: MenuBookIcon, category: 'financial', parent: 'Finance' },
     { id: 'internal-transfer', name: 'Internal Transfer', icon: SwapHorizIcon, category: 'financial', parent: 'Finance' },
     { id: 'adjustment-management', name: 'Adjustment Account', icon: SwapHorizIcon, category: 'financial', parent: 'Finance' },

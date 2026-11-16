@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Printer, Search, RefreshCw, Scale, TrendingUp, TrendingDown, Package, Wallet } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Search, RefreshCw, Scale, TrendingUp, TrendingDown, Package, Wallet, Landmark } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/dashboard-layout';
 import { Autocomplete, TextField, InputAdornment } from '@mui/material';
@@ -69,6 +69,14 @@ export default function BalanceSheet() {
     });
     csv += `\nTotal Receivables,${formatCurrency(data.summary.totalReceivables)}\n`;
     csv += `Stock Value,${formatCurrency(data.summary.stockValue)}\n`;
+    if (data.fixedAssets && data.fixedAssets.length > 0) {
+      csv += `\nFixed Assets (Vehicles, Furniture & Equipment)\n`;
+      csv += 'S.No,Asset Name,Category,Value\n';
+      data.fixedAssets.forEach((a, i) => {
+        csv += `${i + 1},${a.asset_name},${a.category},${formatCurrency(a.current_value)}\n`;
+      });
+      csv += `Total Fixed Assets,${formatCurrency(data.summary.fixedAssetsValue || 0)}\n`;
+    }
     csv += `TOTAL ASSETS,${formatCurrency(data.summary.totalAssets)}\n\n`;
     csv += 'LIABILITIES\n';
     csv += 'Payables (Credit Balances)\n';
@@ -140,9 +148,9 @@ export default function BalanceSheet() {
         receivablesCount: filteredReceivables.length,
         totalPayables,
         payablesCount: filteredPayables.length,
-        totalAssets: totalReceivables + (reportData.summary.stockValue || 0),
+        totalAssets: totalReceivables + (reportData.summary.stockValue || 0) + (reportData.summary.fixedAssetsValue || 0),
         totalLiabilities: totalPayables,
-        netWorth: (totalReceivables + (reportData.summary.stockValue || 0)) - totalPayables
+        netWorth: (totalReceivables + (reportData.summary.stockValue || 0) + (reportData.summary.fixedAssetsValue || 0)) - totalPayables
       }
     };
   };
@@ -282,7 +290,7 @@ export default function BalanceSheet() {
               </div>
 
               {/* Summary Cards - Screen */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 print:hidden">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4 print:hidden">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Receivables</p>
@@ -298,6 +306,14 @@ export default function BalanceSheet() {
                   </div>
                   <p className="text-2xl font-bold text-purple-800 mt-1">Rs. {formatCurrency(filteredData.summary.stockValue)}</p>
                 </div>
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Fixed Assets</p>
+                    <Landmark className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-amber-900 mt-1">Rs. {formatCurrency(filteredData.summary.fixedAssetsValue || 0)}</p>
+                  <p className="text-xs text-amber-700 mt-1">{filteredData.summary.fixedAssetsCount || filteredData.fixedAssets?.length || 0} assets</p>
+                </div>
                 <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-red-600 uppercase tracking-wide">Payables</p>
@@ -306,7 +322,7 @@ export default function BalanceSheet() {
                   <p className="text-2xl font-bold text-red-800 mt-1">Rs. {formatCurrency(filteredData.summary.totalLiabilities)}</p>
                   <p className="text-xs text-red-600 mt-1">{filteredData.summary.payablesCount} accounts</p>
                 </div>
-                <div className={`bg-gradient-to-br ${filteredData.summary.netWorth >= 0 ? 'from-emerald-50 to-emerald-100 border-emerald-200' : 'from-orange-50 to-orange-100 border-orange-200'} border rounded-xl p-4`}>
+                <div className={`bg-gradient-to-br ${filteredData.summary.netWorth >= 0 ? 'from-emerald-50 to-emerald-100 border-emerald-200' : 'from-orange-50 to-orange-100 border-orange-200'} border rounded-xl p-4 col-span-2 sm:col-span-1`}>
                   <div className="flex items-center justify-between">
                     <p className={`text-xs font-semibold ${filteredData.summary.netWorth >= 0 ? 'text-emerald-600' : 'text-orange-600'} uppercase tracking-wide`}>Net Worth</p>
                     <Wallet className={`w-4 h-4 ${filteredData.summary.netWorth >= 0 ? 'text-emerald-500' : 'text-orange-500'}`} />
@@ -358,11 +374,47 @@ export default function BalanceSheet() {
                   </div>
 
                   {/* Stock Value */}
-                  <div className="px-3 pb-3">
-                    <div className="flex justify-between py-2 px-3 bg-slate-50 rounded print:bg-white">
+                  <div className="px-3 pb-2">
+                    <div className="flex justify-between py-2 px-3 bg-slate-50 rounded print:bg-white border border-slate-200">
                       <span className="text-sm font-semibold text-slate-700">Inventory / Stock Value</span>
                       <span className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(filteredData.summary.stockValue)}</span>
                     </div>
+                  </div>
+
+                  {/* Fixed Assets (Vehicles, Furniture, Machinery, Equipment) */}
+                  <div className="p-3 pt-0">
+                    <div className="bg-amber-50 border border-amber-200 px-3 py-1.5 rounded mb-2 print:bg-white flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">Fixed Assets (Vehicles, Furniture & Equipment)</h4>
+                      <span className="text-xs font-bold text-amber-900 tabular-nums">
+                        Rs. {formatCurrency(filteredData.summary.fixedAssetsValue || 0)}
+                      </span>
+                    </div>
+                    {filteredData.fixedAssets && filteredData.fixedAssets.length > 0 ? (
+                      <div className="max-h-48 overflow-auto print:max-h-none border border-slate-200 rounded">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-300 bg-slate-50 print:border-black">
+                              <th className="px-2 py-1.5 text-left font-bold text-slate-700 uppercase">#</th>
+                              <th className="px-2 py-1.5 text-left font-bold text-slate-700 uppercase">Asset Name</th>
+                              <th className="px-2 py-1.5 text-left font-bold text-slate-700 uppercase">Category</th>
+                              <th className="px-2 py-1.5 text-right font-bold text-slate-700 uppercase">Current Value</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {filteredData.fixedAssets.map((asset, index) => (
+                              <tr key={asset.asset_id} className="hover:bg-slate-50">
+                                <td className="px-2 py-1 text-slate-600">{index + 1}</td>
+                                <td className="px-2 py-1 text-slate-900 font-medium">{asset.asset_name}</td>
+                                <td className="px-2 py-1 text-slate-600">{asset.category}</td>
+                                <td className="px-2 py-1 text-right text-slate-900 font-semibold tabular-nums">{formatCurrency(asset.current_value)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-500 px-2 py-1 italic">No fixed assets registered</div>
+                    )}
                   </div>
 
                   {/* Total Assets */}

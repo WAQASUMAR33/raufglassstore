@@ -282,6 +282,12 @@ export function canAccessMenuItem(user, item) {
     return hasPageAccess(allowed, pageId) || hasPageAccess(allowed, 'customers') || hasPageAccess(allowed, 'accounts');
   }
 
+  if (pageId === 'assets') {
+    const role = resolveStaffRole(user);
+    if (isAdminRole(role) || isSuperAdminRole(role)) return true;
+    return hasPageAccess(allowed, 'assets') || hasPageAccess(allowed, 'expenses') || hasPageAccess(allowed, 'journal') || hasPageAccess(allowed, 'ledger');
+  }
+
   return hasPageAccess(allowed, pageId);
 }
 

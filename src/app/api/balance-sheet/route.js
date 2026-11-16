@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { initBranchScope } from '@/lib/branch-server';
+import { getTotalFixedAssets } from '@/lib/assets-helper';
 
 
 // GET - Generate balance sheet data
@@ -125,6 +126,10 @@ export async function GET(request) {
       }
     });
 
+    // Get fixed assets
+    const fixedAssetsData = await getTotalFixedAssets();
+    const fixedAssets = fixedAssetsData.total;
+
     // Organize balance sheet data
     const balanceSheet = {
       date: date,
@@ -134,15 +139,16 @@ export async function GET(request) {
           accountsReceivable: totalAssets,
           total: (dayEndData?.closing_cash || 0) + totalAssets
         },
-        totalAssets: (dayEndData?.closing_cash || 0) + totalAssets
+        fixedAssets: fixedAssets,
+        totalAssets: (dayEndData?.closing_cash || 0) + totalAssets + fixedAssets
       },
       liabilities: {
         accountsPayable: totalLiabilities,
         totalLiabilities: totalLiabilities
       },
       equity: {
-        retainedEarnings: ((dayEndData?.closing_cash || 0) + totalAssets) - totalLiabilities,
-        totalEquity: ((dayEndData?.closing_cash || 0) + totalAssets) - totalLiabilities
+        retainedEarnings: ((dayEndData?.closing_cash || 0) + totalAssets + fixedAssets) - totalLiabilities,
+        totalEquity: ((dayEndData?.closing_cash || 0) + totalAssets + fixedAssets) - totalLiabilities
       }
     };
 
