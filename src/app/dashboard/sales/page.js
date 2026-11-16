@@ -3244,11 +3244,7 @@ function SalesPageContent() {
         showSnackbar('Total amount must be greater than 0', 'error');
         return;
       }
-
-      if ((parseFloat(paymentData.deliveryCharges) || 0) > 0 && transportOptions.length === 0) {
-        showSnackbar('Please select a transport account for the delivery charges', 'error');
-        return;
-      }
+      // Transport account selection is optional
 
       if ((parseFloat(paymentData.bank) || 0) > 0 && !paymentData.bankAccountId) {
         showSnackbar('Please select a bank account for the bank payment', 'error');
