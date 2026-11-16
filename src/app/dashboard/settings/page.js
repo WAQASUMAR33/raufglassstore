@@ -59,7 +59,9 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Stack
+  Stack,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 
 import {
@@ -85,7 +87,11 @@ import {
   Store as StoreIcon,
   Settings as SettingsIcon,
   Check as CheckIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
+  WhatsApp as WhatsAppIcon,
+  Send as SendIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  ErrorOutline as ErrorOutlineIcon
 } from '@mui/icons-material';
 
 export default function SettingsPage() {
@@ -122,6 +128,94 @@ export default function SettingsPage() {
   const [fpError, setFpError] = useState('');
   const [fpSuccess, setFpSuccess] = useState('');
   const [fpLoading, setFpLoading] = useState(false);
+
+  // WhatsApp Gateway State
+  const [waConfig, setWaConfig] = useState({
+    is_enabled: false,
+    instance_id: '',
+    api_token: '',
+    auto_send_on_sale: true,
+    custom_caption: 'Assalam-o-Alaikum, here is your bill from Zain Traders Mandi Bahauddin. Thank you for your business! Ph: 0302-2133218, 0347-7743218',
+    api_provider: 'ultramsg',
+  });
+  const [waConnection, setWaConnection] = useState({ checked: false, connected: false, message: '' });
+  const [waLoading, setWaLoading] = useState(false);
+  const [waSaving, setWaSaving] = useState(false);
+  const [waTesting, setWaTesting] = useState(false);
+  const [waTestPhone, setWaTestPhone] = useState('');
+
+  const fetchWhatsAppSettings = useCallback(async () => {
+    setWaLoading(true);
+    try {
+      const res = await fetch('/api/whatsapp/settings');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.settings) {
+          setWaConfig((prev) => ({
+            ...prev,
+            ...data.settings,
+          }));
+        }
+        if (data.connection) {
+          setWaConnection({ checked: true, ...data.connection });
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching WhatsApp settings:', e);
+    } finally {
+      setWaLoading(false);
+    }
+  }, []);
+
+  const handleSaveWhatsAppConfig = async (e) => {
+    e?.preventDefault();
+    setWaSaving(true);
+    try {
+      const res = await fetch('/api/whatsapp/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(waConfig),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showSnackbar('WhatsApp automation settings saved successfully!', 'success');
+        if (data.connection) {
+          setWaConnection({ checked: true, ...data.connection });
+        }
+      } else {
+        showSnackbar(data.error || 'Failed to save WhatsApp settings', 'error');
+      }
+    } catch (err) {
+      showSnackbar('Error saving WhatsApp settings', 'error');
+    } finally {
+      setWaSaving(false);
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!waTestPhone.trim()) {
+      showSnackbar('Please enter a test phone number (e.g. 03477743218)', 'error');
+      return;
+    }
+    setWaTesting(true);
+    try {
+      const res = await fetch('/api/whatsapp/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: waTestPhone }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showSnackbar('Test message sent to WhatsApp successfully!', 'success');
+      } else {
+        showSnackbar(data.error || 'Failed to send test message', 'error');
+      }
+    } catch (err) {
+      showSnackbar('Error sending test message', 'error');
+    } finally {
+      setWaTesting(false);
+    }
+  };
 
   // Initial Auth & Data Load
   const fetchUsers = useCallback(async (isSilent = false) => {
@@ -160,10 +254,11 @@ export default function SettingsPage() {
       }
       setCurrentUser(user);
       fetchUsers(false);
+      fetchWhatsAppSettings();
     } catch {
       router.push('/login');
     }
-  }, [router, fetchUsers]);
+  }, [router, fetchUsers, fetchWhatsAppSettings]);
 
   // Handle Add New User
   const handleAddUserSubmit = async (e) => {
@@ -553,6 +648,7 @@ export default function SettingsPage() {
           >
             <Tab icon={<ShieldIcon />} iconPosition="start" label="User Authentication & Biometrics" />
             <Tab icon={<SettingsIcon />} iconPosition="start" label="System Preferences" />
+            <Tab icon={<WhatsAppIcon sx={{ color: '#25D366' }} />} iconPosition="start" label="WhatsApp Automation" />
           </Tabs>
 
           {/* TAB 1: User Security Table */}
@@ -784,6 +880,243 @@ export default function SettingsPage() {
                   </Card>
                 </Grid>
               </Grid>
+            </Box>
+          )}
+
+          {/* TAB 3: WhatsApp Automation */}
+          {activeTab === 2 && (
+            <Box sx={{ p: 3 }}>
+              {waLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                  <CircularProgress size={36} sx={{ color: '#25D366' }} />
+                </Box>
+              ) : (
+                <Grid container spacing={3}>
+                  {/* Left Column: Configuration Form */}
+                  <Grid item xs={12} lg={7}>
+                    <Card variant="outlined" sx={{ p: 3, borderRadius: 2.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ bgcolor: '#dcfce7', color: '#16a34a' }}>
+                            <WhatsAppIcon />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                              WhatsApp Cloud Gateway
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Automatically send invoices and receipts directly to customer WhatsApp numbers
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Chip
+                          icon={waConfig.is_enabled ? (waConnection.connected ? <CheckCircleOutlineIcon /> : <ErrorOutlineIcon />) : undefined}
+                          label={
+                            !waConfig.is_enabled
+                              ? 'Disabled (Desktop Fallback)'
+                              : waConnection.connected
+                              ? 'Gateway Online & Connected'
+                              : 'Credentials Configured'
+                          }
+                          color={!waConfig.is_enabled ? 'default' : waConnection.connected ? 'success' : 'warning'}
+                          variant="outlined"
+                          sx={{ fontWeight: 700 }}
+                        />
+                      </Box>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      <Box component="form" onSubmit={handleSaveWhatsAppConfig}>
+                        <Stack spacing={2.5}>
+                          <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={waConfig.is_enabled}
+                                  onChange={(e) => setWaConfig({ ...waConfig, is_enabled: e.target.checked })}
+                                  color="success"
+                                />
+                              }
+                              label={
+                                <Box>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                                    Enable WhatsApp Cloud Automation
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Send bills directly in the background without needing WhatsApp Desktop installed on every counter machine.
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                          </Box>
+
+                          <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={waConfig.auto_send_on_sale}
+                                  onChange={(e) => setWaConfig({ ...waConfig, auto_send_on_sale: e.target.checked })}
+                                  color="success"
+                                  disabled={!waConfig.is_enabled}
+                                />
+                              }
+                              label={
+                                <Box>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                                    Auto-Send on "Save Sale"
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Automatically renders bill as PNG image and transmits to customer's mobile number immediately upon saving a sale.
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                          </Box>
+
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                fullWidth
+                                size="small"
+                                label="Gateway Provider"
+                                value="UltraMsg (Recommended for Vercel/Next.js)"
+                                disabled
+                                helperText="UltraMsg REST API Engine"
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                fullWidth
+                                size="small"
+                                required={waConfig.is_enabled}
+                                label="Instance ID"
+                                placeholder="e.g. instance104821"
+                                value={waConfig.instance_id || ''}
+                                onChange={(e) => setWaConfig({ ...waConfig, instance_id: e.target.value })}
+                                helperText="From your UltraMsg dashboard"
+                              />
+                            </Grid>
+                          </Grid>
+
+                          <TextField
+                            fullWidth
+                            size="small"
+                            type="password"
+                            required={waConfig.is_enabled}
+                            label="API Token"
+                            placeholder="Enter UltraMsg API token"
+                            value={waConfig.api_token || ''}
+                            onChange={(e) => setWaConfig({ ...waConfig, api_token: e.target.value })}
+                            helperText="Stored securely in database for automated bill dispatch"
+                          />
+
+                          <TextField
+                            fullWidth
+                            size="small"
+                            multiline
+                            rows={3}
+                            label="Default Message Caption"
+                            value={waConfig.custom_caption || ''}
+                            onChange={(e) => setWaConfig({ ...waConfig, custom_caption: e.target.value })}
+                            helperText="Appended to the bill image (Invoice #, customer name and amount are added automatically)"
+                          />
+
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
+                            <Button
+                              type="submit"
+                              variant="contained"
+                              disabled={waSaving}
+                              startIcon={waSaving ? <CircularProgress size={18} color="inherit" /> : <CheckIcon />}
+                              sx={{
+                                bgcolor: '#16a34a',
+                                color: 'white',
+                                fontWeight: 700,
+                                px: 3,
+                                py: 1,
+                                borderRadius: 2,
+                                '&:hover': { bgcolor: '#15803d' },
+                              }}
+                            >
+                              {waSaving ? 'Saving…' : 'Save WhatsApp Settings'}
+                            </Button>
+                          </Box>
+                        </Stack>
+                      </Box>
+                    </Card>
+                  </Grid>
+
+                  {/* Right Column: Live Test & Setup Instructions */}
+                  <Grid item xs={12} lg={5}>
+                    <Stack spacing={3}>
+                      {/* Live Test Card */}
+                      <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <SendIcon color="primary" fontSize="small" /> Test WhatsApp Dispatch
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Verify that your gateway credentials are functioning by sending a real test message to your phone.
+                        </Typography>
+
+                        <Stack spacing={2}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Recipient Phone Number"
+                            placeholder="03477743218 or 923477743218"
+                            value={waTestPhone}
+                            onChange={(e) => setWaTestPhone(e.target.value)}
+                            helperText="Format: 03XX-XXXXXXX or 923XXXXXXXXX"
+                          />
+
+                          <Button
+                            variant="outlined"
+                            fullWidth
+                            disabled={waTesting || !waConfig.is_enabled}
+                            onClick={handleTestWhatsApp}
+                            startIcon={waTesting ? <CircularProgress size={18} color="inherit" /> : <SendIcon />}
+                            sx={{
+                              borderColor: '#16a34a',
+                              color: '#16a34a',
+                              fontWeight: 700,
+                              borderRadius: 2,
+                              '&:hover': { bgcolor: '#f0fdf4', borderColor: '#15803d' },
+                            }}
+                          >
+                            {waTesting ? 'Sending Test…' : 'Send Test WhatsApp Message'}
+                          </Button>
+                        </Stack>
+                      </Card>
+
+                      {/* Setup Instructions */}
+                      <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#f8fafc' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <InfoIcon color="info" fontSize="small" /> Quick 2-Minute Setup
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                          To connect Zain Traders to WhatsApp Cloud:
+                        </Typography>
+                        <Box component="ol" sx={{ pl: 2.5, m: 0, '& li': { mb: 1, fontSize: '0.85rem', color: '#475569' } }}>
+                          <li>
+                            Open <strong>UltraMsg.com</strong> and create a free account.
+                          </li>
+                          <li>
+                            Scan the QR code from your phone's WhatsApp (Linked Devices).
+                          </li>
+                          <li>
+                            Copy your <strong>Instance ID</strong> and <strong>Token</strong> from UltraMsg dashboard into the fields on the left.
+                          </li>
+                          <li>
+                            Toggle <strong>Enable WhatsApp Cloud Automation</strong> ON and click <strong>Save</strong>!
+                          </li>
+                        </Box>
+                        <Alert severity="success" sx={{ mt: 2, py: 0.5, borderRadius: 2, fontSize: '0.8rem' }}>
+                          Bills will be automatically sent to customers immediately when you click <strong>Save Sale</strong>!
+                        </Alert>
+                      </Card>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              )}
             </Box>
           )}
         </Card>
