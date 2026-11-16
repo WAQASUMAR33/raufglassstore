@@ -5905,6 +5905,19 @@ function SalesPageContent() {
   // Current bill data for printing (from create view)
   const [currentBillData, setCurrentBillData] = useState(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const [activeReceiptCopy, setActiveReceiptCopy] = useState('OFFICE');
+
+  const handlePrintCopy = async (copyType, fromDialog = true, targetBill = null) => {
+    setActiveReceiptCopy(copyType);
+    const activeBill = targetBill || currentBillData || selectedBill;
+    if (activeBill && !currentBillData) {
+      setCurrentBillData(activeBill);
+    }
+    setTimeout(() => {
+      const mode = fromDialog && selectedBill && !currentBillData ? 'EXISTING' : 'A4';
+      handlePrintBill(mode, fromDialog, activeBill);
+    }, 120);
+  };
 
   const resolveBillForActions = async (bill) => {
     if (!bill) return null;
@@ -10359,7 +10372,7 @@ function SalesPageContent() {
           <Box sx={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '21cm', overflow: 'hidden' }}>
             {/* A4 Printable Container */}
             <Box id="printable-invoice-a4" sx={{ width: '100%', bgcolor: '#ffffff' }}>
-              <CommercialInvoiceReceipt bill={currentBillData} />
+              <CommercialInvoiceReceipt bill={currentBillData} copyType={activeReceiptCopy} />
             </Box>
 
           </Box>
@@ -10545,17 +10558,69 @@ function SalesPageContent() {
                 </Box>
               </Box>
 
+              {/* Copy Selector Tabs */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 1.5, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0', gap: 1 }} className="no-print">
+                <Button
+                  size="small"
+                  variant={activeReceiptCopy === 'OFFICE' ? 'contained' : 'outlined'}
+                  onClick={() => setActiveReceiptCopy('OFFICE')}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.825rem',
+                    bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e40af' : 'transparent',
+                    borderColor: '#1e40af',
+                    color: activeReceiptCopy === 'OFFICE' ? '#fff' : '#1e40af',
+                    '&:hover': { bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e3a8a' : 'rgba(30,64,175,0.08)' }
+                  }}
+                >
+                  Office Copy
+                </Button>
+                <Button
+                  size="small"
+                  variant={activeReceiptCopy === 'CUSTOMER' ? 'contained' : 'outlined'}
+                  onClick={() => setActiveReceiptCopy('CUSTOMER')}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.825rem',
+                    bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#047857' : 'transparent',
+                    borderColor: '#047857',
+                    color: activeReceiptCopy === 'CUSTOMER' ? '#fff' : '#047857',
+                    '&:hover': { bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#065f46' : 'rgba(4,120,87,0.08)' }
+                  }}
+                >
+                  Customer Copy
+                </Button>
+                <Button
+                  size="small"
+                  variant={activeReceiptCopy === 'CUTTER' ? 'contained' : 'outlined'}
+                  onClick={() => setActiveReceiptCopy('CUTTER')}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.825rem',
+                    bgcolor: activeReceiptCopy === 'CUTTER' ? '#b45309' : 'transparent',
+                    borderColor: '#b45309',
+                    color: activeReceiptCopy === 'CUTTER' ? '#fff' : '#b45309',
+                    '&:hover': { bgcolor: activeReceiptCopy === 'CUTTER' ? '#92400e' : 'rgba(180,83,9,0.08)' }
+                  }}
+                >
+                  Cutter Copy
+                </Button>
+              </Box>
+
               <Box id="receipt-preview" className="thermal-receipt" sx={{ width: '100%', bgcolor: 'white', p: { xs: 1, sm: 2 }, color: '#000' }}>
-                <CommercialInvoiceReceipt bill={currentBillData} />
+                <CommercialInvoiceReceipt bill={currentBillData} copyType={activeReceiptCopy} />
               </Box>
             </>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 3, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0' }} className="no-print">
+        <DialogActions sx={{ p: 2.5, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap', gap: 1 }} className="no-print">
           <Button
             onClick={() => setReceiptDialogOpen(false)}
             variant="outlined"
-            sx={{ minWidth: 100 }}
+            sx={{ minWidth: 90 }}
           >
             Close
           </Button>
@@ -10574,10 +10639,11 @@ function SalesPageContent() {
             variant="contained"
             startIcon={isSendingWhatsApp ? <CircularProgress size={16} sx={{ color: 'white' }} /> : null}
             sx={{
-              minWidth: 150,
+              minWidth: 140,
               bgcolor: '#25D366',
               '&:hover': { bgcolor: '#1ebe5d' },
-              color: 'white'
+              color: 'white',
+              fontWeight: 600
             }}
             onClick={() => handleSendWhatsApp(currentBillData)}
             disabled={isSendingWhatsApp}
@@ -10589,21 +10655,53 @@ function SalesPageContent() {
             variant="contained"
             startIcon={<PrintIcon />}
             sx={{
-              minWidth: 150,
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' }
+              minWidth: 155,
+              bgcolor: '#1e40af',
+              '&:hover': { bgcolor: '#1e3a8a' },
+              color: 'white',
+              fontWeight: 700
             }}
-            onClick={() => handlePrintBill('A4', true)}
+            onClick={() => handlePrintCopy('OFFICE', true, currentBillData)}
           >
-            Print A4
+            Print Office Copy
           </Button>
           <Button
             variant="contained"
             startIcon={<PrintIcon />}
             sx={{
-              minWidth: 150,
+              minWidth: 170,
+              bgcolor: '#047857',
+              '&:hover': { bgcolor: '#065f46' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUSTOMER', true, currentBillData)}
+          >
+            Print Customer Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 155,
+              bgcolor: '#b45309',
+              '&:hover': { bgcolor: '#92400e' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUTTER', true, currentBillData)}
+          >
+            Print Cutter Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 130,
               bgcolor: '#fd7e14',
-              '&:hover': { bgcolor: '#e8690b' }
+              '&:hover': { bgcolor: '#e8690b' },
+              color: 'white',
+              fontWeight: 600
             }}
             onClick={() => handlePrintBill('THERMAL', true)}
           >
@@ -11360,17 +11458,69 @@ function SalesPageContent() {
           </IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 0, bgcolor: 'white' }}>
+          {/* Copy Selector Tabs */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 1.5, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0', gap: 1 }} className="no-print">
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'OFFICE' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('OFFICE')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e40af' : 'transparent',
+                borderColor: '#1e40af',
+                color: activeReceiptCopy === 'OFFICE' ? '#fff' : '#1e40af',
+                '&:hover': { bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e3a8a' : 'rgba(30,64,175,0.08)' }
+              }}
+            >
+              Office Copy
+            </Button>
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'CUSTOMER' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('CUSTOMER')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#047857' : 'transparent',
+                borderColor: '#047857',
+                color: activeReceiptCopy === 'CUSTOMER' ? '#fff' : '#047857',
+                '&:hover': { bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#065f46' : 'rgba(4,120,87,0.08)' }
+              }}
+            >
+              Customer Copy
+            </Button>
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'CUTTER' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('CUTTER')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'CUTTER' ? '#b45309' : 'transparent',
+                borderColor: '#b45309',
+                color: activeReceiptCopy === 'CUTTER' ? '#fff' : '#b45309',
+                '&:hover': { bgcolor: activeReceiptCopy === 'CUTTER' ? '#92400e' : 'rgba(180,83,9,0.08)' }
+              }}
+            >
+              Cutter Copy
+            </Button>
+          </Box>
+
           {selectedBill && (
             <Box id="printable-invoice" sx={{ width: '100%', bgcolor: '#ffffff', p: 2 }}>
-              <CommercialInvoiceReceipt bill={selectedBill} />
+              <CommercialInvoiceReceipt bill={selectedBill} copyType={activeReceiptCopy} />
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 3, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0' }} className="no-print">
+        <DialogActions sx={{ p: 2.5, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap', gap: 1 }} className="no-print">
           <Button
             onClick={handleCloseBillDialog}
             variant="outlined"
-            sx={{ minWidth: 100 }}
+            sx={{ minWidth: 90 }}
           >
             Close
           </Button>
@@ -11389,36 +11539,69 @@ function SalesPageContent() {
             variant="contained"
             startIcon={isSendingWhatsApp ? <CircularProgress size={16} sx={{ color: 'white' }} /> : null}
             sx={{
-              minWidth: 150,
+              minWidth: 140,
               bgcolor: '#25D366',
               '&:hover': { bgcolor: '#1ebe5d' },
               color: 'white',
+              fontWeight: 600,
             }}
             onClick={() => handleSendWhatsApp(selectedBill, null, 'printable-invoice')}
             disabled={isSendingWhatsApp}
             title="Send invoice via WhatsApp Desktop"
           >
-            {isSendingWhatsApp ? 'Copying...' : 'WhatsApp'}
+            {isSendingWhatsApp ? 'Copying...' : '📲 WhatsApp'}
           </Button>
           <Button
             variant="contained"
             startIcon={<PrintIcon />}
             sx={{
-              minWidth: 140,
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' }
+              minWidth: 155,
+              bgcolor: '#1e40af',
+              '&:hover': { bgcolor: '#1e3a8a' },
+              color: 'white',
+              fontWeight: 700
             }}
-            onClick={() => handlePrintBill('EXISTING', true, selectedBill)}
+            onClick={() => handlePrintCopy('OFFICE', true, selectedBill)}
           >
-            Print A4
+            Print Office Copy
           </Button>
           <Button
             variant="contained"
             startIcon={<PrintIcon />}
             sx={{
-              minWidth: 140,
+              minWidth: 170,
+              bgcolor: '#047857',
+              '&:hover': { bgcolor: '#065f46' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUSTOMER', true, selectedBill)}
+          >
+            Print Customer Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 155,
+              bgcolor: '#b45309',
+              '&:hover': { bgcolor: '#92400e' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUTTER', true, selectedBill)}
+          >
+            Print Cutter Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 130,
               bgcolor: '#fd7e14',
-              '&:hover': { bgcolor: '#e8690b' }
+              '&:hover': { bgcolor: '#e8690b' },
+              color: 'white',
+              fontWeight: 600
             }}
             onClick={() => {
               handlePrintBill('THERMAL', true, selectedBill);

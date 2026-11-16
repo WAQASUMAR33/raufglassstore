@@ -21,24 +21,64 @@ const fmtNum = (val) => {
   return n.toFixed(2);
 };
 
+// Format dimensions cleanly without trailing zeros
+const fmtDim = (val) => {
+  if (val === undefined || val === null || val === '') return '';
+  const n = parseFloat(val);
+  if (isNaN(n)) return String(val).trim();
+  if (n % 1 === 0) return n.toString();
+  return parseFloat(n.toFixed(3)).toString();
+};
+
+const formatDimension = (h, w) => {
+  const dh = fmtDim(h);
+  const dw = fmtDim(w);
+  if (!dh && !dw) return '—';
+  if (dh && dw) return `${dh}" × ${dw}"`;
+  return `${dh || dw}"`;
+};
+
 // Cache addons in memory across renders
 let cachedAddons = null;
 
-// Parse line item details (width, height, pcs, job desc) and expand any ad-ons into their own rows
+// Parse line item details (width, height, pcs, job desc) and expand any ad-ons
 export function expandInvoiceLineItems(detail, availableAddons = []) {
-  let width = detail.calc_width ?? detail.width_in ?? '';
-  let height = detail.calc_height ?? detail.height_in ?? '';
+  let actualWidth = detail.width_in !== undefined && detail.width_in !== null && detail.width_in !== '' ? detail.width_in : '';
+  let actualHeight = detail.height_in !== undefined && detail.height_in !== null && detail.height_in !== '' ? detail.height_in : '';
+  let calcWidth = detail.calc_width !== undefined && detail.calc_width !== null && detail.calc_width !== '' ? detail.calc_width : '';
+  let calcHeight = detail.calc_height !== undefined && detail.calc_height !== null && detail.calc_height !== '' ? detail.calc_height : '';
   let pcs = detail.pieces ?? detail.qnty_pcs ?? '';
   let jobDesc = detail.comments || '';
 
   const sizeStr = String(detail.size || '').trim();
 
-  if ((!width || !height) && sizeStr) {
-    const dimMatch = sizeStr.match(/(\d+(?:\.\d+)?)\s*["']?\s*[×x*X]\s*(\d+(?:\.\d+)?)\s*["']?/);
+  // Try parsing actual dimensions from sizeStr if missing
+  if ((!actualWidth || !actualHeight) && sizeStr) {
+    const preMatch = sizeStr.split(/\(Avail|\[/i)[0];
+    const dimMatch = preMatch.match(/(\d+(?:\.\d+)?)\s*["']?\s*[×x*X]\s*(\d+(?:\.\d+)?)/);
     if (dimMatch) {
-      if (!width) width = dimMatch[1];
-      if (!height) height = dimMatch[2];
+      if (!actualWidth) actualWidth = dimMatch[1];
+      if (!actualHeight) actualHeight = dimMatch[2];
     }
+  }
+
+  // Parse Avail (standard) dimensions from sizeStr if missing
+  if ((!calcWidth || !calcHeight) && sizeStr) {
+    const availMatch = sizeStr.match(/\(Avail:\s*(\d+(?:\.\d+)?)\s*["']?\s*[×x*X]\s*(\d+(?:\.\d+)?)\s*["']?\)/i);
+    if (availMatch) {
+      if (!calcWidth) calcWidth = availMatch[1];
+      if (!calcHeight) calcHeight = availMatch[2];
+    }
+  }
+
+  // If standard dimensions still missing, calculate or fallback to actual
+  if (!calcWidth && actualWidth) {
+    const nw = parseFloat(actualWidth);
+    calcWidth = (!isNaN(nw) && nw > 0) ? Math.ceil(nw).toString() : actualWidth;
+  }
+  if (!calcHeight && actualHeight) {
+    const nh = parseFloat(actualHeight);
+    calcHeight = (!isNaN(nh) && nh > 0) ? Math.ceil(nh).toString() : actualHeight;
   }
 
   if (!pcs && sizeStr) {
@@ -127,8 +167,10 @@ export function expandInvoiceLineItems(detail, availableAddons = []) {
     pro_id: detail.pro_id,
     itemName: itemName,
     jobDesc: jobDesc || '-',
-    width: width ? fmtNum(width) : '-',
-    height: height ? fmtNum(height) : '-',
+    actualWidth: actualWidth,
+    actualHeight: actualHeight,
+    calcWidth: calcWidth,
+    calcHeight: calcHeight,
     pcs: Number(pcs) || 1,
     qtySqFt: detailQty,
     rate: detailRate,
@@ -161,24 +203,24 @@ function formatInvoiceDate(dateVal) {
 
 /**
  * CommercialInvoiceReceipt Component
- * Matches the official physical invoice format:
- * - Calligraphic logo + Zain Traders Sargodha
- * - Commercial Invoice Title
- * - Outlined Customer Info Box & Invoice Info Box
- * - Item Table with sub-headers: Size (Width | Height)
- * - Totals & Grand Total line
- * - Bottom Signature & box summary table (Discount, Carriage, Bill Value, Payments, Balance)
+ * Supports 3 specialized copies:
+ * 1. OFFICE: Full columns (#, Item Name, Job Desc, Actual Size, Pcs, Standard Size, Qty, Rate, Value) + Full financial summary
+ * 2. CUSTOMER: (#, Item Name, Job Desc, Actual Size, Pcs, Value) + Customer billing summary
+ * 3. CUTTER: (#, Item Name, Job Desc, Actual Size, Pcs) + Workshop cutting & sign-off box (NO rates/amounts)
  */
 export default function CommercialInvoiceReceipt({
   bill = {},
+  copyType = 'OFFICE',
   isOrder = false,
   isQuotation = false,
   title = null,
 }) {
   if (!bill) return null;
 
+  const copy = String(copyType || 'OFFICE').toUpperCase();
+
   // Header title
-  const invoiceTitle = title || (
+  const baseInvoiceTitle = title || (
     isQuotation || bill.bill_type === 'QUOTATION'
       ? 'Quotation'
       : bill.bill_type === 'ORDER' || isOrder
@@ -187,6 +229,18 @@ export default function CommercialInvoiceReceipt({
       ? 'Sale Return Invoice'
       : 'Commercial Invoice'
   );
+
+  const copyBadgeText = copy === 'CUTTER'
+    ? 'CUTTER COPY'
+    : copy === 'CUSTOMER'
+    ? 'CUSTOMER COPY'
+    : 'OFFICE COPY';
+
+  const copyBadgeBg = copy === 'CUTTER'
+    ? '#b45309'
+    : copy === 'CUSTOMER'
+    ? '#047857'
+    : '#1e40af';
 
   const [availableAddons, setAvailableAddons] = React.useState(cachedAddons || []);
 
@@ -255,12 +309,12 @@ export default function CommercialInvoiceReceipt({
   const hwMatch = String(bill.reference || bill.notes || '').match(/\[Hardware:\s*(?:Rs\.\s*)?([0-9.]+)\]/i);
   const hardwareCharges = parseFloat(bill.hardware_amount || 0) || (hwMatch ? parseFloat(hwMatch[1]) : 0);
   const billValue = parseFloat(bill.total_amount || 0);
-  
+
   const cashPayment = parseFloat(bill.cash_payment || (bill.payment && !bill.bank_payment ? bill.payment : 0) || 0);
   const bankPayment = parseFloat(bill.bank_payment || 0);
   const advancePayment = parseFloat(bill.advance_payment || 0);
   const bankTitle = bill.bank_title || '';
-  
+
   const totalPaid = parseFloat(bill.payment !== undefined && bill.payment !== null ? bill.payment : (cashPayment + bankPayment + advancePayment));
   const balance = billValue - totalPaid;
   const prevBal = parseFloat(bill.previous_balance || bill.previous_customer_balance || 0);
@@ -270,7 +324,7 @@ export default function CommercialInvoiceReceipt({
     <Box
       sx={{
         width: '100%',
-        maxWidth: '800px',
+        maxWidth: '820px',
         mx: 'auto',
         p: { xs: 1.5, sm: 2.5 },
         bgcolor: '#ffffff',
@@ -288,7 +342,6 @@ export default function CommercialInvoiceReceipt({
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
         {/* Left: Brand Identity */}
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-          {/* Stylized Urdu calligraphy mark */}
           <Box
             sx={{
               width: 54,
@@ -337,8 +390,8 @@ export default function CommercialInvoiceReceipt({
           </Box>
         </Box>
 
-        {/* Center/Right: Commercial Invoice Title */}
-        <Box sx={{ textAlign: 'right', pr: 2 }}>
+        {/* Center/Right: Commercial Invoice Title + Copy Badge */}
+        <Box sx={{ textAlign: 'right', pr: 1 }}>
           <Typography
             sx={{
               fontSize: { xs: '1.2rem', sm: '1.45rem' },
@@ -351,8 +404,28 @@ export default function CommercialInvoiceReceipt({
               textUnderlineOffset: '4px',
             }}
           >
-            {invoiceTitle}
+            {baseInvoiceTitle}
           </Typography>
+          <Box
+            component="span"
+            sx={{
+              display: 'inline-block',
+              mt: 0.6,
+              px: 1.2,
+              py: 0.25,
+              borderRadius: '4px',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              bgcolor: copyBadgeBg,
+              color: '#ffffff',
+              printColorAdjust: 'exact',
+              WebkitPrintColorAdjust: 'exact',
+            }}
+          >
+            {copyBadgeText}
+          </Box>
         </Box>
       </Box>
 
@@ -466,228 +539,291 @@ export default function CommercialInvoiceReceipt({
             width: '100%',
             borderCollapse: 'collapse',
             border: '1px solid #000000',
-            fontSize: '0.825rem',
+            fontSize: '0.82rem',
             textAlign: 'left',
           }}
         >
           <thead>
             {/* Main Header Row */}
             <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #000000' }}>
+              {/* S# */}
               <th
-                rowSpan={2}
+                style={{
+                  border: '1px solid #000000',
+                  padding: '6px 4px',
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  width: copy === 'OFFICE' ? '5%' : copy === 'CUSTOMER' ? '6%' : '7%',
+                }}
+              >
+                #
+              </th>
+
+              {/* Item Name */}
+              <th
                 style={{
                   border: '1px solid #000000',
                   padding: '6px 8px',
-                  fontWeight: 600,
-                  width: '26%',
+                  fontWeight: 700,
+                  width: copy === 'OFFICE' ? '22%' : copy === 'CUSTOMER' ? '30%' : '35%',
                 }}
               >
                 Item Name
               </th>
+
+              {/* Job Description */}
               <th
-                rowSpan={2}
                 style={{
                   border: '1px solid #000000',
                   padding: '6px 8px',
-                  fontWeight: 600,
-                  width: '22%',
+                  fontWeight: 700,
+                  width: copy === 'OFFICE' ? '17%' : copy === 'CUSTOMER' ? '24%' : '28%',
                 }}
               >
                 Job Description
               </th>
+
+              {/* Actual Size (H × W) */}
               <th
-                colSpan={2}
                 style={{
                   border: '1px solid #000000',
-                  padding: '4px 6px',
-                  fontWeight: 600,
+                  padding: '6px 6px',
+                  fontWeight: 700,
                   textAlign: 'center',
-                  width: '18%',
+                  width: copy === 'OFFICE' ? '13%' : copy === 'CUSTOMER' ? '18%' : '18%',
                 }}
               >
-                Size
+                Actual Size
+                <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, color: '#475569' }}>(H × W)</span>
               </th>
+
+              {/* Number of Pieces (pcs) */}
               <th
-                rowSpan={2}
                 style={{
                   border: '1px solid #000000',
                   padding: '6px 4px',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   textAlign: 'center',
-                  width: '7%',
+                  width: copy === 'OFFICE' ? '6%' : copy === 'CUSTOMER' ? '8%' : '12%',
                 }}
               >
-                Qty Pcs
+                Pcs
               </th>
-              <th
-                rowSpan={2}
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  fontWeight: 600,
-                  textAlign: 'right',
-                  width: '11%',
-                }}
-              >
-                Quantity SqFt
-              </th>
-              <th
-                rowSpan={2}
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  fontWeight: 600,
-                  textAlign: 'right',
-                  width: '8%',
-                }}
-              >
-                Rate
-              </th>
-              <th
-                rowSpan={2}
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  fontWeight: 600,
-                  textAlign: 'right',
-                  width: '12%',
-                }}
-              >
-                Value
-              </th>
-            </tr>
 
-            {/* Sub-header for Size (Width | Height) */}
-            <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #000000' }}>
-              <th
-                style={{
-                  border: '1px solid #000000',
-                  padding: '4px 6px',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  textAlign: 'center',
-                  width: '9%',
-                }}
-              >
-                Width
-              </th>
-              <th
-                style={{
-                  border: '1px solid #000000',
-                  padding: '4px 6px',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  textAlign: 'center',
-                  width: '9%',
-                }}
-              >
-                Height
-              </th>
+              {/* Office-only: Standard (H × W) */}
+              {copy === 'OFFICE' && (
+                <th
+                  style={{
+                    border: '1px solid #000000',
+                    padding: '6px 6px',
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    width: '13%',
+                  }}
+                >
+                  Standard
+                  <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, color: '#475569' }}>(H × W)</span>
+                </th>
+              )}
+
+              {/* Office-only: Qty (SqFt) */}
+              {copy === 'OFFICE' && (
+                <th
+                  style={{
+                    border: '1px solid #000000',
+                    padding: '6px 6px',
+                    fontWeight: 700,
+                    textAlign: 'right',
+                    width: '8%',
+                  }}
+                >
+                  Qty
+                  <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, color: '#475569' }}>SqFt</span>
+                </th>
+              )}
+
+              {/* Office-only: Rate */}
+              {copy === 'OFFICE' && (
+                <th
+                  style={{
+                    border: '1px solid #000000',
+                    padding: '6px 6px',
+                    fontWeight: 700,
+                    textAlign: 'right',
+                    width: '7%',
+                  }}
+                >
+                  Rate
+                </th>
+              )}
+
+              {/* Value (Office & Customer copies only) */}
+              {copy !== 'CUTTER' && (
+                <th
+                  style={{
+                    border: '1px solid #000000',
+                    padding: '6px 8px',
+                    fontWeight: 700,
+                    textAlign: 'right',
+                    width: copy === 'OFFICE' ? '9%' : '14%',
+                  }}
+                >
+                  Value
+                </th>
+              )}
             </tr>
           </thead>
 
           <tbody>
             {lines.length > 0 ? (
               lines.map((item, index) => {
+                const prevItem = index > 0 ? lines[index - 1] : null;
                 const isRepeatedProduct = index > 0 && (
-                  (item.pro_id && item.pro_id === lines[index - 1]?.pro_id) ||
-                  (item.itemName && item.itemName === lines[index - 1]?.itemName)
+                  (item.pro_id && item.pro_id === prevItem?.pro_id) ||
+                  (item.itemName && item.itemName === prevItem?.itemName)
                 );
+                const currentAddonsStr = (item.addons || []).map(a => `${a.name}:${a.rate}`).sort().join('|');
+                const prevAddonsStr = (prevItem?.addons || []).map(a => `${a.name}:${a.rate}`).sort().join('|');
+                const isRepeatedAddons = isRepeatedProduct && currentAddonsStr === prevAddonsStr;
+
+                const actualSizeStr = formatDimension(item.actualHeight, item.actualWidth);
+                const standardSizeStr = formatDimension(item.calcHeight, item.calcWidth);
+
                 return (
-                <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 8px',
-                      fontWeight: 400,
-                      color: '#000',
-                    }}
-                  >
-                    {!isRepeatedProduct ? (
-                      <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.itemName}</span>
-                    ) : null}
-                    {item.addons && item.addons.length > 0 && (
-                      <div style={{ fontSize: '0.72rem', color: '#475569', fontStyle: 'italic', marginTop: '2px' }}>
-                        Ad-Ons: {item.addons.map(a => `${a.name}${a.rate ? ` (${fmtAmt(a.rate)})` : ''}`).join(', ')}
-                      </div>
+                  <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    {/* # */}
+                    <td
+                      style={{
+                        border: '1px solid #000000',
+                        padding: '6px 4px',
+                        textAlign: 'center',
+                        fontWeight: 600,
+                        color: '#000',
+                      }}
+                    >
+                      {index + 1}
+                    </td>
+
+                    {/* Item Name */}
+                    <td
+                      style={{
+                        border: '1px solid #000000',
+                        padding: '6px 8px',
+                        fontWeight: 400,
+                        color: '#000',
+                      }}
+                    >
+                      {!isRepeatedProduct ? (
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.itemName}</span>
+                      ) : (
+                        <div style={{ textAlign: 'center', color: '#64748b', fontWeight: 700, fontSize: '1rem', lineHeight: 1 }}>"</div>
+                      )}
+                      {item.addons && item.addons.length > 0 && !isRepeatedAddons && (
+                        <div style={{ fontSize: '0.72rem', color: '#475569', fontStyle: 'italic', marginTop: '2px' }}>
+                          Ad-Ons: {item.addons.map(a => `${a.name}${a.rate ? ` (${fmtAmt(a.rate)})` : ''}`).join(', ')}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Job Description */}
+                    <td
+                      style={{
+                        border: '1px solid #000000',
+                        padding: '6px 8px',
+                        color: '#333',
+                        fontWeight: 400,
+                      }}
+                    >
+                      {item.jobDesc}
+                    </td>
+
+                    {/* Actual Size (H × W) */}
+                    <td
+                      style={{
+                        border: '1px solid #000000',
+                        padding: '6px 4px',
+                        textAlign: 'center',
+                        fontWeight: 500,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {actualSizeStr}
+                    </td>
+
+                    {/* Number of Pieces (pcs) */}
+                    <td
+                      style={{
+                        border: '1px solid #000000',
+                        padding: '6px 4px',
+                        textAlign: 'center',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {item.pcs}
+                    </td>
+
+                    {/* Office-only: Standard (H × W) */}
+                    {copy === 'OFFICE' && (
+                      <td
+                        style={{
+                          border: '1px solid #000000',
+                          padding: '6px 4px',
+                          textAlign: 'center',
+                          fontWeight: 500,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {standardSizeStr}
+                      </td>
                     )}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 8px',
-                      color: '#333',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {item.jobDesc}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 4px',
-                      textAlign: 'center',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {item.width}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 4px',
-                      textAlign: 'center',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {item.height}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 4px',
-                      textAlign: 'center',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {item.pcs}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 8px',
-                      textAlign: 'right',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {fmtNum(item.qtySqFt)}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 8px',
-                      textAlign: 'right',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {fmtAmt(item.rate)}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 8px',
-                      textAlign: 'right',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {fmtAmt(item.amount)}
-                  </td>
-                </tr>
+
+                    {/* Office-only: Qty (SqFt) */}
+                    {copy === 'OFFICE' && (
+                      <td
+                        style={{
+                          border: '1px solid #000000',
+                          padding: '6px 6px',
+                          textAlign: 'right',
+                          fontWeight: 400,
+                        }}
+                      >
+                        {fmtNum(item.qtySqFt)}
+                      </td>
+                    )}
+
+                    {/* Office-only: Rate */}
+                    {copy === 'OFFICE' && (
+                      <td
+                        style={{
+                          border: '1px solid #000000',
+                          padding: '6px 6px',
+                          textAlign: 'right',
+                          fontWeight: 400,
+                        }}
+                      >
+                        {fmtAmt(item.rate)}
+                      </td>
+                    )}
+
+                    {/* Value (Office & Customer copies only) */}
+                    {copy !== 'CUTTER' && (
+                      <td
+                        style={{
+                          border: '1px solid #000000',
+                          padding: '6px 8px',
+                          textAlign: 'right',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {fmtAmt(item.amount)}
+                      </td>
+                    )}
+                  </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan={8} style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                <td colSpan={copy === 'OFFICE' ? 9 : copy === 'CUSTOMER' ? 6 : 5} style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
                   No items in this invoice
                 </td>
               </tr>
@@ -696,7 +832,7 @@ export default function CommercialInvoiceReceipt({
             {/* ────────── TOTAL ROW ────────── */}
             <tr style={{ borderTop: '2px solid #000000', fontWeight: 600, backgroundColor: '#fafafa' }}>
               <td
-                colSpan={2}
+                colSpan={3}
                 style={{
                   border: '1px solid #000000',
                   padding: '6px 8px',
@@ -704,10 +840,9 @@ export default function CommercialInvoiceReceipt({
                   fontWeight: 600,
                 }}
               >
-                Total
+                {copy === 'CUTTER' ? 'Total Pieces' : 'Total'}
               </td>
               <td
-                colSpan={2}
                 style={{
                   border: '1px solid #000000',
                   padding: '6px 4px',
@@ -723,40 +858,57 @@ export default function CommercialInvoiceReceipt({
                   border: '1px solid #000000',
                   padding: '6px 4px',
                   textAlign: 'center',
-                  fontWeight: 600,
+                  fontWeight: 700,
                 }}
               >
                 {totalPcs}
               </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  textAlign: 'right',
-                  fontWeight: 600,
-                }}
-              >
-                {fmtNum(totalSqFt)}
-              </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  textAlign: 'right',
-                }}
-              >
-                —
-              </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  textAlign: 'right',
-                  fontWeight: 600,
-                }}
-              >
-                {fmtAmt(totalItemsValue)}
-              </td>
+              {copy === 'OFFICE' && (
+                <>
+                  <td
+                    style={{
+                      border: '1px solid #000000',
+                      padding: '6px 4px',
+                      textAlign: 'center',
+                      color: '#666',
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    —
+                  </td>
+                  <td
+                    style={{
+                      border: '1px solid #000000',
+                      padding: '6px 6px',
+                      textAlign: 'right',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {fmtNum(totalSqFt)}
+                  </td>
+                  <td
+                    style={{
+                      border: '1px solid #000000',
+                      padding: '6px 6px',
+                      textAlign: 'right',
+                    }}
+                  >
+                    —
+                  </td>
+                </>
+              )}
+              {copy !== 'CUTTER' && (
+                <td
+                  style={{
+                    border: '1px solid #000000',
+                    padding: '6px 8px',
+                    textAlign: 'right',
+                    fontWeight: 600,
+                  }}
+                >
+                  {fmtAmt(totalItemsValue)}
+                </td>
+              )}
             </tr>
 
             {/* ────────── GRAND TOTAL ROW ────────── */}
@@ -772,7 +924,7 @@ export default function CommercialInvoiceReceipt({
                   letterSpacing: '0.02em',
                 }}
               >
-                Grand Total
+                {copy === 'CUTTER' ? 'Total Pcs to Cut' : 'Grand Total'}
               </td>
               <td
                 style={{
@@ -780,172 +932,268 @@ export default function CommercialInvoiceReceipt({
                   padding: '6px 4px',
                   textAlign: 'center',
                   fontWeight: 700,
+                  fontSize: copy === 'CUTTER' ? '0.95rem' : '0.85rem',
                 }}
               >
                 {totalPcs}
               </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  textAlign: 'right',
-                  fontWeight: 700,
-                }}
-              >
-                {fmtNum(totalSqFt)}
-              </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  textAlign: 'right',
-                }}
-              >
-                —
-              </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  textAlign: 'right',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                }}
-              >
-                {fmtAmt(billValue)}
-              </td>
+              {copy === 'OFFICE' && (
+                <>
+                  <td
+                    style={{
+                      border: '1px solid #000000',
+                      padding: '6px 4px',
+                      textAlign: 'center',
+                      color: '#666',
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    —
+                  </td>
+                  <td
+                    style={{
+                      border: '1px solid #000000',
+                      padding: '6px 6px',
+                      textAlign: 'right',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {fmtNum(totalSqFt)}
+                  </td>
+                  <td
+                    style={{
+                      border: '1px solid #000000',
+                      padding: '6px 6px',
+                      textAlign: 'right',
+                    }}
+                  >
+                    —
+                  </td>
+                </>
+              )}
+              {copy !== 'CUTTER' && (
+                <td
+                  style={{
+                    border: '1px solid #000000',
+                    padding: '6px 8px',
+                    textAlign: 'right',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {fmtAmt(billValue)}
+                </td>
+              )}
             </tr>
           </tbody>
         </table>
       </Box>
 
-      {/* ───────────────── BOTTOM SECTION: SIGNATURE & SUMMARY BOX ───────────────── */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: '1.25fr 1fr' },
-          gap: 2,
-          alignItems: 'end',
-          pt: 1,
-        }}
-      >
-        {/* Left: Signature & Stamp area */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 1 }}>
-          <Box>
-            <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#000' }}>
-              Signature & Stamp _____________________
-            </Typography>
-          </Box>
-          <Box>
-            <Typography sx={{ fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic' }}>
-              Software Developed by RapidTechPro 0300-4657827
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Right: Boxed Amount Summary Table */}
+      {/* ───────────────── BOTTOM SECTION ───────────────── */}
+      {copy === 'CUTTER' ? (
+        /* CUTTER COPY BOTTOM: Workshop Details & Quality Verification (No financial details) */
         <Box
           sx={{
-            border: '1px solid #000000',
-            borderRadius: '6px',
-            overflow: 'hidden',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1.25fr 1fr' },
+            gap: 2,
+            pt: 1,
           }}
         >
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
+          {/* Left: Workshop & Glass Specs */}
+          <Box
+            sx={{
+              border: '1px solid #000000',
+              borderRadius: '6px',
+              p: 1.25,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.75,
               fontSize: '0.8rem',
             }}
           >
-            <tbody>
-              <tr>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Discount:</td>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(discount)}</td>
-              </tr>
-              <tr>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Loader Amount:</td>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(carriage)}</td>
-              </tr>
-              <tr>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Fitter Amount:</td>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(fittingCharges)}</td>
-              </tr>
-              <tr>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Labour:</td>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(labourCharges)}</td>
-              </tr>
-              {cutterCharges > 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#000' }}>Assigned Cutter:</Typography>
+              <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#b45309' }}>{cutterName}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333' }}>Total Glass Area:</Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#000' }}>{fmtNum(totalSqFt)} Sq Ft</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333' }}>DC / Vehicle No:</Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#000' }}>{dcNo}</Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333' }}>Cutting Remarks:</Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#000', mt: 0.25 }}>{remarks}</Typography>
+            </Box>
+          </Box>
+
+          {/* Right: Cutter & Inspection Sign-off */}
+          <Box
+            sx={{
+              border: '1px solid #000000',
+              borderRadius: '6px',
+              p: 1.25,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: 2,
+              fontSize: '0.8rem',
+            }}
+          >
+            <Box>
+              <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#333' }}>Cutter Signature:</Typography>
+              <Box sx={{ borderBottom: '1px solid #000', mt: 2.5, width: '100%' }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#333' }}>Checked By (Quality / Sizes):</Typography>
+              <Box sx={{ borderBottom: '1px solid #000', mt: 2.5, width: '100%' }} />
+            </Box>
+          </Box>
+        </Box>
+      ) : (
+        /* OFFICE & CUSTOMER COPIES BOTTOM: Signature & Financial Summary */
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1.25fr 1fr' },
+            gap: 2,
+            alignItems: 'end',
+            pt: 1,
+          }}
+        >
+          {/* Left: Signature & Stamp area */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 1 }}>
+            <Box>
+              <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#000' }}>
+                Signature & Stamp _____________________
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic' }}>
+                Software Developed by RapidTechPro 0300-4657827
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Right: Boxed Amount Summary Table */}
+          <Box
+            sx={{
+              border: '1px solid #000000',
+              borderRadius: '6px',
+              overflow: 'hidden',
+            }}
+          >
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '0.8rem',
+              }}
+            >
+              <tbody>
+                {/* Discount */}
                 <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cutter Amount:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cutterCharges)}</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Discount:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(discount)}</td>
                 </tr>
-              )}
-              <tr>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Hardware Amount:</td>
-                <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
-              </tr>
-              <tr style={{ backgroundColor: '#f8fafc' }}>
-                <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', fontWeight: 700 }}>Bill Value:</td>
-                <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>{fmtAmt(billValue)}</td>
-              </tr>
-              {/* Payment Details */}
-              {bankPayment > 0 && cashPayment > 0 ? (
-                <>
-                  <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cash Received:</td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
-                  </tr>
+
+                {/* Delivery / Carriage */}
+                <tr>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Loader / Delivery:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(carriage)}</td>
+                </tr>
+
+                {/* Office Copy includes internal expense breakdowns */}
+                {copy === 'OFFICE' && (
+                  <>
+                    <tr>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Fitter Amount:</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(fittingCharges)}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Labour:</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(labourCharges)}</td>
+                    </tr>
+                    {cutterCharges > 0 && (
+                      <tr>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cutter Amount:</td>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cutterCharges)}</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Hardware Amount:</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
+                    </tr>
+                  </>
+                )}
+
+                <tr style={{ backgroundColor: '#f8fafc' }}>
+                  <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', fontWeight: 700 }}>Bill Value:</td>
+                  <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>{fmtAmt(billValue)}</td>
+                </tr>
+
+                {/* Payment Details */}
+                {bankPayment > 0 && cashPayment > 0 ? (
+                  <>
+                    <tr>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cash Received:</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>
+                        Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
+                      </td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
+                    </tr>
+                  </>
+                ) : bankPayment > 0 ? (
                   <tr>
                     <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>
                       Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
                     </td>
                     <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
                   </tr>
-                </>
-              ) : bankPayment > 0 ? (
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>
-                    Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
-                  </td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
-                </tr>
-              ) : (
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cash Received:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
-                </tr>
-              )}
-              {advancePayment > 0 && (
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Advance Payment:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(advancePayment)}</td>
-                </tr>
-              )}
-              <tr style={{ backgroundColor: '#f1f5f9' }}>
-                <td style={{ borderBottom: prevBal > 0 ? '1px solid #cbd5e1' : 'none', padding: '6px 8px', fontWeight: 700, fontSize: '0.85rem' }}>Balance:</td>
-                <td style={{ borderBottom: prevBal > 0 ? '1px solid #cbd5e1' : 'none', padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: '0.85rem', color: balance > 0 ? '#b91c1c' : '#15803d' }}>
-                  {fmtAmt(balance)}
-                </td>
-              </tr>
-              {prevBal > 0 && (
-                <>
+                ) : (
                   <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600, color: '#64748b' }}>Prev. Balance:</td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400, color: '#64748b' }}>{fmtAmt(prevBal)}</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cash Received:</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
                   </tr>
-                  <tr style={{ backgroundColor: '#f8fafc' }}>
-                    <td style={{ padding: '6px 8px', fontWeight: 700, fontSize: '0.85rem' }}>Total Balance:</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: '0.85rem', color: totalBalance > 0 ? '#b91c1c' : '#15803d' }}>
-                      {fmtAmt(totalBalance)}
-                    </td>
+                )}
+                {advancePayment > 0 && (
+                  <tr>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Advance Payment:</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(advancePayment)}</td>
                   </tr>
-                </>
-              )}
-            </tbody>
-          </table>
+                )}
+
+                <tr style={{ backgroundColor: '#f1f5f9' }}>
+                  <td style={{ borderBottom: prevBal > 0 ? '1px solid #cbd5e1' : 'none', padding: '6px 8px', fontWeight: 700, fontSize: '0.85rem' }}>Balance:</td>
+                  <td style={{ borderBottom: prevBal > 0 ? '1px solid #cbd5e1' : 'none', padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: '0.85rem', color: balance > 0 ? '#b91c1c' : '#15803d' }}>
+                    {fmtAmt(balance)}
+                  </td>
+                </tr>
+                {prevBal > 0 && (
+                  <>
+                    <tr>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600, color: '#64748b' }}>Prev. Balance:</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400, color: '#64748b' }}>{fmtAmt(prevBal)}</td>
+                    </tr>
+                    <tr style={{ backgroundColor: '#f8fafc' }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 700, fontSize: '0.85rem' }}>Total Balance:</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: '0.85rem', color: totalBalance > 0 ? '#b91c1c' : '#15803d' }}>
+                        {fmtAmt(totalBalance)}
+                      </td>
+                    </tr>
+                  </>
+                )}
+              </tbody>
+            </table>
+          </Box>
         </Box>
-      </Box>
+      )}
     </Box>
   );
 }
