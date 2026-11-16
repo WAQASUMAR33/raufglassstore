@@ -115,7 +115,7 @@ import {
   getLinkedOriginalSaleId,
 } from './components/sale-utils';
 
-const INVOICE_STORE_PHONE_LINE = `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).filter(Boolean).join(', ')}`;
+const INVOICE_STORE_PHONE_LINE = `Ph:- ${(COMPANY.phones || ['0302-2133218', '0347-7743218']).filter(Boolean).join(', ')}`;
 
 // Sale-page "below cost" check must use cost rate (pro_cost_price), never purchase/crate.
 const getProductCostPrice = (product) => {

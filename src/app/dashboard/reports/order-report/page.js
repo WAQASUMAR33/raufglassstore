@@ -119,7 +119,7 @@ export default function OrderReport() {
     if (!reportData) return;
     let csv = 'Zain Traders Mandi Bahauddin\n';
     csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
-    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'Phone: 0302-2133218, 0347-7743218\n\n';
     csv += 'ORDER REGISTER\n';
     csv += `Period: ${formatDate(startDate)} to ${formatDate(endDate)}\n\n`;
     csv += 'S.No,Date,Order ID,Customer,Items,Gross Amount,Discount,Shipping,Net Total,Paid,Pending\n';
@@ -244,7 +244,7 @@ export default function OrderReport() {
               <div className="hidden print:block border-b-2 border-black pb-4 mb-4">
                 <div className="text-center">
                   <h1 className="text-2xl font-bold tracking-wider">ZAIN TRADERS MANDI BAHAUDDIN</h1>
-                  <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
+                  <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</p>
                   <div className="mt-3 py-2 bg-black text-white">
                     <h2 className="text-lg font-bold tracking-widest">ORDER REGISTER</h2>
                   </div>
@@ -428,7 +428,7 @@ export default function OrderReport() {
               <div className="text-center border-b-2 border-black pb-3 mb-3">
                 <div className="text-xl font-bold" style={{ direction: 'rtl' }}>اتفاق آئرن اینڈ سیمنٹ سٹور</div>
                 <div className="text-sm text-gray-600" style={{ direction: 'rtl' }}>گجرات سرگودھا روڈ، پاہڑیانوالی</div>
-                <div className="text-sm mt-0.5">Ph:- 0302-2133218, 0315-4533218</div>
+                <div className="text-sm mt-0.5">Ph:- 0302-2133218, 0347-7743218</div>
                 <div className="font-bold uppercase tracking-wider mt-1 text-sm">ORDER INVOICE</div>
               </div>
 

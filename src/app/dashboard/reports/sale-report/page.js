@@ -220,7 +220,7 @@ export default function SaleReport() {
     if (!reportData) return;
     let csv = 'Zain Traders Mandi Bahauddin\n';
     csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
-    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'Phone: 0302-2133218, 0347-7743218\n\n';
     csv += 'SALES REGISTER\n';
     csv += `Period: ${formatDate(startDate)} to ${formatDate(endDate)}\n\n`;
     csv += 'S.No,Date,Invoice No,Party Name,Type,Gross Amount,Discount,Shipping,Net Amount,Received,Balance\n';
@@ -280,7 +280,7 @@ export default function SaleReport() {
           <div class="company">
             <h2 style="margin:0;font-size:20px">Zain Traders Mandi Bahauddin</h2>
             <div>Phalia Road , Near Aljannat Petrol pump M.B.Din.</div>
-            <div>Ph: 0302-2133218, 0315-4533218</div>
+            <div>Ph: 0302-2133218, 0347-7743218</div>
             <div style="margin-top:6px;font-weight:bold;font-size:18px">SALE INVOICE</div>
           </div>
 

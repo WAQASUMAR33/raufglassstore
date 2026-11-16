@@ -1347,7 +1347,7 @@ function FinancePageContent() {
     fmtAmt,
     formatDatePK,
     formatTimePK,
-    phoneLine: `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}`,
+    phoneLine: `Ph:- ${(COMPANY.phones || ['0302-2133218', '0347-7743218']).join(', ')}`,
     getInvoiceNet,
     getInvoiceRemainingDue,
     getSupplierBalanceAfterBill,
@@ -2963,7 +2963,7 @@ function FinancePageContent() {
           <h2 style="margin:0;font-size:20px;font-weight:800;">Zain Traders Mandi Bahauddin</h2>
           <p style="margin:4px 0;direction:rtl;font-size:16px;">زین ٹریڈرز منڈی بہاؤالدین</p>
           <p style="margin:4px 0;font-size:12px;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
-          <p style="margin:4px 0;font-weight:bold;">Ph:- 0302-2133218, 0315-4533218</p>
+          <p style="margin:4px 0;font-weight:bold;">Ph:- 0302-2133218, 0347-7743218</p>
           <h3 style="margin:10px 0 0 0;color:${accentColor};letter-spacing:1px;">${isPay ? 'DEBIT VOUCHER' : 'CREDIT VOUCHER'}</h3>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
@@ -3777,7 +3777,7 @@ function FinancePageContent() {
   <h1>Zain Traders Mandi Bahauddin</h1>
   <p style="direction:rtl;font-size:16px;margin:2px 0;">زین ٹریڈرز منڈی بہاؤالدین</p>
   <p style="margin:2px 0;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
-  <p style="font-weight:bold;margin:2px 0;">Ph:- 0302-2133218, 0315-4533218</p>
+  <p style="font-weight:bold;margin:2px 0;">Ph:- 0302-2133218, 0347-7743218</p>
   <div class="ledger-title">GENERAL LEDGER</div>
 </div>
 <div class="meta">
@@ -5727,7 +5727,7 @@ function FinancePageContent() {
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Zain Traders Mandi Bahauddin</Typography>
                 <Typography variant="body1" sx={{ direction: 'rtl', my: 0.5 }}>زین ٹریڈرز منڈی بہاؤالدین</Typography>
                 <Typography variant="body2">Phalia Road , Near Aljannat Petrol pump M.B.Din.</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Ph:- 0302-2133218, 0315-4533218</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Ph:- 0302-2133218, 0347-7743218</Typography>
                 <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1, letterSpacing: 1 }}>
                   {paymentReceiptData.type === 'PAY' ? 'DEBIT VOUCHER' : 'CREDIT VOUCHER'}
                 </Typography>
@@ -5887,7 +5887,7 @@ function FinancePageContent() {
     <div class="name-urdu" style="font-size:18px;font-weight:bold;">Zain Traders Mandi Bahauddin</div>
     <div style="font-size:15px;direction:rtl;margin:2px 0;">زین ٹریڈرز منڈی بہاؤالدین</div>
     <div class="address">Phalia Road , Near Aljannat Petrol pump M.B.Din.</div>
-    <div class="phone">Ph:- 0302-2133218, 0315-4533218</div>
+    <div class="phone">Ph:- 0302-2133218, 0347-7743218</div>
     <div class="voucher-type">${d.type === 'PAY' ? 'Debit Voucher' : 'Credit Voucher'}</div>
   </div>
   <div class="meta">
@@ -6027,7 +6027,7 @@ function FinancePageContent() {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
                   <span style={{ fontSize: '1rem', color: '#25D366', marginRight: '4px' }}>📞</span>
                   <Typography variant="body2">
-                    Ph:- 0302-2133218, 0315-4533218
+                    Ph:- 0302-2133218, 0347-7743218
                   </Typography>
                 </Box>
                 <Typography variant="h6" sx={{
@@ -6331,7 +6331,7 @@ function FinancePageContent() {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
                   <span style={{ fontSize: '1rem', color: '#25D366', marginRight: '4px' }}>📞</span>
                   <Typography variant="body2">
-                    Ph:- 0302-2133218, 0315-4533218
+                    Ph:- 0302-2133218, 0347-7743218
                   </Typography>
                 </Box>
                 <Typography variant="h6" sx={{
@@ -6653,7 +6653,7 @@ function FinancePageContent() {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
                   <span style={{ fontSize: '1rem', color: '#25D366', marginRight: '4px' }}>📞</span>
                   <Typography variant="body2">
-                    Ph:- 0302-2133218, 0315-4533218
+                    Ph:- 0302-2133218, 0347-7743218
                   </Typography>
                 </Box>
                 <Typography variant="h6" sx={{
@@ -7142,7 +7142,7 @@ function FinancePageContent() {
                 Phalia Road , Near Aljannat Petrol pump M.B.Din.
               </Typography>
               <Typography sx={{ fontSize: '11px', fontWeight: 'bold', mt: 0.25, color: '#000' }}>
-                Ph: 0302-2133218, 0315-4533218
+                Ph: 0302-2133218, 0347-7743218
               </Typography>
               <Typography
                 sx={{

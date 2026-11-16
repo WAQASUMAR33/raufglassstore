@@ -12,7 +12,7 @@ export const COMPANY = {
   tagline: 'Glass, Mirror & Aluminium Solutions',
   address: 'Phalia Road , Near Aljannat Petrol pump M.B.Din.',
   addressUr: 'پھالیہ روڈ، نزد الجنت پٹرول پمپ، منڈی بہاؤالدین',
-  phones: ['0302-2133218', '0315-4533218'],
+  phones: ['0302-2133218', '0347-7743218'],
 };
 
 export const POWERED_BY = {

@@ -162,7 +162,7 @@ export default function CashReport() {
     if (!reportData) return;
     let csv = 'Zain Traders Mandi Bahauddin\n';
     csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
-    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'Phone: 0302-2133218, 0347-7743218\n\n';
     csv += 'CASH BOOK REPORT\n';
     csv += `Period: ${formatDate(startDate)} to ${formatDate(endDate)}\n\n`;
     csv += 'S.No,Date,Type,Account Title,Description,Bill No,Debit (Cash In),Credit (Cash Out),Running Balance\n';
@@ -531,7 +531,7 @@ export default function CashReport() {
               <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-4">
                 <div className="text-center">
                   <h1 className="text-2xl font-black tracking-wider text-slate-900 uppercase">ZAIN TRADERS MANDI BAHAUDDIN</h1>
-                  <p className="text-xs text-slate-600 font-medium">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
+                  <p className="text-xs text-slate-600 font-medium">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</p>
                   <div className="mt-2 py-1.5 bg-slate-900 text-white">
                     <h2 className="text-sm font-bold tracking-widest uppercase">CASH BOOK REPORT</h2>
                   </div>

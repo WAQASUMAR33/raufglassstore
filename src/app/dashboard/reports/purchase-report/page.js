@@ -195,7 +195,7 @@ export default function PurchaseReport() {
     if (!reportData) return;
     let csv = 'Zain Traders Mandi Bahauddin\n';
     csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
-    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'Phone: 0302-2133218, 0347-7743218\n\n';
     csv += 'PURCHASE REGISTER\n';
     csv += `Period: ${formatDate(startDate)} to ${formatDate(endDate)}\n\n`;
     csv += 'S.No,Date,Voucher No,Party Name,Gross Amount,Unloading,Fare,Discount,Net Amount,Paid,Balance\n';
@@ -319,7 +319,7 @@ export default function PurchaseReport() {
               <div className="hidden print:block border-b-2 border-black pb-4 mb-4">
                 <div className="text-center">
                   <h1 className="text-2xl font-bold tracking-wider">ZAIN TRADERS MANDI BAHAUDDIN</h1>
-                  <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
+                  <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</p>
                   <div className="mt-3 py-2 bg-black text-white">
                     <h2 className="text-lg font-bold tracking-widest">PURCHASE REGISTER</h2>
                   </div>
@@ -503,7 +503,7 @@ export default function PurchaseReport() {
                 <Typography variant="body2" sx={{ mb: 1, direction: 'rtl' }}>گجرات سرگودھا روڈ، پاہڑیانوالی</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
                   <Typography variant="body2" sx={{ color: '#25D366' }}>📞</Typography>
-                  <Typography variant="body2">Ph:- 0302-2133218, 0315-4533218</Typography>
+                  <Typography variant="body2">Ph:- 0302-2133218, 0347-7743218</Typography>
                 </Box>
                 <Typography variant="h6" sx={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, mt: 1 }}>PURCHASE INVOICE</Typography>
               </Box>

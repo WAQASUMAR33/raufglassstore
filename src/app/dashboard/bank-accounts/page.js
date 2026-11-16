@@ -195,7 +195,7 @@ export default function BankAccountsPage() {
           {/* Printable Header */}
           <div className="hidden print:block text-center border-b-2 border-slate-900 pb-4 mb-6">
             <h1 className="text-2xl font-black tracking-wider text-slate-900">ZAIN TRADERS MANDI BAHAUDDIN</h1>
-            <p className="text-xs text-slate-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
+            <p className="text-xs text-slate-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</p>
             <div className="mt-2 py-1.5 bg-slate-900 text-white inline-block px-6 rounded-md">
               <h2 className="text-sm font-bold tracking-widest uppercase">BANK ACCOUNTS & CLOSING BALANCES REPORT</h2>
             </div>

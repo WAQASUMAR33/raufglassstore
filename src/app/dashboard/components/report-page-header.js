@@ -12,7 +12,7 @@ export default function ReportPageHeader({ reportTitle, metaLines = [], classNam
   return (
     <div className={`text-center border-b-2 border-slate-800 pb-3 mb-4 print:border-black print:mb-3 ${className}`}>
       <h1 className="text-2xl font-bold tracking-wider text-slate-900">ZAIN TRADERS MANDI BAHAUDDIN</h1>
-      <p className="text-sm text-slate-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
+      <p className="text-sm text-slate-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</p>
       <div className="mt-2 py-1.5 bg-slate-900 text-white print:bg-black">
         <h2 className="text-sm sm:text-base font-bold tracking-widest uppercase px-1">{reportTitle}</h2>
       </div>

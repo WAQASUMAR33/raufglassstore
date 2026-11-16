@@ -488,7 +488,7 @@ export default function ItemSaleReport() {
                       </div>
                       <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
                         <span style={{ color: '#25D366' }}>📞</span>
-                        Ph:- 0302-2133218, 0315-4533218
+                        Ph:- 0302-2133218, 0347-7743218
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginTop: 8, color: isSaleReturn ? '#d32f2f' : '#000' }}>
                         {isSale ? 'SALE INVOICE' : isSaleReturn ? 'SALE RETURN INVOICE' : isPurchase ? 'PURCHASE INVOICE' : 'PURCHASE RETURN'}

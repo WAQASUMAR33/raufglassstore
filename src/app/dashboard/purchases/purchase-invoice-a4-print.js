@@ -354,7 +354,7 @@ function renderMetaHtml(bill, ctx) {
 }
 
 function renderFullHeaderHtml(ctx) {
-  const phone = ctx.phoneLine || `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}`;
+  const phone = ctx.phoneLine || `Ph:- ${(COMPANY.phones || ['0302-2133218', '0347-7743218']).join(', ')}`;
   return `<div class="pi-header-full">
     <p class="pi-ur">${esc(COMPANY.nameUr)}</p>
     <p class="pi-addr">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
@@ -608,7 +608,7 @@ export function PurchaseInvoiceA4Document({ bill, ctx }) {
   const allDetails = bill.purchase_details || [];
   const totalPages = pages.length;
   const createdBy = typeof ctx.createdByFor === 'function' ? ctx.createdByFor(bill) : '—';
-  const phone = ctx.phoneLine || `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}`;
+  const phone = ctx.phoneLine || `Ph:- ${(COMPANY.phones || ['0302-2133218', '0347-7743218']).join(', ')}`;
 
   return (
     <>

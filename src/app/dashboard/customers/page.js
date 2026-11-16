@@ -757,7 +757,7 @@ export default function CustomersPage() {
       @media print{@page{size:A4 portrait;margin:12mm}}
     </style></head><body>
     <h1>Zain Traders Mandi Bahauddin — Accounts List</h1>
-    <p style="font-size:0.78rem;color:#475569;margin:2px 0 4px">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
+    <p style="font-size:0.78rem;color:#475569;margin:2px 0 4px">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</p>
     <p class="sub">Printed: ${now} &nbsp;|&nbsp; Total: ${list.length} accounts</p>
     <table>
       <thead><tr>

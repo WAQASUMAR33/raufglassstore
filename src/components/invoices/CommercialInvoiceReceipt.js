@@ -385,7 +385,7 @@ export default function CommercialInvoiceReceipt({
               Phalia Road , Near Aljannat Petrol pump M.B.Din.
             </Typography>
             <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#000000', lineHeight: 1.25, mt: 0.25 }}>
-              Ph: 0302-2133218, 0315-4533218
+              Ph: 0302-2133218, 0347-7743218
             </Typography>
           </Box>
         </Box>

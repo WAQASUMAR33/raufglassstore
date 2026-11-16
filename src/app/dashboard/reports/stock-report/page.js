@@ -335,7 +335,7 @@ export default function StockReport() {
     const rawRows = sortCombinedAllStockRows(getCombinedAllStockRows(products));
     let csv = 'Zain Traders Mandi Bahauddin\n';
     csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
-    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'Phone: 0302-2133218, 0347-7743218\n\n';
     csv += 'STOCK REPORT (combined by store)\n';
     csv += `Generated: ${new Date().toLocaleDateString('en-GB')}\n\n`;
     csv += 'S.No,Store,Category,Item Name,Unit,Qty,Base Rate,Sale Rate,Cost Rate,Line Value,Low Stock Threshold,Status\n';
@@ -384,7 +384,7 @@ export default function StockReport() {
     doc.text('ZAIN TRADERS MANDI BAHAUDDIN', pageWidth / 2, 36, { align: 'center' });
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218', pageWidth / 2, 52, { align: 'center' });
+    doc.text('Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218', pageWidth / 2, 52, { align: 'center' });
 
     doc.setFillColor(30, 41, 59);
     doc.rect(30, 62, pageWidth - 60, 22, 'F');

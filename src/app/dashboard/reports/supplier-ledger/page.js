@@ -108,7 +108,7 @@ export default function SupplierLedgerReport() {
 
     let csv = 'Zain Traders Mandi Bahauddin\n';
     csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
-    csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
+    csv += 'Phone: 0302-2133218, 0347-7743218\n\n';
     csv += 'Supplier Ledger Report\n';
     csv += `Supplier: ${reportData.supplier?.cus_name}\n`;
     csv += `From: ${formatDatePK(startDate)} To: ${formatDatePK(endDate)}\n`;

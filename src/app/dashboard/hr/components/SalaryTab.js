@@ -797,7 +797,7 @@ function buildSalarySheetHtml(rows, month, year, totals) {
   tfoot td { font-weight: 800; background: #fef3c7; border-top: 2px solid #f59e0b; }
 </style></head><body>
   <h1>${COMPANY.name || 'Zain Traders Mandi Bahauddin'} — Monthly Salary Sheet</h1>
-  <div style="font-size:11px;color:#475569;margin-bottom:6px">${COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'} | Tel: ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}</div>
+  <div style="font-size:11px;color:#475569;margin-bottom:6px">${COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'} | Tel: ${(COMPANY.phones || ['0302-2133218', '0347-7743218']).join(', ')}</div>
   <div class="sub">${period} · ${rows.length} employee(s)</div>
   <table>
     <thead><tr>${headerRow}</tr></thead>

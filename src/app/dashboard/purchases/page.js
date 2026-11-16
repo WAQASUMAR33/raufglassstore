@@ -2128,7 +2128,7 @@ function PurchasesPageContent() {
     fmtAmt,
     formatDatePK,
     formatTimePK,
-    phoneLine: `Ph:- ${(COMPANY.phones || ['0302-2133218', '0315-4533218']).join(', ')}`,
+    phoneLine: `Ph:- ${(COMPANY.phones || ['0302-2133218', '0347-7743218']).join(', ')}`,
     getInvoiceNet,
     getInvoiceRemainingDue,
     getSupplierBalanceAfterBill,

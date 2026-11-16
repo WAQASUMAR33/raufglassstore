@@ -1008,7 +1008,7 @@ export default function SaleReturnsPage() {
           <h2 style="margin:0;font-size:20px;font-weight:900;">Zain Traders Mandi Bahauddin</h2>
           <h3 style="margin:4px 0;font-size:18px;direction:rtl;">زین ٹریڈرز منڈی بہاؤالدین</h3>
           <p style="margin:4px 0;font-size:13px;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
-          <p style="margin:4px 0;font-size:13px;font-weight:bold;">Ph:- 0302-2133218, 0315-4533218</p>
+          <p style="margin:4px 0;font-size:13px;font-weight:bold;">Ph:- 0302-2133218, 0347-7743218</p>
           <h3 style="margin:8px 0 0 0;color:#c62828;letter-spacing:1px;">SALE RETURN INVOICE</h3>
         </div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #ddd;margin-bottom:12px;">

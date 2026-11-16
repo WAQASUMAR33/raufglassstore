@@ -7632,7 +7632,7 @@ function OrdersPageContent() {
                 Phalia Road , Near Aljannat Petrol pump M.B.Din.
               </Typography>
               <Typography sx={{ fontSize: '11px', fontWeight: 'bold', mt: 0.25, color: '#000' }}>
-                Ph: 0302-2133218, 0315-4533218
+                Ph: 0302-2133218, 0347-7743218
               </Typography>
               <Typography
                 sx={{
