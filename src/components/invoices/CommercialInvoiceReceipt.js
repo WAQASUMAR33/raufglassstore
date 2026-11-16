@@ -720,7 +720,7 @@ export default function CommercialInvoiceReceipt({
                       )}
                       {item.addons && item.addons.length > 0 && !isRepeatedAddons && (
                         <div style={{ fontSize: '0.72rem', color: '#475569', fontStyle: 'italic', marginTop: '2px' }}>
-                          Ad-Ons: {item.addons.map(a => `${a.name}${a.rate ? ` (${fmtAmt(a.rate)})` : ''}`).join(', ')}
+                          {item.addons.map(a => `${a.name}${copy !== 'CUTTER' && a.rate ? ` (${fmtAmt(a.rate)})` : ''}`).join(', ')}
                         </div>
                       )}
                     </td>
