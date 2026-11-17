@@ -22,6 +22,11 @@ export function printReceiptReport({
     return false;
   }
 
+  // Collect all stylesheets, web fonts, and style blocks from the host document
+  const headStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map(el => el.outerHTML)
+    .join('\n');
+
   let iframe = document.getElementById('report-print-iframe');
   if (!iframe) {
     iframe = document.createElement('iframe');
@@ -44,46 +49,30 @@ export function printReceiptReport({
 <head>
   <meta charset="utf-8" />
   <title>${escapeHtml(title)}</title>
+  ${headStyles}
   <style>
     * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     @page {
       size: ${isThermal ? '80mm auto' : 'A5 portrait'};
       margin: ${isThermal ? '0' : '3mm 4mm'};
     }
     html, body {
-      width: 100%;
-      height: auto;
+      width: 100% !important;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
       background: #ffffff !important;
       color: #000000 !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     }
     body {
-      max-width: ${isThermal ? '78mm' : '142mm'};
-      margin: 0 auto;
-      padding: ${isThermal ? '2mm' : '1mm 2mm'};
-      font-size: 10px;
-    }
-    table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-    }
-    th, td {
-      border: 1px solid #000000 !important;
-    }
-    tr {
-      page-break-inside: avoid;
-    }
-    thead {
-      display: table-header-group;
-    }
-    tfoot {
-      display: table-footer-group;
+      max-width: ${isThermal ? '78mm' : '140mm'} !important;
+      margin: 0 auto !important;
+      padding: ${isThermal ? '2mm' : '1mm 2mm'} !important;
     }
     .no-print {
       display: none !important;
@@ -103,7 +92,6 @@ export function printReceiptReport({
       iframe.contentWindow.print();
     } catch (err) {
       console.error('Failed to trigger iframe print:', err);
-      // Fallback: print current window
       window.print();
     }
   }, 250);

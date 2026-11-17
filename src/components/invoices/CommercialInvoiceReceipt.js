@@ -356,9 +356,17 @@ export default function CommercialInvoiceReceipt({
 
   return (
     <Box
+      style={{
+        width: '100%',
+        maxWidth: '140mm',
+        margin: '0 auto',
+        boxSizing: 'border-box',
+        backgroundColor: '#ffffff',
+        color: '#000000',
+      }}
       sx={{
         width: '100%',
-        maxWidth: '142mm',
+        maxWidth: '140mm',
         mx: 'auto',
         p: { xs: 0.5, sm: 1 },
         bgcolor: '#ffffff',
@@ -373,199 +381,169 @@ export default function CommercialInvoiceReceipt({
       }}
     >
       {/* ───────────────── HEADER SECTION ───────────────── */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-        {/* Left: Brand Identity */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-          <Box
-            sx={{
-              width: 38,
-              height: 38,
-              borderRadius: '50%',
-              border: '1.5px solid #000000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: '#ffffff',
-              flexShrink: 0,
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: '18px',
-                fontWeight: 900,
-                lineHeight: 1,
-                fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif',
-                color: '#000000',
-                pb: 0.25,
-              }}
-            >
-              زین
-            </Typography>
-          </Box>
-
-          <Box>
-            <Typography
-              sx={{
-                fontSize: '0.98rem',
-                fontWeight: 900,
-                letterSpacing: '0.02em',
-                lineHeight: 1.1,
-                color: '#000000',
-              }}
-            >
-              ZAIN TRADERS MANDI BAHAUDDIN
-            </Typography>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#333333', lineHeight: 1.15, mt: 0.1 }}>
-              Phalia Road , Near Aljannat Petrol pump M.B.Din.
-            </Typography>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#000000', lineHeight: 1.15, mt: 0.1 }}>
-              Ph: 0302-2133218, 0347-7743218
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Center/Right: Commercial Invoice Title + Copy Badge */}
-        <Box sx={{ textAlign: 'right', pr: 0.5 }}>
-          <Typography
-            sx={{
-              fontSize: { xs: '1rem', sm: '1.15rem' },
-              fontWeight: 700,
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              fontStyle: 'italic',
-              letterSpacing: '0.02em',
-              color: '#000000',
-              textDecoration: 'underline',
-              textUnderlineOffset: '3px',
-              lineHeight: 1.1,
-            }}
-          >
-            {baseInvoiceTitle}
-          </Typography>
-          <Box
-            component="span"
-            sx={{
-              display: 'inline-block',
-              mt: 0.4,
-              px: 0.8,
-              py: 0.15,
-              borderRadius: '3px',
-              fontSize: '0.62rem',
-              fontWeight: 800,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              bgcolor: copyBadgeBg,
-              color: '#ffffff',
-              printColorAdjust: 'exact',
-              WebkitPrintColorAdjust: 'exact',
-            }}
-          >
-            {copyBadgeText}
-          </Box>
-        </Box>
-      </Box>
+      <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginBottom: '4px' }}>
+        <tbody>
+          <tr>
+            <td style={{ verticalAlign: 'top', border: 'none', padding: 0 }}>
+              <table style={{ borderCollapse: 'collapse', border: 'none' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ verticalAlign: 'top', paddingRight: '8px', border: 'none' }}>
+                      <div
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          border: '1.5px solid #000000',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: '#ffffff',
+                          textAlign: 'center',
+                          lineHeight: '34px',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '18px',
+                            fontWeight: 900,
+                            fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif',
+                            color: '#000000',
+                          }}
+                        >
+                          زین
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ verticalAlign: 'top', border: 'none', padding: 0 }}>
+                      <div style={{ fontSize: '0.98rem', fontWeight: 900, letterSpacing: '0.02em', lineHeight: 1.1, color: '#000000' }}>
+                        ZAIN TRADERS MANDI BAHAUDDIN
+                      </div>
+                      <div style={{ fontSize: '0.68rem', fontWeight: 600, color: '#333333', lineHeight: 1.15, marginTop: '2px' }}>
+                        Phalia Road , Near Aljannat Petrol pump M.B.Din.
+                      </div>
+                      <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#000000', lineHeight: 1.15, marginTop: '2px' }}>
+                        Ph: 0302-2133218, 0347-7743218
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+            <td style={{ verticalAlign: 'top', textAlign: 'right', border: 'none', padding: 0 }}>
+              <div
+                style={{
+                  fontSize: '1.15rem',
+                  fontWeight: 700,
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontStyle: 'italic',
+                  letterSpacing: '0.02em',
+                  color: '#000000',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '3px',
+                  lineHeight: 1.1,
+                }}
+              >
+                {baseInvoiceTitle}
+              </div>
+              <div style={{ marginTop: '4px' }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    borderRadius: '3px',
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    backgroundColor: copyBadgeBg,
+                    color: '#ffffff',
+                    WebkitPrintColorAdjust: 'exact',
+                    printColorAdjust: 'exact',
+                  }}
+                >
+                  {copyBadgeText}
+                </span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       {/* Decorative horizontal accent */}
-      <Box sx={{ borderBottom: '1.5px solid #000000', mb: 0.75, width: '100%' }} />
+      <div style={{ borderBottom: '1.5px solid #000000', marginBottom: '6px', width: '100%' }} />
 
       {/* ───────────────── CUSTOMER & INVOICE DETAILS ───────────────── */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: '1.45fr 1fr' },
-          gap: 0.75,
-          mb: 0.75,
-        }}
-      >
-        {/* Left Box: Customer Info */}
-        <Box
-          sx={{
-            border: '1px solid #000000',
-            borderRadius: '4px',
-            p: 0.6,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0.2,
-            fontSize: '0.72rem',
-          }}
-        >
-          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>CUSTOMER:</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#000' }}>
-              {bill.customer?.cus_name || 'Walking Customer'}
-              {bill.customer?.name_urdu ? ` (${bill.customer.name_urdu})` : ''}
-            </Typography>
-          </Box>
+      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '6px 0', border: 'none', marginBottom: '6px' }}>
+        <tbody>
+          <tr>
+            {/* Left Box: Customer Info */}
+            <td style={{ verticalAlign: 'top', width: '58%', border: '1px solid #000000', borderRadius: '4px', padding: '4px 6px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.72rem' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: '70px', fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>CUSTOMER:</td>
+                    <td style={{ fontWeight: 600, color: '#000', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>
+                      {bill.customer?.cus_name || 'Walking Customer'}
+                      {bill.customer?.name_urdu ? ` (${bill.customer.name_urdu})` : ''}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>PHONE:</td>
+                    <td style={{ fontWeight: 500, color: '#000', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>
+                      {bill.customer?.cus_phone_no || bill.customer?.phone || bill.customer_phone || '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>ADDRESS:</td>
+                    <td style={{ fontWeight: 400, color: '#111', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>
+                      {[bill.customer?.cus_address, bill.customer?.city?.city_name].filter(Boolean).join(', ') || bill.customer?.cus_address || '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>FITTER:</td>
+                    <td style={{ fontWeight: 400, color: '#000', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>
+                      {displayFitter}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>REMARKS:</td>
+                    <td style={{ fontWeight: 400, color: '#111', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>
+                      {remarks}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>PHONE:</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 500, color: '#000' }}>
-              {bill.customer?.cus_phone_no || bill.customer?.phone || bill.customer_phone || '-'}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>ADDRESS:</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 400, color: '#111' }}>
-              {[bill.customer?.cus_address, bill.customer?.city?.city_name].filter(Boolean).join(', ') || bill.customer?.cus_address || '-'}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>FITTER:</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 400, color: '#000' }}>
-              {displayFitter}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>REMARKS:</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 400, color: '#111' }}>
-              {remarks}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Right Box: Invoice Meta Info */}
-        <Box
-          sx={{
-            border: '1px solid #000000',
-            borderRadius: '4px',
-            p: 0.6,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0.2,
-            fontSize: '0.72rem',
-          }}
-        >
-          <Box sx={{ display: 'grid', gridTemplateColumns: '62px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>{invLabel}</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#000' }}>
-              {invoiceNo}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '55px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>DATE:</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 500, color: '#000' }}>
-              {formatInvoiceDate(bill.created_at || new Date())}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '55px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>Q. No.:</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 500, color: '#111' }}>
-              {qNo}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '55px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>Dc No.:</Typography>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 500, color: '#111' }}>
-              {dcNo}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
+            {/* Right Box: Invoice Meta Info */}
+            <td style={{ verticalAlign: 'top', width: '42%', border: '1px solid #000000', borderRadius: '4px', padding: '4px 6px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.72rem' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: '62px', fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>{invLabel}</td>
+                    <td style={{ fontWeight: 700, color: '#000', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>{invoiceNo}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>DATE:</td>
+                    <td style={{ fontWeight: 500, color: '#000', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>
+                      {formatInvoiceDate(bill.created_at || new Date())}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>Q. No.:</td>
+                    <td style={{ fontWeight: 500, color: '#111', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>{qNo}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: '#222', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>Dc No.:</td>
+                    <td style={{ fontWeight: 500, color: '#111', border: 'none', padding: '1px 0', verticalAlign: 'top' }}>{dcNo}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       {/* ───────────────── PRODUCT TABLE ───────────────── */}
       <Box sx={{ mb: 1, overflowX: 'auto', width: '100%' }}>
@@ -1045,71 +1023,57 @@ export default function CommercialInvoiceReceipt({
 
       {/* ───────────────── BOTTOM SECTION ───────────────── */}
       {copy === 'CUTTER' ? (
-        /* CUTTER COPY BOTTOM: Quality & Cutter Sign-off (Assigned Cutter box removed) */
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            pt: 0.5,
-          }}
-        >
-          {/* Right: Cutter & Inspection Sign-off */}
-          <Box
-            sx={{
-              width: { xs: '100%', sm: '45%' },
-              border: '1px solid #000000',
-              borderRadius: '4px',
-              p: 0.75,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: 1,
-              fontSize: '0.7rem',
-            }}
-          >
-            <Box>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#333' }}>Cutter Signature:</Typography>
-              <Box sx={{ borderBottom: '1px solid #000', mt: 1.5, width: '100%' }} />
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#333' }}>Checked By (Quality / Sizes):</Typography>
-              <Box sx={{ borderBottom: '1px solid #000', mt: 1.5, width: '100%' }} />
-            </Box>
-          </Box>
-        </Box>
+        /* CUTTER COPY BOTTOM: Quality & Cutter Sign-off */
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '6px' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '55%', border: 'none' }}></td>
+              <td
+                style={{
+                  width: '45%',
+                  verticalAlign: 'top',
+                  border: '1px solid #000000',
+                  borderRadius: '4px',
+                  padding: '6px',
+                  fontSize: '0.7rem',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#333' }}>Cutter Signature:</div>
+                  <div style={{ borderBottom: '1px solid #000', marginTop: '16px', width: '100%' }} />
+                </div>
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#333' }}>Checked By (Quality / Sizes):</div>
+                  <div style={{ borderBottom: '1px solid #000', marginTop: '16px', width: '100%' }} />
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       ) : (
         /* OFFICE & CUSTOMER COPIES BOTTOM: Signature & Financial Summary */
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1.25fr 1fr' },
-            gap: 1,
-            alignItems: 'end',
-            pt: 0.5,
-          }}
-        >
-          {/* Left: Signature & Stamp area */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pb: 0.5 }}>
-            <Box>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#000' }}>
-                Signature & Stamp _____________________
-              </Typography>
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: '0.62rem', color: '#64748b', fontStyle: 'italic' }}>
-                Software Developed by RapidTechPro 0300-4657827
-              </Typography>
-            </Box>
-          </Box>
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '6px' }}>
+          <tbody>
+            <tr>
+              {/* Left: Signature & Stamp area */}
+              <td style={{ verticalAlign: 'bottom', border: 'none', padding: '0 8px 4px 0' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#000', marginBottom: '8px' }}>
+                  Signature & Stamp _____________________
+                </div>
+                <div style={{ fontSize: '0.62rem', color: '#64748b', fontStyle: 'italic' }}>
+                  Software Developed by RapidTechPro 0300-4657827
+                </div>
+              </td>
 
-          {/* Right: Boxed Amount Summary Table */}
-          <Box
-            sx={{
-              border: '1px solid #000000',
-              borderRadius: '4px',
-              overflow: 'hidden',
-            }}
-          >
+              {/* Right: Boxed Amount Summary Table */}
+              <td style={{ verticalAlign: 'bottom', width: '230px', border: 'none', padding: 0 }}>
+                <div
+                  style={{
+                    border: '1px solid #000000',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                  }}
+                >
             <table
               style={{
                 width: '100%',
@@ -1211,9 +1175,12 @@ export default function CommercialInvoiceReceipt({
                 )}
               </tbody>
             </table>
-          </Box>
-        </Box>
-      )}
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+)}
     </Box>
   );
 }
