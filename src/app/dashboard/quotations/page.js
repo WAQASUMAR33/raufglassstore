@@ -2734,13 +2734,17 @@ function QuotationsPageContent() {
                     </Box>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center' }}>
                       {(() => {
-                        const directAddons = formSelectedProduct.associated_addons || [];
-                        const productAddonLinks = formSelectedProduct.product_addons || [];
-                        const linkedAddons = productAddonLinks.map(pa => ({
-                          ...(pa.addon || {}),
-                          sale_price: pa.sale_price !== null && pa.sale_price !== undefined ? pa.sale_price : pa.addon?.sale_price
-                        }));
-                        const allAddons = directAddons.length > 0 ? directAddons : linkedAddons;
+                        const rawAddons = formSelectedProduct.addons || formSelectedProduct.associated_addons || formSelectedProduct.product_addons || [];
+                        const linkedAddons = rawAddons.map(pa => {
+                          const base = pa.addon || pa;
+                          if (!base) return null;
+                          return {
+                            ...base,
+                            id: base.id || pa.addon_id || pa.id,
+                            sale_price: (pa.sale_price !== null && pa.sale_price !== undefined) ? pa.sale_price : (base.sale_price || 0)
+                          };
+                        }).filter(Boolean);
+                        const allAddons = linkedAddons;
 
                         if (allAddons.length === 0) {
                           return (

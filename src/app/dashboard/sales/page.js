@@ -1093,21 +1093,31 @@ function SalesPageContent() {
   // Product form state
   const [productFormData, setProductFormData] = useState({ ...EMPTY_PRODUCT_FORM_DATA });
 
-  // Addons available for the currently selected product
+  // Addons specifically associated with the currently selected product
   const availableAddonsForProduct = useMemo(() => {
     if (!formSelectedProduct) return [];
-    const productSpecific = (formSelectedProduct.addons || [])
-      .map(pa => pa.addon || pa)
+    const rawList = formSelectedProduct.addons || formSelectedProduct.associated_addons || formSelectedProduct.product_addons || [];
+    const list = rawList
+      .map(pa => {
+        const base = pa.addon || pa;
+        if (!base) return null;
+        return {
+          ...base,
+          id: base.id || pa.addon_id,
+          sale_price: (pa.sale_price !== null && pa.sale_price !== undefined) ? pa.sale_price : base.sale_price,
+          is_linked: true
+        };
+      })
       .filter(Boolean);
+
     const map = new Map();
-    productSpecific.forEach(a => map.set(a.id, { ...a, is_linked: true }));
-    allAddons.forEach(a => {
-      if (!map.has(a.id)) {
-        map.set(a.id, { ...a, is_linked: false });
+    list.forEach(a => {
+      if (a.id && !map.has(a.id)) {
+        map.set(a.id, a);
       }
     });
     return Array.from(map.values());
-  }, [formSelectedProduct, allAddons]);
+  }, [formSelectedProduct]);
 
   // Per-product dropdown 'eye' visibility state (which options show purchase rate)
   const [visibleCrates, setVisibleCrates] = useState([]);

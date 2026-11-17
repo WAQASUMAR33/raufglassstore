@@ -4630,9 +4630,19 @@ function OrdersPageContent() {
                     </Box>
                     <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center', minHeight: 32 }}>
                       {(() => {
-                        const avail = formSelectedProduct.addons || [];
+                        const rawAvail = formSelectedProduct.addons || formSelectedProduct.associated_addons || formSelectedProduct.product_addons || [];
+                        const avail = rawAvail.map(pa => {
+                          const base = pa.addon || pa;
+                          if (!base) return null;
+                          return {
+                            ...base,
+                            id: base.id || pa.addon_id || pa.id,
+                            sale_price: (pa.sale_price !== null && pa.sale_price !== undefined) ? pa.sale_price : (base.sale_price || 0)
+                          };
+                        }).filter(Boolean);
+
                         const additionalSelected = (productFormData.selected_addons || []).filter(
-                          a => !avail.some(pa => ((pa.addon?.id || pa.addon_id || pa.id) === (a.id || a.addon_id)))
+                          a => !avail.some(pa => ((pa.id || pa.addon_id) === (a.id || a.addon_id)))
                         );
 
                         if (avail.length === 0 && additionalSelected.length === 0) {
@@ -4646,7 +4656,7 @@ function OrdersPageContent() {
                         return (
                           <>
                             {avail.map(pa => {
-                              const addon = pa.addon || pa;
+                              const addon = pa;
                               const addonId = addon.id || pa.addon_id;
                               const isSelected = (productFormData.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
                               const sel = (productFormData.selected_addons || []).find(a => (a.id || a.addon_id) === addonId);
