@@ -108,6 +108,8 @@ import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
 import CommercialInvoiceReceipt, { expandInvoiceLineItems } from '@/components/invoices/CommercialInvoiceReceipt';
+import { printReceiptReport, downloadReceiptPdf } from '@/lib/invoice-report-service';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import {
   fetchSalesForReturnInvoicePicker,
   normalizeReturnForReceipt,
@@ -6094,9 +6096,19 @@ function SalesPageContent() {
       setCurrentBillData(activeBill);
     }
     setTimeout(() => {
-      const mode = fromDialog && selectedBill && !currentBillData ? 'EXISTING' : 'A4';
-      handlePrintBill(mode, fromDialog, activeBill);
-    }, 120);
+      const receiptPreview = document.getElementById('receipt-preview') || document.getElementById('printable-invoice') || document.getElementById('printable-invoice-a4');
+      const invoiceNo = activeBill?.sale_id || activeBill?.order_id || 'invoice';
+      if (receiptPreview) {
+        printReceiptReport({
+          element: receiptPreview,
+          title: `Commercial Invoice #${invoiceNo} (${copyType} COPY)`,
+          isThermal: false,
+        });
+      } else {
+        const mode = fromDialog && selectedBill && !currentBillData ? 'EXISTING' : 'A4';
+        handlePrintBill(mode, fromDialog, activeBill);
+      }
+    }, 150);
   };
 
   const resolveBillForActions = async (bill) => {
@@ -6134,9 +6146,6 @@ function SalesPageContent() {
   const handlePrintBill = async (mode = 'A4', fromDialog = false, targetBill = null) => {
     try {
       const actualMode = typeof mode === 'string' ? mode : 'A4';
-      const className = actualMode === 'THERMAL'
-        ? 'print-thermal'
-        : (actualMode === 'EXISTING' ? 'print-existing' : 'print-a4');
       const isThermal = actualMode === 'THERMAL';
 
       let activeBill = targetBill || currentBillData || selectedBill;
@@ -6147,80 +6156,22 @@ function SalesPageContent() {
         setCurrentBillData(activeBill);
       }
 
-      // Get the printable container
-      let printableContainer = actualMode === 'EXISTING'
-        ? document.getElementById('printable-invoice')
-        : (actualMode === 'THERMAL'
-          ? document.getElementById('printable-invoice-thermal')
-          : document.getElementById('printable-invoice-a4'));
-
-      // Fallback in case container is not found
-      if (!printableContainer) {
-        printableContainer = isThermal
-          ? document.getElementById('printable-invoice-thermal')
-          : (document.getElementById('printable-invoice') || document.getElementById('printable-invoice-a4'));
-      }
-
-      if (!printableContainer) {
-        console.error('Printable container not found');
-        return;
-      }
-
-      // If printing from dialog for A4, copy receipt preview content (do NOT overwrite thermal template)
-      if (fromDialog && !isThermal) {
-        const receiptPreview = document.getElementById('receipt-preview');
-        if (receiptPreview && printableContainer) {
-          printableContainer.innerHTML = receiptPreview.innerHTML;
-        }
-      }
-
-      // Add dynamic style for thermal page size
-      let styleId = 'dynamic-print-style';
-      let styleElement = document.getElementById(styleId);
-      if (!styleElement) {
-        styleElement = document.createElement('style');
-        styleElement.id = styleId;
-        document.head.appendChild(styleElement);
-      }
-
-      if (isThermal) {
-        styleElement.textContent = `
-          @media print {
-            @page {
-              size: 80mm portrait !important;
-              margin: 0 !important;
-            }
-            body {
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-          }
-        `;
-      } else {
-        styleElement.textContent = `
-          @media print {
-            @page {
-              size: A5 portrait !important;
-              margin: 3mm 4mm !important;
-            }
-          }
-        `;
-      }
-
-      // Add body class for print styling
-      document.body.classList.add(className);
-
       setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-          document.body.classList.remove('print-thermal');
-          document.body.classList.remove('print-a4');
-          document.body.classList.remove('print-existing');
+        let printableContainer = actualMode === 'EXISTING'
+          ? document.getElementById('printable-invoice')
+          : (isThermal
+            ? document.getElementById('printable-invoice-thermal')
+            : (document.getElementById('receipt-preview') || document.getElementById('printable-invoice-a4')));
 
-          if (styleElement) {
-            styleElement.remove();
-          }
-        }, 150);
+        if (printableContainer) {
+          printReceiptReport({
+            element: printableContainer,
+            title: isThermal ? `Thermal #${activeBill?.sale_id || ''}` : `Commercial Invoice #${activeBill?.sale_id || ''}`,
+            isThermal,
+          });
+        } else {
+          window.print();
+        }
       }, 150);
     } catch (e) {
       console.error('Print error:', e);
@@ -11100,6 +11051,28 @@ function SalesPageContent() {
           >
             Print Thermal
           </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PictureAsPdfIcon />}
+            sx={{
+              minWidth: 120,
+              borderColor: '#64748b',
+              color: '#334155',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#f1f5f9', borderColor: '#334155' }
+            }}
+            onClick={() => {
+              const preview = document.getElementById('receipt-preview');
+              if (preview) {
+                downloadReceiptPdf({
+                  element: preview,
+                  fileName: `Invoice-${currentBillData?.sale_id || 'sale'}-${activeReceiptCopy}.pdf`,
+                });
+              }
+            }}
+          >
+            PDF Report
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -12002,6 +11975,28 @@ function SalesPageContent() {
           >
             Print Thermal
           </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PictureAsPdfIcon />}
+            sx={{
+              minWidth: 120,
+              borderColor: '#64748b',
+              color: '#334155',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#f1f5f9', borderColor: '#334155' }
+            }}
+            onClick={() => {
+              const preview = document.getElementById('printable-invoice') || document.getElementById('receipt-preview');
+              if (preview) {
+                downloadReceiptPdf({
+                  element: preview,
+                  fileName: `Invoice-${selectedBill?.sale_id || 'sale'}-${activeReceiptCopy}.pdf`,
+                });
+              }
+            }}
+          >
+            PDF Report
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -12009,8 +12004,28 @@ function SalesPageContent() {
       <style jsx global>{`
         @media print {
           body.print-thermal *,
-          body.print-thermal {
-            visibility: hidden;
+          body.print-a4 *,
+          body.print-existing * {
+            visibility: hidden !important;
+          }
+
+          body.print-thermal .MuiDialog-root,
+          body.print-thermal .MuiDialog-container,
+          body.print-thermal .MuiBackdrop-root,
+          body.print-thermal .dashboard-layout-root,
+          body.print-thermal .no-print,
+          body.print-a4 .MuiDialog-root,
+          body.print-a4 .MuiDialog-container,
+          body.print-a4 .MuiBackdrop-root,
+          body.print-a4 .dashboard-layout-root,
+          body.print-a4 .no-print,
+          body.print-existing .MuiDialog-root,
+          body.print-existing .MuiDialog-container,
+          body.print-existing .MuiBackdrop-root,
+          body.print-existing .dashboard-layout-root,
+          body.print-existing .no-print {
+            display: none !important;
+            visibility: hidden !important;
           }
 
           body.print-thermal #printable-invoice-thermal,
@@ -12019,7 +12034,7 @@ function SalesPageContent() {
           }
 
           body.print-thermal #printable-invoice-thermal {
-            position: fixed !important;
+            position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: 78mm !important;
@@ -12032,20 +12047,23 @@ function SalesPageContent() {
             color: #000000 !important;
           }
 
-          /* A4 Print Styling */
+          /* A4/A5 Print Styling */
           body.print-a4 #printable-invoice-a4,
-          body.print-a4 #printable-invoice-a4 * {
+          body.print-a4 #printable-invoice-a4 *,
+          body.print-existing #printable-invoice,
+          body.print-existing #printable-invoice * {
             visibility: visible !important;
             height: auto !important;
           }
 
-          body.print-a4 #printable-invoice-a4 {
+          body.print-a4 #printable-invoice-a4,
+          body.print-existing #printable-invoice {
             display: block !important;
-            position: fixed !important;
+            position: absolute !important;
             left: 0 !important;
             top: 0 !important;
-            width: 148mm !important;
-            max-width: 148mm !important;
+            width: 142mm !important;
+            max-width: 142mm !important;
             margin: 0 auto !important;
             padding: 0 !important;
             z-index: 999999 !important;

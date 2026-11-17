@@ -85,6 +85,9 @@ import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
 import CommercialInvoiceReceipt from '@/components/invoices/CommercialInvoiceReceipt';
+import { printReceiptReport, downloadReceiptPdf } from '@/lib/invoice-report-service';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
 const fmtAmt = (val) => {
   const n = parseFloat(val || 0);
@@ -468,6 +471,8 @@ function QuotationsPageContent() {
   // Current bill data for printing (from create view)
   const [currentBillData, setCurrentBillData] = useState(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const [activeReceiptCopy, setActiveReceiptCopy] = useState('OFFICE');
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -1935,10 +1940,47 @@ function QuotationsPageContent() {
     }
   };
 
+  const handlePrintCopy = async (copyType, targetBill = null) => {
+    setActiveReceiptCopy(copyType);
+    const activeBill = targetBill || currentBillData;
+    if (activeBill && !currentBillData) {
+      setCurrentBillData(activeBill);
+    }
+    setTimeout(() => {
+      const receiptPreview = document.getElementById('receipt-preview') || document.getElementById('printable-invoice-a4');
+      const invoiceNo = activeBill?.sale_id || activeBill?.bill_number || 'quotation';
+      if (receiptPreview) {
+        printReceiptReport({
+          element: receiptPreview,
+          title: `Quotation #${invoiceNo} (${copyType} COPY)`,
+          isThermal: false,
+        });
+      } else {
+        handlePrintBill('A4', activeBill);
+      }
+    }, 150);
+  };
+
+  const handleSendWhatsApp = async (bill, elementId = 'receipt-preview') => {
+    try {
+      setIsSendingWhatsApp(true);
+      const { shareViaWhatsAppDesktop, whatsAppSuccessMessage } = await import('@/lib/whatsapp-local');
+      const { opened } = await shareViaWhatsAppDesktop({
+        elementId,
+        phone: bill?.customer?.cus_phone_no,
+      });
+      showSnackbar(`✅ ${whatsAppSuccessMessage(opened)}`, 'success');
+    } catch (err) {
+      showSnackbar(`❌ WhatsApp error: ${err.message}`, 'error');
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
+  };
+
   const handlePrintBill = (mode = 'A4', targetBill = null) => {
     try {
       const actualMode = mode === 'THERMAL' ? 'THERMAL' : 'A4';
-      const className = actualMode === 'THERMAL' ? 'print-thermal' : 'print-a4';
+      const isThermal = actualMode === 'THERMAL';
       const activeBill = targetBill || currentBillData;
 
       if (!activeBill) {
@@ -1950,35 +1992,21 @@ function QuotationsPageContent() {
         setCurrentBillData(activeBill);
       }
 
-      const printableContainer = document.getElementById(
-        actualMode === 'THERMAL' ? 'printable-invoice-thermal' : 'printable-invoice-a4'
-      );
-
-      if (!printableContainer) {
-        showSnackbar('Print template not ready. Please try again.', 'error');
-        return;
-      }
-
-      let styleElement = document.getElementById('dynamic-print-style');
-      if (!styleElement) {
-        styleElement = document.createElement('style');
-        styleElement.id = 'dynamic-print-style';
-        document.head.appendChild(styleElement);
-      }
-
-      styleElement.textContent = actualMode === 'THERMAL'
-        ? `@media print { @page { size: 80mm portrait !important; margin: 0 !important; } body { margin: 0 !important; padding: 0 !important; } }`
-        : `@media print { @page { size: A5 portrait !important; margin: 3mm 4mm !important; } }`;
-
-      document.body.classList.add(className);
-
       setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-          document.body.classList.remove('print-thermal', 'print-a4');
-          styleElement?.remove();
-        }, 150);
-      }, 200);
+        const container = isThermal
+          ? document.getElementById('printable-invoice-thermal')
+          : (document.getElementById('receipt-preview') || document.getElementById('printable-invoice-a4'));
+
+        if (container) {
+          printReceiptReport({
+            element: container,
+            title: isThermal ? `Thermal #${activeBill.sale_id || ''}` : `Quotation #${activeBill.sale_id || ''}`,
+            isThermal,
+          });
+        } else {
+          window.print();
+        }
+      }, 150);
     } catch (e) {
       console.error('Print error:', e);
       showSnackbar('Failed to open print dialog', 'error');
@@ -4096,7 +4124,7 @@ function QuotationsPageContent() {
         PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
       >
         <DialogTitle sx={{
-          bgcolor: BRAND.supporting.periwinkle,
+          bgcolor: BRAND.primary.green,
           color: '#fff',
           fontWeight: 800,
           display: 'flex',
@@ -4114,93 +4142,65 @@ function QuotationsPageContent() {
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ bgcolor: '#f8fafc', p: { xs: 2, md: 3 } }}>
+        <DialogContent sx={{ p: 0, bgcolor: 'white' }}>
+          <Box sx={{ p: 1.5, pb: 1, display: 'flex', gap: 1, borderBottom: '1px solid #e2e8f0', bgcolor: '#f8fafc', flexWrap: 'wrap' }} className="no-print">
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'OFFICE' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('OFFICE')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e40af' : 'transparent',
+                borderColor: '#1e40af',
+                color: activeReceiptCopy === 'OFFICE' ? '#fff' : '#1e40af',
+                '&:hover': { bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e3a8a' : 'rgba(30,64,175,0.08)' }
+              }}
+            >
+              Office Copy
+            </Button>
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'CUSTOMER' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('CUSTOMER')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#047857' : 'transparent',
+                borderColor: '#047857',
+                color: activeReceiptCopy === 'CUSTOMER' ? '#fff' : '#047857',
+                '&:hover': { bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#065f46' : 'rgba(4,120,87,0.08)' }
+              }}
+            >
+              Customer Copy
+            </Button>
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'CUTTER' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('CUTTER')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'CUTTER' ? '#b45309' : 'transparent',
+                borderColor: '#b45309',
+                color: activeReceiptCopy === 'CUTTER' ? '#fff' : '#b45309',
+                '&:hover': { bgcolor: activeReceiptCopy === 'CUTTER' ? '#92400e' : 'rgba(180,83,9,0.08)' }
+              }}
+            >
+              Cutter Copy
+            </Button>
+          </Box>
+
           {currentBillData && (
-            <Paper elevation={0} sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
-              <Box sx={{ textAlign: 'center', mb: 3, pb: 2, borderBottom: `3px solid ${BRAND.supporting.periwinkle}` }}>
-                <Typography sx={{ fontWeight: 900, fontSize: '1.25rem', color: '#1e293b' }}>{COMPANY.name}</Typography>
-                <Typography sx={{ fontSize: '0.875rem', color: '#64748b', direction: 'rtl' }}>{COMPANY.nameUr}</Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#64748b', mt: 0.5 }}>{COMPANY.address}</Typography>
-                <Chip
-                  label="QUOTATION"
-                  sx={{
-                    mt: 1.5,
-                    bgcolor: BRAND.tint.periwinkle,
-                    color: BRAND.text.periwinkle,
-                    fontWeight: 800,
-                    letterSpacing: '0.08em',
-                  }}
-                />
-              </Box>
-
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="overline" sx={{ color: '#94a3b8', fontWeight: 700 }}>Customer</Typography>
-                  <Typography sx={{ fontWeight: 700, color: '#1e293b' }}>{currentBillData.customer?.cus_name || 'N/A'}</Typography>
-                  {currentBillData.customer?.cus_phone_no && (
-                    <Typography sx={{ fontSize: '0.8125rem', color: '#64748b' }}>{currentBillData.customer.cus_phone_no}</Typography>
-                  )}
-                </Grid>
-                <Grid item xs={12} sm={6} sx={{ textAlign: { sm: 'right' } }}>
-                  <Typography variant="overline" sx={{ color: '#94a3b8', fontWeight: 700 }}>Quotation Details</Typography>
-                  <Typography sx={{ fontSize: '0.875rem' }}><strong>Quote #:</strong> {currentBillData.sale_id}</Typography>
-                  <Typography sx={{ fontSize: '0.875rem' }}><strong>Date:</strong> {formatDatePK(currentBillData.created_at)}</Typography>
-                  {currentBillData.reference && (
-                    <Typography sx={{ fontSize: '0.875rem' }}><strong>Ref:</strong> {currentBillData.reference}</Typography>
-                  )}
-                </Grid>
-              </Grid>
-
-              <TableContainer sx={{ border: '1px solid #e2e8f0', borderRadius: 1.5, mb: 2 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: BRAND.tint.periwinkle }}>
-                      <TableCell sx={{ fontWeight: 700, color: BRAND.text.periwinkle }}>#</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: BRAND.text.periwinkle }}>Item</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: BRAND.text.periwinkle }}>Qty</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: BRAND.text.periwinkle }}>Rate</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: BRAND.text.periwinkle }}>Amount</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {currentBillData.sale_details?.map((detail, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>{detail.product?.pro_title || 'Item'}</TableCell>
-                        <TableCell align="right">{detail.qnty}</TableCell>
-                        <TableCell align="right">{fmtAmt(detail.unit_rate)}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>{fmtAmt(detail.total_amount)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Box sx={{ minWidth: 240 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
-                    <Typography color="text.secondary">Subtotal</Typography>
-                    <Typography>{fmtAmt(parseFloat(currentBillData.total_amount || 0) + parseFloat(currentBillData.discount || 0))}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
-                    <Typography color="text.secondary">Discount</Typography>
-                    <Typography>{fmtAmt(currentBillData.discount)}</Typography>
-                  </Box>
-                  <Divider sx={{ my: 1 }} />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
-                    <Typography sx={{ fontWeight: 800, color: BRAND.text.periwinkle }}>Quoted Total</Typography>
-                    <Typography sx={{ fontWeight: 800, fontSize: '1.125rem', color: BRAND.text.periwinkle }}>{fmtAmt(currentBillData.total_amount)}</Typography>
-                  </Box>
-                </Box>
-              </Box>
-
-              <Typography sx={{ mt: 3, fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', fontStyle: 'italic' }}>
-                This is a quotation only. Prices and availability may change until converted to a sale.
-              </Typography>
-            </Paper>
+            <Box id="receipt-preview" className="thermal-receipt" sx={{ width: '100%', bgcolor: 'white', p: { xs: 1, sm: 2 }, color: '#000' }}>
+              <CommercialInvoiceReceipt bill={currentBillData} copyType={activeReceiptCopy} isQuotation={true} />
+            </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 1 }}>
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 1 }} className="no-print">
           <Button onClick={() => setReceiptDialogOpen(false)} sx={{ color: '#64748b' }}>Close</Button>
           {currentBillData?.sale_id && (
             <>
@@ -4228,11 +4228,99 @@ function QuotationsPageContent() {
               </Button>
             </>
           )}
-          <Button onClick={() => handlePrintBill('A4')} startIcon={<PrintIcon />} variant="outlined" sx={{ borderColor: BRAND.supporting.periwinkle, color: BRAND.text.periwinkle }}>
-            Print A5
+          <Button
+            variant="contained"
+            sx={{
+              minWidth: 140,
+              bgcolor: '#25D366',
+              '&:hover': { bgcolor: '#1ebe5d' },
+              color: 'white',
+              fontWeight: 600
+            }}
+            onClick={() => handleSendWhatsApp(currentBillData, 'receipt-preview')}
+            disabled={isSendingWhatsApp || !currentBillData?.customer?.cus_phone_no}
+            title={!currentBillData?.customer?.cus_phone_no ? 'No phone number on file' : 'Send receipt via WhatsApp'}
+          >
+            {isSendingWhatsApp ? <CircularProgress size={16} sx={{ mr: 1, color: 'white' }} /> : null}
+            {isSendingWhatsApp ? 'Sending...' : 'WhatsApp'}
           </Button>
-          <Button onClick={() => handlePrintBill('THERMAL')} startIcon={<PrintIcon />} variant="contained" sx={{ bgcolor: BRAND.supporting.periwinkle, '&:hover': { bgcolor: '#4a57d4' } }}>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 155,
+              bgcolor: '#1e40af',
+              '&:hover': { bgcolor: '#1e3a8a' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('OFFICE', currentBillData)}
+          >
+            Print Office Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 170,
+              bgcolor: '#047857',
+              '&:hover': { bgcolor: '#065f46' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUSTOMER', currentBillData)}
+          >
+            Print Customer Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 155,
+              bgcolor: '#b45309',
+              '&:hover': { bgcolor: '#92400e' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUTTER', currentBillData)}
+          >
+            Print Cutter Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 130,
+              bgcolor: '#fd7e14',
+              '&:hover': { bgcolor: '#e8690b' },
+              color: 'white',
+              fontWeight: 600
+            }}
+            onClick={() => handlePrintBill('THERMAL')}
+          >
             Print Thermal
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PictureAsPdfIcon />}
+            sx={{
+              minWidth: 120,
+              borderColor: '#64748b',
+              color: '#334155',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#f1f5f9', borderColor: '#334155' }
+            }}
+            onClick={() => {
+              const preview = document.getElementById('receipt-preview');
+              if (preview) {
+                downloadReceiptPdf({
+                  element: preview,
+                  fileName: `Quotation-${currentBillData?.sale_id || 'quote'}-${activeReceiptCopy}.pdf`,
+                });
+              }
+            }}
+          >
+            PDF Report
           </Button>
         </DialogActions>
       </Dialog>
@@ -4394,12 +4482,12 @@ function QuotationsPageContent() {
 
           body.print-a4 #printable-invoice-a4 {
             display: block !important;
-            position: fixed !important;
+            position: absolute !important;
             left: 0 !important;
             top: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
+            width: 142mm !important;
+            max-width: 142mm !important;
+            margin: 0 auto !important;
             padding: 0 !important;
             z-index: 999999 !important;
             background: #ffffff !important;

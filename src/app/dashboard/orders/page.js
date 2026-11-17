@@ -94,6 +94,8 @@ import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
 import CommercialInvoiceReceipt from '@/components/invoices/CommercialInvoiceReceipt';
+import { printReceiptReport, downloadReceiptPdf } from '@/lib/invoice-report-service';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
 const fmtAmt = (val) => {
   const n = parseFloat(val || 0);
@@ -3320,126 +3322,56 @@ function OrdersPageContent() {
   // Current bill data for printing (from create view)
   const [currentBillData, setCurrentBillData] = useState(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const [activeReceiptCopy, setActiveReceiptCopy] = useState('OFFICE');
+
+  const handlePrintCopy = async (copyType, fromDialog = true, targetBill = null) => {
+    setActiveReceiptCopy(copyType);
+    const activeBill = targetBill || currentBillData || selectedBill;
+    if (activeBill) {
+      if (!currentBillData) setCurrentBillData(activeBill);
+      if (!selectedBill) setSelectedBill(activeBill);
+    }
+    setTimeout(() => {
+      const receiptPreview = document.getElementById('receipt-preview') || document.getElementById('printable-invoice') || document.getElementById('printable-invoice-a4');
+      const invoiceNo = getBillDisplayNo(activeBill) || activeBill?.order_id || 'order';
+      if (receiptPreview) {
+        printReceiptReport({
+          element: receiptPreview,
+          title: `Order #${invoiceNo} (${copyType} COPY)`,
+          isThermal: false,
+        });
+      } else {
+        handlePrintBill('A4', fromDialog, activeBill);
+      }
+    }, 150);
+  };
 
   const handlePrintBill = (mode = 'EXISTING', fromDialog = false, targetBill = null) => {
     try {
       const actualMode = typeof mode === 'string' ? mode : 'EXISTING';
-      const className = actualMode === 'THERMAL' 
-        ? 'print-thermal' 
-        : (actualMode === 'EXISTING' ? 'print-existing' : 'print-a4');
       const isThermal = actualMode === 'THERMAL';
-
-      // Ensure active bill is set for printing
       const activeBill = targetBill || currentBillData || selectedBill;
       if (activeBill) {
         setCurrentBillData(activeBill);
         setSelectedBill(activeBill);
       }
 
-      // Get the printable container
-      let printableContainer = actualMode === 'EXISTING'
-        ? document.getElementById('printable-invoice')
-        : (actualMode === 'THERMAL'
-          ? document.getElementById('printable-invoice-thermal')
-          : document.getElementById('printable-invoice-a4'));
-
-      // Fallback in case container is not found
-      if (!printableContainer) {
-        printableContainer = isThermal
-          ? document.getElementById('printable-invoice-thermal')
-          : (document.getElementById('printable-invoice') || document.getElementById('printable-invoice-a4'));
-      }
-
-      if (!printableContainer) {
-        console.error('Printable container not found');
-        return;
-      }
-
-      // If printing from dialog for A4, copy receipt preview content (do NOT overwrite thermal template)
-      if (fromDialog && !isThermal) {
-        const receiptPreview = document.getElementById('receipt-preview');
-        if (receiptPreview && printableContainer) {
-          printableContainer.innerHTML = receiptPreview.innerHTML;
-        }
-      }
-
-      // Move container to visible position temporarily for print
-      const originalStyles = {
-        position: printableContainer.style.position,
-        left: printableContainer.style.left,
-        top: printableContainer.style.top,
-        visibility: printableContainer.style.visibility,
-        display: printableContainer.style.display
-      };
-
-      // Make container visible and position it for print
-      printableContainer.style.position = 'fixed';
-      printableContainer.style.left = '0';
-      printableContainer.style.top = '0';
-      printableContainer.style.visibility = 'visible';
-      printableContainer.style.display = 'block';
-      printableContainer.style.zIndex = '9999';
-      printableContainer.style.backgroundColor = 'white';
-
-      // Add dynamic style for thermal page size
-      let styleId = 'dynamic-print-style';
-      let styleElement = document.getElementById(styleId);
-      if (!styleElement) {
-        styleElement = document.createElement('style');
-        styleElement.id = styleId;
-        document.head.appendChild(styleElement);
-      }
-
-      if (isThermal) {
-        styleElement.textContent = `
-          @media print {
-            @page {
-              size: 80mm portrait !important;
-              margin: 0 !important;
-            }
-            body {
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-          }
-        `;
-      } else {
-        styleElement.textContent = `
-          @media print {
-            @page {
-              size: A5 portrait !important;
-              margin: 0.3cm !important;
-            }
-          }
-        `;
-      }
-
-      // Add body class for print styling
-      document.body.classList.add(className);
-
-      // Small delay to ensure DOM is ready
       setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-          // Restore original styles
-          printableContainer.style.position = originalStyles.position;
-          printableContainer.style.left = originalStyles.left;
-          printableContainer.style.top = originalStyles.top;
-          printableContainer.style.visibility = originalStyles.visibility;
-          printableContainer.style.display = originalStyles.display;
-          printableContainer.style.zIndex = '';
-          printableContainer.style.backgroundColor = '';
+        let printableContainer = actualMode === 'EXISTING'
+          ? document.getElementById('printable-invoice')
+          : (isThermal
+            ? document.getElementById('printable-invoice-thermal')
+            : (document.getElementById('receipt-preview') || document.getElementById('printable-invoice-a4')));
 
-          // Remove body class
-          document.body.classList.remove('print-thermal');
-          document.body.classList.remove('print-a4');
-          document.body.classList.remove('print-existing');
-
-          // Remove dynamic style
-          if (styleElement) {
-            styleElement.remove();
-          }
-        }, 150);
+        if (printableContainer) {
+          printReceiptReport({
+            element: printableContainer,
+            title: isThermal ? `Thermal #${getBillDisplayNo(activeBill) || ''}` : `Order #${getBillDisplayNo(activeBill) || ''}`,
+            isThermal,
+          });
+        } else {
+          window.print();
+        }
       }, 150);
     } catch (e) {
       console.error('Print error:', e);
@@ -6044,57 +5976,164 @@ function OrdersPageContent() {
             </IconButton>
           </DialogTitle>
           <DialogContent sx={{ p: 0, bgcolor: 'white' }}>
+            <Box sx={{ p: 1.5, pb: 1, display: 'flex', gap: 1, borderBottom: '1px solid #e2e8f0', bgcolor: '#f8fafc', flexWrap: 'wrap' }} className="no-print">
+              <Button
+                size="small"
+                variant={activeReceiptCopy === 'OFFICE' ? 'contained' : 'outlined'}
+                onClick={() => setActiveReceiptCopy('OFFICE')}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.825rem',
+                  bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e40af' : 'transparent',
+                  borderColor: '#1e40af',
+                  color: activeReceiptCopy === 'OFFICE' ? '#fff' : '#1e40af',
+                  '&:hover': { bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e3a8a' : 'rgba(30,64,175,0.08)' }
+                }}
+              >
+                Office Copy
+              </Button>
+              <Button
+                size="small"
+                variant={activeReceiptCopy === 'CUSTOMER' ? 'contained' : 'outlined'}
+                onClick={() => setActiveReceiptCopy('CUSTOMER')}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.825rem',
+                  bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#047857' : 'transparent',
+                  borderColor: '#047857',
+                  color: activeReceiptCopy === 'CUSTOMER' ? '#fff' : '#047857',
+                  '&:hover': { bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#065f46' : 'rgba(4,120,87,0.08)' }
+                }}
+              >
+                Customer Copy
+              </Button>
+              <Button
+                size="small"
+                variant={activeReceiptCopy === 'CUTTER' ? 'contained' : 'outlined'}
+                onClick={() => setActiveReceiptCopy('CUTTER')}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.825rem',
+                  bgcolor: activeReceiptCopy === 'CUTTER' ? '#b45309' : 'transparent',
+                  borderColor: '#b45309',
+                  color: activeReceiptCopy === 'CUTTER' ? '#fff' : '#b45309',
+                  '&:hover': { bgcolor: activeReceiptCopy === 'CUTTER' ? '#92400e' : 'rgba(180,83,9,0.08)' }
+                }}
+              >
+                Cutter Copy
+              </Button>
+            </Box>
+
             {currentBillData && (
               <Box id="receipt-preview" className="thermal-receipt" sx={{ width: '100%', bgcolor: 'white', p: { xs: 1, sm: 2 }, color: '#000' }}>
-                <CommercialInvoiceReceipt bill={currentBillData} isOrder={true} />
+                <CommercialInvoiceReceipt bill={currentBillData} copyType={activeReceiptCopy} isOrder={true} />
               </Box>
             )}
           </DialogContent>
-          <DialogActions sx={{ p: 3, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0' }} className="no-print">
+          <DialogActions sx={{ p: 2.5, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap', gap: 1 }} className="no-print">
             <Button
               onClick={handleCloseReceipt}
               variant="outlined"
-              sx={{ minWidth: 100 }}
+              sx={{ minWidth: 90 }}
             >
               Close
             </Button>
             <Button
               variant="contained"
-              startIcon={<PrintIcon />}
               sx={{
-                minWidth: 150,
-                bgcolor: 'primary.main',
-                '&:hover': { bgcolor: 'primary.dark' }
-              }}
-              onClick={() => handlePrintBill('A4', true)}
-            >
-              Print A5
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<PrintIcon />}
-              sx={{
-                minWidth: 150,
-                bgcolor: '#fd7e14',
-                '&:hover': { bgcolor: '#e8690b' }
-              }}
-              onClick={() => handlePrintBill('THERMAL', true)}
-            >
-              Print Thermal
-            </Button>
-            <Button
-              variant="contained"
-              sx={{
-                minWidth: 150,
+                minWidth: 140,
                 bgcolor: '#25D366',
-                '&:hover': { bgcolor: '#1ebe5d' }
+                '&:hover': { bgcolor: '#1ebe5d' },
+                color: 'white',
+                fontWeight: 600
               }}
               onClick={() => handleSendWhatsApp(currentBillData, 'receipt-preview')}
               disabled={isSendingWhatsApp || !currentBillData?.customer?.cus_phone_no}
               title={!currentBillData?.customer?.cus_phone_no ? 'No phone number on file' : 'Send receipt via WhatsApp'}
             >
               {isSendingWhatsApp ? <CircularProgress size={16} sx={{ mr: 1, color: 'white' }} /> : null}
-              {isSendingWhatsApp ? 'Sending...' : '📲 WhatsApp'}
+              {isSendingWhatsApp ? 'Sending...' : 'WhatsApp'}
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<PrintIcon />}
+              sx={{
+                minWidth: 155,
+                bgcolor: '#1e40af',
+                '&:hover': { bgcolor: '#1e3a8a' },
+                color: 'white',
+                fontWeight: 700
+              }}
+              onClick={() => handlePrintCopy('OFFICE', true, currentBillData)}
+            >
+              Print Office Copy
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<PrintIcon />}
+              sx={{
+                minWidth: 170,
+                bgcolor: '#047857',
+                '&:hover': { bgcolor: '#065f46' },
+                color: 'white',
+                fontWeight: 700
+              }}
+              onClick={() => handlePrintCopy('CUSTOMER', true, currentBillData)}
+            >
+              Print Customer Copy
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<PrintIcon />}
+              sx={{
+                minWidth: 155,
+                bgcolor: '#b45309',
+                '&:hover': { bgcolor: '#92400e' },
+                color: 'white',
+                fontWeight: 700
+              }}
+              onClick={() => handlePrintCopy('CUTTER', true, currentBillData)}
+            >
+              Print Cutter Copy
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<PrintIcon />}
+              sx={{
+                minWidth: 130,
+                bgcolor: '#fd7e14',
+                '&:hover': { bgcolor: '#e8690b' },
+                color: 'white',
+                fontWeight: 600
+              }}
+              onClick={() => handlePrintBill('THERMAL', true)}
+            >
+              Print Thermal
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PictureAsPdfIcon />}
+              sx={{
+                minWidth: 120,
+                borderColor: '#64748b',
+                color: '#334155',
+                fontWeight: 700,
+                '&:hover': { bgcolor: '#f1f5f9', borderColor: '#334155' }
+              }}
+              onClick={() => {
+                const preview = document.getElementById('receipt-preview');
+                if (preview) {
+                  downloadReceiptPdf({
+                    element: preview,
+                    fileName: `Order-${getBillDisplayNo(currentBillData) || 'order'}-${activeReceiptCopy}.pdf`,
+                  });
+                }
+              }}
+            >
+              PDF Report
             </Button>
           </DialogActions>
         </Dialog>
@@ -7389,45 +7428,164 @@ function OrdersPageContent() {
           </IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 0, bgcolor: 'white' }}>
+          <Box sx={{ p: 1.5, pb: 1, display: 'flex', gap: 1, borderBottom: '1px solid #e2e8f0', bgcolor: '#f8fafc', flexWrap: 'wrap' }} className="no-print">
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'OFFICE' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('OFFICE')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e40af' : 'transparent',
+                borderColor: '#1e40af',
+                color: activeReceiptCopy === 'OFFICE' ? '#fff' : '#1e40af',
+                '&:hover': { bgcolor: activeReceiptCopy === 'OFFICE' ? '#1e3a8a' : 'rgba(30,64,175,0.08)' }
+              }}
+            >
+              Office Copy
+            </Button>
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'CUSTOMER' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('CUSTOMER')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#047857' : 'transparent',
+                borderColor: '#047857',
+                color: activeReceiptCopy === 'CUSTOMER' ? '#fff' : '#047857',
+                '&:hover': { bgcolor: activeReceiptCopy === 'CUSTOMER' ? '#065f46' : 'rgba(4,120,87,0.08)' }
+              }}
+            >
+              Customer Copy
+            </Button>
+            <Button
+              size="small"
+              variant={activeReceiptCopy === 'CUTTER' ? 'contained' : 'outlined'}
+              onClick={() => setActiveReceiptCopy('CUTTER')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.825rem',
+                bgcolor: activeReceiptCopy === 'CUTTER' ? '#b45309' : 'transparent',
+                borderColor: '#b45309',
+                color: activeReceiptCopy === 'CUTTER' ? '#fff' : '#b45309',
+                '&:hover': { bgcolor: activeReceiptCopy === 'CUTTER' ? '#92400e' : 'rgba(180,83,9,0.08)' }
+              }}
+            >
+              Cutter Copy
+            </Button>
+          </Box>
+
           {selectedBill && (
-            <Box id="printable-invoice" sx={{ width: '100%', bgcolor: 'white', p: 2 }}>
-              <CommercialInvoiceReceipt bill={selectedBill} isOrder={true} />
+            <Box id="printable-invoice" sx={{ width: '100%', bgcolor: 'white', p: { xs: 1, sm: 2 } }}>
+              <CommercialInvoiceReceipt bill={selectedBill} copyType={activeReceiptCopy} isOrder={true} />
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 3, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0' }} className="no-print">
+        <DialogActions sx={{ p: 2.5, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap', gap: 1 }} className="no-print">
           <Button
             onClick={handleCloseBillDialog}
             variant="outlined"
-            sx={{ minWidth: 100 }}
+            sx={{ minWidth: 90 }}
           >
             Close
           </Button>
           <Button
             variant="contained"
-            startIcon={<PrintIcon />}
             sx={{
-              minWidth: 150,
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' }
-            }}
-            onClick={() => handlePrintBill('EXISTING')}
-          >
-            Print Bill
-          </Button>
-          <Button
-            variant="contained"
-            sx={{
-              minWidth: 150,
+              minWidth: 140,
               bgcolor: '#25D366',
-              '&:hover': { bgcolor: '#1ebe5d' }
+              '&:hover': { bgcolor: '#1ebe5d' },
+              color: 'white',
+              fontWeight: 600
             }}
             onClick={() => handleSendWhatsApp(selectedBill, 'printable-invoice')}
             disabled={isSendingWhatsApp || !selectedBill?.customer?.cus_phone_no}
             title={!selectedBill?.customer?.cus_phone_no ? 'No phone number on file' : 'Send receipt via WhatsApp'}
           >
             {isSendingWhatsApp ? <CircularProgress size={16} sx={{ mr: 1, color: 'white' }} /> : null}
-            {isSendingWhatsApp ? 'Sending...' : '📲 WhatsApp'}
+            {isSendingWhatsApp ? 'Sending...' : 'WhatsApp'}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 155,
+              bgcolor: '#1e40af',
+              '&:hover': { bgcolor: '#1e3a8a' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('OFFICE', true, selectedBill)}
+          >
+            Print Office Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 170,
+              bgcolor: '#047857',
+              '&:hover': { bgcolor: '#065f46' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUSTOMER', true, selectedBill)}
+          >
+            Print Customer Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 155,
+              bgcolor: '#b45309',
+              '&:hover': { bgcolor: '#92400e' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUTTER', true, selectedBill)}
+          >
+            Print Cutter Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 130,
+              bgcolor: '#fd7e14',
+              '&:hover': { bgcolor: '#e8690b' },
+              color: 'white',
+              fontWeight: 600
+            }}
+            onClick={() => handlePrintBill('THERMAL', true, selectedBill)}
+          >
+            Print Thermal
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PictureAsPdfIcon />}
+            sx={{
+              minWidth: 120,
+              borderColor: '#64748b',
+              color: '#334155',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#f1f5f9', borderColor: '#334155' }
+            }}
+            onClick={() => {
+              const preview = document.getElementById('printable-invoice');
+              if (preview) {
+                downloadReceiptPdf({
+                  element: preview,
+                  fileName: `Order-${getBillDisplayNo(selectedBill) || 'order'}-${activeReceiptCopy}.pdf`,
+                });
+              }
+            }}
+          >
+            PDF Report
           </Button>
         </DialogActions>
       </Dialog>

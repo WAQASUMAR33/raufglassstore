@@ -350,37 +350,28 @@ export default function CommercialInvoiceReceipt({
   const prevBal = parseFloat(bill.previous_balance || bill.previous_customer_balance || 0);
   const totalBalance = prevBal + balance;
 
+  const invLabel = isQuotation || bill.bill_type === 'QUOTATION'
+    ? 'QUOT. NO.:'
+    : (isOrder || bill.bill_type === 'ORDER' ? 'ORDER NO.:' : 'INV. NO.:');
+
   return (
     <Box
       sx={{
         width: '100%',
-        maxWidth: '148mm',
+        maxWidth: '142mm',
         mx: 'auto',
-        p: { xs: 0.75, sm: 1.25 },
+        p: { xs: 0.5, sm: 1 },
         bgcolor: '#ffffff',
         color: '#000000',
         fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         boxSizing: 'border-box',
         '@media print': {
-          p: '1.5mm 2.5mm',
+          p: '0.5mm 1mm',
           maxWidth: '100%',
           width: '100%',
         },
       }}
     >
-      <style>{`
-        @media print {
-          @page {
-            size: A5 portrait !important;
-            margin: 3mm 3mm !important;
-          }
-          body, #printable-invoice, #printable-invoice-a4, #receipt-preview {
-            zoom: 0.9 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-        }
-      `}</style>
       {/* ───────────────── HEADER SECTION ───────────────── */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
         {/* Left: Brand Identity */}
@@ -546,8 +537,8 @@ export default function CommercialInvoiceReceipt({
             fontSize: '0.72rem',
           }}
         >
-          <Box sx={{ display: 'grid', gridTemplateColumns: '55px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>INV. NO.:</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '62px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>{invLabel}</Typography>
             <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#000' }}>
               {invoiceNo}
             </Typography>
