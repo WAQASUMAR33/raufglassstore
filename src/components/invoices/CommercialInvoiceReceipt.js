@@ -568,7 +568,7 @@ export default function CommercialInvoiceReceipt({
                   fontWeight: 700,
                   textAlign: 'center',
                   fontSize: '0.68rem',
-                  width: copy === 'OFFICE' ? '4%' : copy === 'CUSTOMER' ? '5%' : '6%',
+                  width: copy === 'OFFICE' ? '4%' : copy === 'CUSTOMER' ? '5%' : '5%',
                 }}
               >
                 #
@@ -581,7 +581,7 @@ export default function CommercialInvoiceReceipt({
                   padding: '3px 4px',
                   fontWeight: 700,
                   fontSize: '0.68rem',
-                  width: copy === 'OFFICE' ? '21%' : copy === 'CUSTOMER' ? '29%' : '34%',
+                  width: copy === 'OFFICE' ? '21%' : copy === 'CUSTOMER' ? '29%' : '24%',
                 }}
               >
                 Item Name
@@ -608,7 +608,7 @@ export default function CommercialInvoiceReceipt({
                   fontWeight: 700,
                   textAlign: 'center',
                   fontSize: '0.68rem',
-                  width: copy === 'OFFICE' ? '14%' : copy === 'CUSTOMER' ? '18%' : '18%',
+                  width: copy === 'OFFICE' ? '14%' : copy === 'CUSTOMER' ? '18%' : '33%',
                 }}
               >
                 Actual Size
@@ -769,8 +769,8 @@ export default function CommercialInvoiceReceipt({
                             border: '1px solid #000000',
                             padding: '2.5px 2px',
                             textAlign: 'center',
-                            fontWeight: 500,
-                            fontSize: '0.68rem',
+                            fontWeight: copy === 'CUTTER' ? 700 : 500,
+                            fontSize: copy === 'CUTTER' ? '0.74rem' : '0.68rem',
                             whiteSpace: 'nowrap',
                           }}
                         >
