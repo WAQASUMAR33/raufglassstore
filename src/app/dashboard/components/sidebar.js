@@ -174,7 +174,7 @@ const ROUTE_MAP = {
 const PATH_TO_ITEM = {};
 
 const getItemHref = (itemId) => {
-  if (itemId === 'new-sale') return '/dashboard/sales';
+  if (itemId === 'new-sale') return '/dashboard/sales?view=create';
   if (itemId === 'new-purchase') return '/dashboard/purchases?view=create';
   if (itemId === 'purchase-returns') return '/dashboard/purchases?type=return';
   if (itemId === 'sale-returns') return '/dashboard/sales?type=return';
@@ -415,14 +415,17 @@ export default function Sidebar({
     });
   };
 
-  const handleNavigation = (itemId) => {
+  const handleNavigation = (itemId, targetHref, e) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     if (itemId === 'hq' && isHqUser(user)) {
       exitHqPosMode();
     }
     setActiveTab(itemId);
     setSidebarOpen(false);
-    const href = getItemHref(itemId);
-    if (href && href !== pathname) {
+    const href = targetHref || getItemHref(itemId);
+    if (href) {
       router.push(href);
     }
   };
@@ -458,7 +461,7 @@ export default function Sidebar({
           <Box
             onClick={(e) => {
               if (!e.ctrlKey && !e.metaKey && e.button === 0) {
-                handleNavigation(item.id);
+                handleNavigation(item.id, href, e);
               }
             }}
             sx={{
@@ -569,7 +572,7 @@ export default function Sidebar({
           <ListItemButton
             onClick={(e) => {
               if (!e.ctrlKey && !e.metaKey && e.button === 0) {
-                handleNavigation(item.id);
+                handleNavigation(item.id, href, e);
               }
             }}
             sx={{
