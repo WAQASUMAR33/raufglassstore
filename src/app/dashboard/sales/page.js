@@ -7911,11 +7911,11 @@ function SalesPageContent() {
                     <TableRow sx={{ bgcolor: '#2e7d32', '& th': { bgcolor: '#2e7d32 !important' } }}>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">S#</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 95 }} align="center">Entered Size (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 105 }} align="center">Calc / Avail (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 85 }} align="right">Glass Rate</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Glass Total</TableCell>
@@ -8022,6 +8022,27 @@ function SalesPageContent() {
                                 }
                                 return product.pro_title;
                               })()}
+                            </TableCell>
+                            <TableCell sx={{ py: 1 }}>
+                              <TextField
+                                size="small"
+                                placeholder="Particular comments..."
+                                value={product.comments || ''}
+                                onChange={(e) => updateRowComments(product.id, e.target.value)}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
+                                sx={{
+                                  width: '100%',
+                                  minWidth: 140,
+                                  '& .MuiInputBase-input': {
+                                    padding: '4px 8px',
+                                    textAlign: 'left',
+                                    fontSize: '0.85rem'
+                                  }
+                                }}
+                              />
                             </TableCell>
                             <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
                               {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
@@ -8131,27 +8152,6 @@ function SalesPageContent() {
                                   }
                                 }}
                                 inputProps={{ min: 0.01, step: 'any' }}
-                              />
-                            </TableCell>
-                            <TableCell sx={{ py: 1 }}>
-                              <TextField
-                                size="small"
-                                placeholder="Particular comments..."
-                                value={product.comments || ''}
-                                onChange={(e) => updateRowComments(product.id, e.target.value)}
-                                onFocus={(e) => {
-                                  e.target.select();
-                                  setActiveRowId(product.id);
-                                }}
-                                sx={{
-                                  width: '100%',
-                                  minWidth: 140,
-                                  '& .MuiInputBase-input': {
-                                    padding: '4px 8px',
-                                    textAlign: 'left',
-                                    fontSize: '0.85rem'
-                                  }
-                                }}
                               />
                             </TableCell>
                             <TableCell sx={{ py: 1 }}>
