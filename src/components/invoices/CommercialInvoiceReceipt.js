@@ -356,13 +356,13 @@ export default function CommercialInvoiceReceipt({
         width: '100%',
         maxWidth: '148mm',
         mx: 'auto',
-        p: { xs: 1, sm: 1.75 },
+        p: { xs: 0.75, sm: 1.25 },
         bgcolor: '#ffffff',
         color: '#000000',
         fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         boxSizing: 'border-box',
         '@media print': {
-          p: '2mm 3mm',
+          p: '1.5mm 2.5mm',
           maxWidth: '100%',
           width: '100%',
         },
@@ -372,20 +372,25 @@ export default function CommercialInvoiceReceipt({
         @media print {
           @page {
             size: A5 portrait !important;
-            margin: 3mm 4mm !important;
+            margin: 3mm 3mm !important;
+          }
+          body, #printable-invoice, #printable-invoice-a4, #receipt-preview {
+            zoom: 0.9 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}</style>
       {/* ───────────────── HEADER SECTION ───────────────── */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
         {/* Left: Brand Identity */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
           <Box
             sx={{
-              width: 54,
-              height: 54,
+              width: 38,
+              height: 38,
               borderRadius: '50%',
-              border: '2px solid #000000',
+              border: '1.5px solid #000000',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -395,12 +400,12 @@ export default function CommercialInvoiceReceipt({
           >
             <Typography
               sx={{
-                fontSize: '26px',
+                fontSize: '18px',
                 fontWeight: 900,
                 lineHeight: 1,
                 fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif',
                 color: '#000000',
-                pb: 0.5,
+                pb: 0.25,
               }}
             >
               زین
@@ -410,36 +415,37 @@ export default function CommercialInvoiceReceipt({
           <Box>
             <Typography
               sx={{
-                fontSize: '1.25rem',
+                fontSize: '0.98rem',
                 fontWeight: 900,
-                letterSpacing: '0.04em',
-                lineHeight: 1.15,
+                letterSpacing: '0.02em',
+                lineHeight: 1.1,
                 color: '#000000',
               }}
             >
               ZAIN TRADERS MANDI BAHAUDDIN
             </Typography>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333333', lineHeight: 1.2, mt: 0.25 }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#333333', lineHeight: 1.15, mt: 0.1 }}>
               Phalia Road , Near Aljannat Petrol pump M.B.Din.
             </Typography>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#000000', lineHeight: 1.25, mt: 0.25 }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#000000', lineHeight: 1.15, mt: 0.1 }}>
               Ph: 0302-2133218, 0347-7743218
             </Typography>
           </Box>
         </Box>
 
         {/* Center/Right: Commercial Invoice Title + Copy Badge */}
-        <Box sx={{ textAlign: 'right', pr: 1 }}>
+        <Box sx={{ textAlign: 'right', pr: 0.5 }}>
           <Typography
             sx={{
-              fontSize: { xs: '1.2rem', sm: '1.45rem' },
+              fontSize: { xs: '1rem', sm: '1.15rem' },
               fontWeight: 700,
               fontFamily: "Georgia, 'Times New Roman', serif",
               fontStyle: 'italic',
-              letterSpacing: '0.03em',
+              letterSpacing: '0.02em',
               color: '#000000',
               textDecoration: 'underline',
-              textUnderlineOffset: '4px',
+              textUnderlineOffset: '3px',
+              lineHeight: 1.1,
             }}
           >
             {baseInvoiceTitle}
@@ -448,13 +454,13 @@ export default function CommercialInvoiceReceipt({
             component="span"
             sx={{
               display: 'inline-block',
-              mt: 0.6,
-              px: 1.2,
-              py: 0.25,
-              borderRadius: '4px',
-              fontSize: '0.72rem',
+              mt: 0.4,
+              px: 0.8,
+              py: 0.15,
+              borderRadius: '3px',
+              fontSize: '0.62rem',
               fontWeight: 800,
-              letterSpacing: '0.08em',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
               bgcolor: copyBadgeBg,
               color: '#ffffff',
@@ -468,61 +474,61 @@ export default function CommercialInvoiceReceipt({
       </Box>
 
       {/* Decorative horizontal accent */}
-      <Box sx={{ borderBottom: '2px solid #000000', mb: 2, width: '100%' }} />
+      <Box sx={{ borderBottom: '1.5px solid #000000', mb: 0.75, width: '100%' }} />
 
       {/* ───────────────── CUSTOMER & INVOICE DETAILS ───────────────── */}
       <Box
         sx={{
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', sm: '1.45fr 1fr' },
-          gap: 1.5,
-          mb: 2,
+          gap: 0.75,
+          mb: 0.75,
         }}
       >
         {/* Left Box: Customer Info */}
         <Box
           sx={{
             border: '1px solid #000000',
-            borderRadius: '6px',
-            p: 1.25,
+            borderRadius: '4px',
+            p: 0.6,
             display: 'flex',
             flexDirection: 'column',
-            gap: 0.5,
-            fontSize: '0.825rem',
+            gap: 0.2,
+            fontSize: '0.72rem',
           }}
         >
-          <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>CUSTOMER:</Typography>
-            <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: '#000' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>CUSTOMER:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#000' }}>
               {bill.customer?.cus_name || 'Walking Customer'}
               {bill.customer?.name_urdu ? ` (${bill.customer.name_urdu})` : ''}
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>PHONE:</Typography>
-            <Typography sx={{ fontSize: '0.825rem', fontWeight: 500, color: '#000' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>PHONE:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 500, color: '#000' }}>
               {bill.customer?.cus_phone_no || bill.customer?.phone || bill.customer_phone || '-'}
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>ADDRESS:</Typography>
-            <Typography sx={{ fontSize: '0.825rem', fontWeight: 400, color: '#111' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>ADDRESS:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 400, color: '#111' }}>
               {[bill.customer?.cus_address, bill.customer?.city?.city_name].filter(Boolean).join(', ') || bill.customer?.cus_address || '-'}
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>FITTER:</Typography>
-            <Typography sx={{ fontSize: '0.825rem', fontWeight: 400, color: '#000' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>FITTER:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 400, color: '#000' }}>
               {displayFitter}
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>REMARKS:</Typography>
-            <Typography sx={{ fontSize: '0.825rem', fontWeight: 400, color: '#111' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '75px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>REMARKS:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 400, color: '#111' }}>
               {remarks}
             </Typography>
           </Box>
@@ -532,38 +538,38 @@ export default function CommercialInvoiceReceipt({
         <Box
           sx={{
             border: '1px solid #000000',
-            borderRadius: '6px',
-            p: 1.25,
+            borderRadius: '4px',
+            p: 0.6,
             display: 'flex',
             flexDirection: 'column',
-            gap: 0.5,
-            fontSize: '0.825rem',
+            gap: 0.2,
+            fontSize: '0.72rem',
           }}
         >
-          <Box sx={{ display: 'grid', gridTemplateColumns: '70px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>INV. NO.:</Typography>
-            <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: '#000' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '55px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>INV. NO.:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#000' }}>
               {invoiceNo}
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '70px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>DATE:</Typography>
-            <Typography sx={{ fontSize: '0.825rem', fontWeight: 400, color: '#000' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '55px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>DATE:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 500, color: '#000' }}>
               {formatInvoiceDate(bill.created_at || new Date())}
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '70px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>Q. No.:</Typography>
-            <Typography sx={{ fontSize: '0.825rem', fontWeight: 400, color: '#111' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '55px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>Q. No.:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 500, color: '#111' }}>
               {qNo}
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '70px 1fr', alignItems: 'baseline' }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#222' }}>Dc No.:</Typography>
-            <Typography sx={{ fontSize: '0.825rem', fontWeight: 400, color: '#111' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '55px 1fr', alignItems: 'baseline' }}>
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#222' }}>Dc No.:</Typography>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 500, color: '#111' }}>
               {dcNo}
             </Typography>
           </Box>
@@ -571,14 +577,15 @@ export default function CommercialInvoiceReceipt({
       </Box>
 
       {/* ───────────────── PRODUCT TABLE ───────────────── */}
-      <Box sx={{ mb: 2, overflowX: 'auto', width: '100%' }}>
+      <Box sx={{ mb: 1, overflowX: 'auto', width: '100%' }}>
         <table
           style={{
             width: '100%',
             borderCollapse: 'collapse',
             border: '1px solid #000000',
-            fontSize: '0.82rem',
+            fontSize: '0.7rem',
             textAlign: 'left',
+            lineHeight: 1.2,
           }}
         >
           <thead>
@@ -588,10 +595,11 @@ export default function CommercialInvoiceReceipt({
               <th
                 style={{
                   border: '1px solid #000000',
-                  padding: '6px 4px',
+                  padding: '3px 2px',
                   fontWeight: 700,
                   textAlign: 'center',
-                  width: copy === 'OFFICE' ? '5%' : copy === 'CUSTOMER' ? '6%' : '7%',
+                  fontSize: '0.68rem',
+                  width: copy === 'OFFICE' ? '4%' : copy === 'CUSTOMER' ? '5%' : '6%',
                 }}
               >
                 #
@@ -601,9 +609,10 @@ export default function CommercialInvoiceReceipt({
               <th
                 style={{
                   border: '1px solid #000000',
-                  padding: '6px 8px',
+                  padding: '3px 4px',
                   fontWeight: 700,
-                  width: copy === 'OFFICE' ? '22%' : copy === 'CUSTOMER' ? '30%' : '35%',
+                  fontSize: '0.68rem',
+                  width: copy === 'OFFICE' ? '21%' : copy === 'CUSTOMER' ? '29%' : '34%',
                 }}
               >
                 Item Name
@@ -613,8 +622,9 @@ export default function CommercialInvoiceReceipt({
               <th
                 style={{
                   border: '1px solid #000000',
-                  padding: '6px 8px',
+                  padding: '3px 4px',
                   fontWeight: 700,
+                  fontSize: '0.68rem',
                   width: copy === 'OFFICE' ? '17%' : copy === 'CUSTOMER' ? '24%' : '28%',
                 }}
               >
@@ -625,24 +635,26 @@ export default function CommercialInvoiceReceipt({
               <th
                 style={{
                   border: '1px solid #000000',
-                  padding: '6px 6px',
+                  padding: '3px 3px',
                   fontWeight: 700,
                   textAlign: 'center',
-                  width: copy === 'OFFICE' ? '13%' : copy === 'CUSTOMER' ? '18%' : '18%',
+                  fontSize: '0.68rem',
+                  width: copy === 'OFFICE' ? '14%' : copy === 'CUSTOMER' ? '18%' : '18%',
                 }}
               >
                 Actual Size
-                <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, color: '#475569' }}>(H × W)</span>
+                <span style={{ display: 'block', fontSize: '0.55rem', fontWeight: 500, color: '#475569' }}>(H × W)</span>
               </th>
 
               {/* Number of Pieces (pcs) */}
               <th
                 style={{
                   border: '1px solid #000000',
-                  padding: '6px 4px',
+                  padding: '3px 2px',
                   fontWeight: 700,
                   textAlign: 'center',
-                  width: copy === 'OFFICE' ? '6%' : copy === 'CUSTOMER' ? '8%' : '12%',
+                  fontSize: '0.68rem',
+                  width: copy === 'OFFICE' ? '5%' : copy === 'CUSTOMER' ? '7%' : '10%',
                 }}
               >
                 Pcs
@@ -653,14 +665,15 @@ export default function CommercialInvoiceReceipt({
                 <th
                   style={{
                     border: '1px solid #000000',
-                    padding: '6px 6px',
+                    padding: '3px 3px',
                     fontWeight: 700,
                     textAlign: 'center',
-                    width: '13%',
+                    fontSize: '0.68rem',
+                    width: '14%',
                   }}
                 >
                   Standard
-                  <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, color: '#475569' }}>(H × W)</span>
+                  <span style={{ display: 'block', fontSize: '0.55rem', fontWeight: 500, color: '#475569' }}>(H × W)</span>
                 </th>
               )}
 
@@ -669,14 +682,15 @@ export default function CommercialInvoiceReceipt({
                 <th
                   style={{
                     border: '1px solid #000000',
-                    padding: '6px 6px',
+                    padding: '3px 3px',
                     fontWeight: 700,
                     textAlign: 'right',
+                    fontSize: '0.68rem',
                     width: '8%',
                   }}
                 >
                   Qty
-                  <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, color: '#475569' }}>SqFt</span>
+                  <span style={{ display: 'block', fontSize: '0.55rem', fontWeight: 500, color: '#475569' }}>SqFt</span>
                 </th>
               )}
 
@@ -685,10 +699,11 @@ export default function CommercialInvoiceReceipt({
                 <th
                   style={{
                     border: '1px solid #000000',
-                    padding: '6px 6px',
+                    padding: '3px 3px',
                     fontWeight: 700,
                     textAlign: 'right',
-                    width: '7%',
+                    fontSize: '0.68rem',
+                    width: '8%',
                   }}
                 >
                   Rate
@@ -700,9 +715,10 @@ export default function CommercialInvoiceReceipt({
                 <th
                   style={{
                     border: '1px solid #000000',
-                    padding: '6px 8px',
+                    padding: '3px 4px',
                     fontWeight: 700,
                     textAlign: 'right',
+                    fontSize: '0.68rem',
                     width: copy === 'OFFICE' ? '9%' : '14%',
                   }}
                 >
@@ -733,9 +749,10 @@ export default function CommercialInvoiceReceipt({
                         <td
                           style={{
                             border: '1px solid #000000',
-                            padding: '6px 4px',
+                            padding: '2.5px 2px',
                             textAlign: 'center',
                             fontWeight: 600,
+                            fontSize: '0.68rem',
                             color: '#000',
                           }}
                         >
@@ -746,18 +763,18 @@ export default function CommercialInvoiceReceipt({
                         <td
                           style={{
                             border: '1px solid #000000',
-                            padding: '6px 8px',
+                            padding: '2.5px 4px',
                             fontWeight: 400,
                             color: '#000',
                           }}
                         >
                           {itemIdxInGroup === 0 ? (
-                            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.itemName}</span>
+                            <span style={{ fontWeight: 600, fontSize: '0.72rem' }}>{item.itemName}</span>
                           ) : (
-                            <div style={{ textAlign: 'center', color: '#64748b', fontWeight: 700, fontSize: '1rem', lineHeight: 1 }}>"</div>
+                            <div style={{ textAlign: 'center', color: '#64748b', fontWeight: 700, fontSize: '0.85rem', lineHeight: 1 }}>"</div>
                           )}
                           {item.addons && item.addons.length > 0 && !isRepeatedAddons && (
-                            <div style={{ fontSize: '0.72rem', color: '#475569', fontStyle: 'italic', marginTop: '2px' }}>
+                            <div style={{ fontSize: '0.6rem', color: '#475569', fontStyle: 'italic', marginTop: '1px', lineHeight: 1.1 }}>
                               {item.addons.map(a => `${a.name}${copy === 'OFFICE' && a.rate ? ` (${fmtAmt(a.rate)})` : ''}`).join(', ')}
                             </div>
                           )}
@@ -767,9 +784,11 @@ export default function CommercialInvoiceReceipt({
                         <td
                           style={{
                             border: '1px solid #000000',
-                            padding: '6px 8px',
+                            padding: '2.5px 4px',
                             color: '#333',
                             fontWeight: 400,
+                            fontSize: '0.68rem',
+                            lineHeight: 1.15,
                           }}
                         >
                           {item.jobDesc}
@@ -779,9 +798,10 @@ export default function CommercialInvoiceReceipt({
                         <td
                           style={{
                             border: '1px solid #000000',
-                            padding: '6px 4px',
+                            padding: '2.5px 2px',
                             textAlign: 'center',
                             fontWeight: 500,
+                            fontSize: '0.68rem',
                             whiteSpace: 'nowrap',
                           }}
                         >
@@ -792,9 +812,10 @@ export default function CommercialInvoiceReceipt({
                         <td
                           style={{
                             border: '1px solid #000000',
-                            padding: '6px 4px',
+                            padding: '2.5px 2px',
                             textAlign: 'center',
                             fontWeight: 600,
+                            fontSize: '0.72rem',
                           }}
                         >
                           {item.pcs}
@@ -805,9 +826,10 @@ export default function CommercialInvoiceReceipt({
                           <td
                             style={{
                               border: '1px solid #000000',
-                              padding: '6px 4px',
+                              padding: '2.5px 2px',
                               textAlign: 'center',
                               fontWeight: 500,
+                              fontSize: '0.68rem',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -820,9 +842,10 @@ export default function CommercialInvoiceReceipt({
                           <td
                             style={{
                               border: '1px solid #000000',
-                              padding: '6px 6px',
+                              padding: '2.5px 3px',
                               textAlign: 'right',
                               fontWeight: 400,
+                              fontSize: '0.68rem',
                             }}
                           >
                             {fmtNum(item.qtySqFt)}
@@ -834,9 +857,10 @@ export default function CommercialInvoiceReceipt({
                           <td
                             style={{
                               border: '1px solid #000000',
-                              padding: '6px 6px',
+                              padding: '2.5px 3px',
                               textAlign: 'right',
                               fontWeight: 400,
+                              fontSize: '0.68rem',
                             }}
                           >
                             {fmtAmt(item.rate)}
@@ -848,9 +872,10 @@ export default function CommercialInvoiceReceipt({
                           <td
                             style={{
                               border: '1px solid #000000',
-                              padding: '6px 8px',
+                              padding: '2.5px 4px',
                               textAlign: 'right',
                               fontWeight: 500,
+                              fontSize: '0.72rem',
                             }}
                           >
                             {fmtAmt(item.amount)}
@@ -866,10 +891,10 @@ export default function CommercialInvoiceReceipt({
                       colSpan={4}
                       style={{
                         border: '1px solid #000000',
-                        padding: '5px 8px',
+                        padding: '2px 4px',
                         textAlign: 'right',
                         fontWeight: 700,
-                        fontSize: '0.8rem',
+                        fontSize: '0.68rem',
                         color: '#1e293b',
                       }}
                     >
@@ -878,10 +903,10 @@ export default function CommercialInvoiceReceipt({
                     <td
                       style={{
                         border: '1px solid #000000',
-                        padding: '5px 4px',
+                        padding: '2px 2px',
                         textAlign: 'center',
                         fontWeight: 700,
-                        fontSize: '0.8rem',
+                        fontSize: '0.7rem',
                         color: '#000000',
                       }}
                     >
@@ -892,10 +917,10 @@ export default function CommercialInvoiceReceipt({
                         <td
                           style={{
                             border: '1px solid #000000',
-                            padding: '5px 4px',
+                            padding: '2px 2px',
                             textAlign: 'center',
                             color: '#64748b',
-                            fontSize: '0.75rem',
+                            fontSize: '0.65rem',
                           }}
                         >
                           —
@@ -903,10 +928,10 @@ export default function CommercialInvoiceReceipt({
                         <td
                           style={{
                             border: '1px solid #000000',
-                            padding: '5px 6px',
+                            padding: '2px 3px',
                             textAlign: 'right',
                             fontWeight: 700,
-                            fontSize: '0.8rem',
+                            fontSize: '0.68rem',
                           }}
                         >
                           {fmtNum(group.totalSqFt)}
@@ -914,7 +939,7 @@ export default function CommercialInvoiceReceipt({
                         <td
                           style={{
                             border: '1px solid #000000',
-                            padding: '5px 6px',
+                            padding: '2px 3px',
                             textAlign: 'right',
                             color: '#64748b',
                           }}
@@ -927,10 +952,10 @@ export default function CommercialInvoiceReceipt({
                       <td
                         style={{
                           border: '1px solid #000000',
-                          padding: '5px 8px',
+                          padding: '2px 4px',
                           textAlign: 'right',
                           fontWeight: 700,
-                          fontSize: '0.8rem',
+                          fontSize: '0.68rem',
                           color: '#000000',
                         }}
                       >
@@ -942,7 +967,7 @@ export default function CommercialInvoiceReceipt({
               ));
             })() : (
               <tr>
-                <td colSpan={copy === 'OFFICE' ? 9 : copy === 'CUSTOMER' ? 6 : 5} style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                <td colSpan={copy === 'OFFICE' ? 9 : copy === 'CUSTOMER' ? 6 : 5} style={{ padding: '10px', textAlign: 'center', color: '#64748b', fontSize: '0.75rem' }}>
                   No items in this invoice
                 </td>
               </tr>
@@ -954,10 +979,10 @@ export default function CommercialInvoiceReceipt({
                 colSpan={4}
                 style={{
                   border: '1px solid #000000',
-                  padding: '6px 8px',
+                  padding: '3px 4px',
                   textAlign: 'right',
                   fontWeight: 700,
-                  fontSize: '0.85rem',
+                  fontSize: '0.72rem',
                   letterSpacing: '0.02em',
                 }}
               >
@@ -966,10 +991,10 @@ export default function CommercialInvoiceReceipt({
               <td
                 style={{
                   border: '1px solid #000000',
-                  padding: '6px 4px',
+                  padding: '3px 2px',
                   textAlign: 'center',
                   fontWeight: 700,
-                  fontSize: copy === 'CUTTER' ? '0.95rem' : '0.85rem',
+                  fontSize: copy === 'CUTTER' ? '0.8rem' : '0.72rem',
                 }}
               >
                 {totalPcs}
@@ -979,10 +1004,10 @@ export default function CommercialInvoiceReceipt({
                   <td
                     style={{
                       border: '1px solid #000000',
-                      padding: '6px 4px',
+                      padding: '3px 2px',
                       textAlign: 'center',
                       color: '#666',
-                      fontSize: '0.75rem',
+                      fontSize: '0.65rem',
                     }}
                   >
                     —
@@ -990,9 +1015,10 @@ export default function CommercialInvoiceReceipt({
                   <td
                     style={{
                       border: '1px solid #000000',
-                      padding: '6px 6px',
+                      padding: '3px 3px',
                       textAlign: 'right',
                       fontWeight: 700,
+                      fontSize: '0.72rem',
                     }}
                   >
                     {fmtNum(totalSqFt)}
@@ -1000,7 +1026,7 @@ export default function CommercialInvoiceReceipt({
                   <td
                     style={{
                       border: '1px solid #000000',
-                      padding: '6px 6px',
+                      padding: '3px 3px',
                       textAlign: 'right',
                     }}
                   >
@@ -1012,10 +1038,10 @@ export default function CommercialInvoiceReceipt({
                 <td
                   style={{
                     border: '1px solid #000000',
-                    padding: '6px 8px',
+                    padding: '3px 4px',
                     textAlign: 'right',
                     fontWeight: 700,
-                    fontSize: '0.875rem',
+                    fontSize: '0.74rem',
                   }}
                 >
                   {fmtAmt(billValue || totalItemsValue)}
@@ -1033,37 +1059,37 @@ export default function CommercialInvoiceReceipt({
           sx={{
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', sm: '1.25fr 1fr' },
-            gap: 2,
-            pt: 1,
+            gap: 1,
+            pt: 0.5,
           }}
         >
           {/* Left: Workshop & Glass Specs */}
           <Box
             sx={{
               border: '1px solid #000000',
-              borderRadius: '6px',
-              p: 1.25,
+              borderRadius: '4px',
+              p: 0.75,
               display: 'flex',
               flexDirection: 'column',
-              gap: 0.75,
-              fontSize: '0.8rem',
+              gap: 0.4,
+              fontSize: '0.7rem',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.5 }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#000' }}>Assigned Cutter:</Typography>
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#b45309' }}>{cutterName}</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.25 }}>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#000' }}>Assigned Cutter:</Typography>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#b45309' }}>{cutterName}</Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.5 }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333' }}>Total Glass Area:</Typography>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#000' }}>{fmtNum(totalSqFt)} Sq Ft</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.25 }}>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#333' }}>Total Glass Area:</Typography>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#000' }}>{fmtNum(totalSqFt)} Sq Ft</Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.5 }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333' }}>DC / Vehicle No:</Typography>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#000' }}>{dcNo}</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.25 }}>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#333' }}>DC / Vehicle No:</Typography>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#000' }}>{dcNo}</Typography>
             </Box>
             <Box>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#333' }}>Cutting Remarks:</Typography>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#000', mt: 0.25 }}>{remarks}</Typography>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#333' }}>Cutting Remarks:</Typography>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 500, color: '#000', mt: 0.1 }}>{remarks}</Typography>
             </Box>
           </Box>
 
@@ -1071,22 +1097,22 @@ export default function CommercialInvoiceReceipt({
           <Box
             sx={{
               border: '1px solid #000000',
-              borderRadius: '6px',
-              p: 1.25,
+              borderRadius: '4px',
+              p: 0.75,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              gap: 2,
-              fontSize: '0.8rem',
+              gap: 1,
+              fontSize: '0.7rem',
             }}
           >
             <Box>
-              <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#333' }}>Cutter Signature:</Typography>
-              <Box sx={{ borderBottom: '1px solid #000', mt: 2.5, width: '100%' }} />
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#333' }}>Cutter Signature:</Typography>
+              <Box sx={{ borderBottom: '1px solid #000', mt: 1.5, width: '100%' }} />
             </Box>
             <Box>
-              <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#333' }}>Checked By (Quality / Sizes):</Typography>
-              <Box sx={{ borderBottom: '1px solid #000', mt: 2.5, width: '100%' }} />
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#333' }}>Checked By (Quality / Sizes):</Typography>
+              <Box sx={{ borderBottom: '1px solid #000', mt: 1.5, width: '100%' }} />
             </Box>
           </Box>
         </Box>
@@ -1096,20 +1122,20 @@ export default function CommercialInvoiceReceipt({
           sx={{
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', sm: '1.25fr 1fr' },
-            gap: 2,
+            gap: 1,
             alignItems: 'end',
-            pt: 1,
+            pt: 0.5,
           }}
         >
           {/* Left: Signature & Stamp area */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pb: 0.5 }}>
             <Box>
-              <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#000' }}>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#000' }}>
                 Signature & Stamp _____________________
               </Typography>
             </Box>
             <Box>
-              <Typography sx={{ fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic' }}>
+              <Typography sx={{ fontSize: '0.62rem', color: '#64748b', fontStyle: 'italic' }}>
                 Software Developed by RapidTechPro 0300-4657827
               </Typography>
             </Box>
@@ -1119,7 +1145,7 @@ export default function CommercialInvoiceReceipt({
           <Box
             sx={{
               border: '1px solid #000000',
-              borderRadius: '6px',
+              borderRadius: '4px',
               overflow: 'hidden',
             }}
           >
@@ -1127,96 +1153,96 @@ export default function CommercialInvoiceReceipt({
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
-                fontSize: '0.8rem',
+                fontSize: '0.68rem',
               }}
             >
               <tbody>
                 {/* Discount */}
                 <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Discount:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(discount)}</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Discount:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(discount)}</td>
                 </tr>
 
                 {/* Delivery / Carriage */}
                 <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Loader / Delivery:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(carriage)}</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Loader / Delivery:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(carriage)}</td>
                 </tr>
 
                 {/* Additional charges (Fitter, Labour, Cutter, Hardware) */}
                 <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Fitter Amount:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(fittingCharges)}</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Fitter Amount:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(fittingCharges)}</td>
                 </tr>
                 <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Labour:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(labourCharges)}</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Labour:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(labourCharges)}</td>
                 </tr>
                 {cutterCharges > 0 && (
                   <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cutter Amount:</td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cutterCharges)}</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cutter Amount:</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cutterCharges)}</td>
                   </tr>
                 )}
                 <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Hardware Amount:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Hardware Amount:</td>
+                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
                 </tr>
 
                 <tr style={{ backgroundColor: '#f8fafc' }}>
-                  <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', fontWeight: 700 }}>Bill Value:</td>
-                  <td style={{ borderBottom: '1px solid #000000', padding: '5px 8px', textAlign: 'right', fontWeight: 700 }}>{fmtAmt(billValue)}</td>
+                  <td style={{ borderBottom: '1px solid #000000', padding: '3px 5px', fontWeight: 700, fontSize: '0.72rem' }}>Bill Value:</td>
+                  <td style={{ borderBottom: '1px solid #000000', padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.72rem' }}>{fmtAmt(billValue)}</td>
                 </tr>
 
                 {/* Payment Details */}
                 {bankPayment > 0 && cashPayment > 0 ? (
                   <>
                     <tr>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cash Received:</td>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cash Received:</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
                     </tr>
                     <tr>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>
                         Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
                       </td>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
                     </tr>
                   </>
                 ) : bankPayment > 0 ? (
                   <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>
                       Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
                     </td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
                   </tr>
                 ) : (
                   <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Cash Received:</td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cash Received:</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
                   </tr>
                 )}
                 {advancePayment > 0 && (
                   <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600 }}>Advance Payment:</td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(advancePayment)}</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Advance Payment:</td>
+                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(advancePayment)}</td>
                   </tr>
                 )}
 
                 <tr style={{ backgroundColor: '#f1f5f9' }}>
-                  <td style={{ borderBottom: prevBal > 0 ? '1px solid #cbd5e1' : 'none', padding: '6px 8px', fontWeight: 700, fontSize: '0.85rem' }}>Balance:</td>
-                  <td style={{ borderBottom: prevBal > 0 ? '1px solid #cbd5e1' : 'none', padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: '0.85rem', color: balance > 0 ? '#b91c1c' : '#15803d' }}>
+                  <td style={{ borderBottom: prevBal > 0 ? '1px solid #cbd5e1' : 'none', padding: '3px 5px', fontWeight: 700, fontSize: '0.74rem' }}>Balance:</td>
+                  <td style={{ borderBottom: prevBal > 0 ? '1px solid #cbd5e1' : 'none', padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.74rem', color: balance > 0 ? '#b91c1c' : '#15803d' }}>
                     {fmtAmt(balance)}
                   </td>
                 </tr>
                 {prevBal > 0 && (
                   <>
                     <tr>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', fontWeight: 600, color: '#64748b' }}>Prev. Balance:</td>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '4px 8px', textAlign: 'right', fontWeight: 400, color: '#64748b' }}>{fmtAmt(prevBal)}</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600, color: '#64748b' }}>Prev. Balance:</td>
+                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400, color: '#64748b' }}>{fmtAmt(prevBal)}</td>
                     </tr>
                     <tr style={{ backgroundColor: '#f8fafc' }}>
-                      <td style={{ padding: '6px 8px', fontWeight: 700, fontSize: '0.85rem' }}>Total Balance:</td>
-                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: '0.85rem', color: totalBalance > 0 ? '#b91c1c' : '#15803d' }}>
+                      <td style={{ padding: '3px 5px', fontWeight: 700, fontSize: '0.74rem' }}>Total Balance:</td>
+                      <td style={{ padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.74rem', color: totalBalance > 0 ? '#b91c1c' : '#15803d' }}>
                         {fmtAmt(totalBalance)}
                       </td>
                     </tr>

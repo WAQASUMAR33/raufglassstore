@@ -406,6 +406,7 @@ function QuotationsPageContent() {
   const [duplicateTargetRow, setDuplicateTargetRow] = useState(null);
   const [rowAddonModalOpen, setRowAddonModalOpen] = useState(false);
   const [rowAddonTarget, setRowAddonTarget] = useState(null);
+  const [entryAddonModalOpen, setEntryAddonModalOpen] = useState(false);
 
   // Transport state
   const [transportOptions, setTransportOptions] = useState([]);
@@ -882,11 +883,35 @@ function QuotationsPageContent() {
         ? (prev.selected_addons || []).filter(a => (a.id || a.addon_id) !== addonId)
         : [...(prev.selected_addons || []), addon];
       const addonsTotal = newSelected.reduce(
-        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        (sum, a) => sum + (parseFloat(a.sale_price !== undefined ? a.sale_price : (a.addon?.sale_price || 0)) || 0),
         0
       );
       const effectiveRate = (parseFloat(prev.rate) || 0) + addonsTotal;
       const amount = Number(((parseFloat(prev.quantity) || 0) * effectiveRate).toFixed(0));
+      return {
+        ...prev,
+        selected_addons: newSelected,
+        amount: amount,
+      };
+    });
+  };
+
+  const updateProductFormAddonPrice = (addonId, newPrice) => {
+    setProductFormData(prev => {
+      const newSelected = (prev.selected_addons || []).map(a => {
+        if ((a.id || a.addon_id) === addonId) {
+          return { ...a, sale_price: newPrice, rate: newPrice };
+        }
+        return a;
+      });
+
+      const addonsTotal = newSelected.reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price !== undefined ? a.sale_price : (a.addon?.sale_price || 0)) || 0),
+        0
+      );
+      const effectiveRate = (parseFloat(prev.rate) || 0) + addonsTotal;
+      const amount = Number(((parseFloat(prev.quantity) || 0) * effectiveRate).toFixed(0));
+
       return {
         ...prev,
         selected_addons: newSelected,
@@ -2725,30 +2750,113 @@ function QuotationsPageContent() {
                           );
                         }
 
-                        return allAddons.map(addon => {
-                          const addonId = addon.id || addon.addon_id;
-                          const isSelected = (productFormData.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
-                          const price = addon.sale_price ?? addon.addon?.sale_price ?? 0;
-                          return (
+                        return (
+                          <>
+                            {allAddons.map(addon => {
+                              const addonId = addon.id || addon.addon_id;
+                              const isSelected = (productFormData.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
+                              const sel = (productFormData.selected_addons || []).find(a => (a.id || a.addon_id) === addonId);
+                              const price = sel?.sale_price !== undefined ? sel.sale_price : (addon.sale_price ?? addon.addon?.sale_price ?? 0);
+
+                              if (isSelected) {
+                                return (
+                                  <Box
+                                    key={addonId}
+                                    sx={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      bgcolor: '#10b981',
+                                      color: '#ffffff',
+                                      borderRadius: '16px',
+                                      pl: 1,
+                                      pr: 0.5,
+                                      py: 0.2,
+                                      gap: 0.5,
+                                      border: '1px solid #059669',
+                                      boxShadow: '0 2px 4px rgba(16,185,129,0.3)',
+                                    }}
+                                  >
+                                    <Typography
+                                      sx={{
+                                        fontWeight: 700,
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                        userSelect: 'none',
+                                      }}
+                                      onClick={() => toggleProductAddon(addon)}
+                                      title="Click to remove"
+                                    >
+                                      ✓ {addon.name || addon.addon?.name || 'Ad-on'}
+                                    </Typography>
+                                    <Box sx={{ display: 'inline-flex', alignItems: 'center', bgcolor: '#ffffff', borderRadius: '10px', px: 0.5, py: 0.1 }}>
+                                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#047857', mr: 0.25 }}>PKR</Typography>
+                                      <input
+                                        type="number"
+                                        value={price}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={(e) => updateProductFormAddonPrice(addonId, e.target.value)}
+                                        style={{
+                                          width: '45px',
+                                          border: 'none',
+                                          outline: 'none',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 800,
+                                          textAlign: 'center',
+                                          color: '#065f46',
+                                          backgroundColor: 'transparent',
+                                        }}
+                                      />
+                                    </Box>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => toggleProductAddon(addon)}
+                                      sx={{ p: 0.2, color: 'white', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)' } }}
+                                      title="Remove"
+                                    >
+                                      <CloseIcon sx={{ fontSize: 13 }} />
+                                    </IconButton>
+                                  </Box>
+                                );
+                              }
+
+                              return (
+                                <Chip
+                                  key={addonId}
+                                  size="small"
+                                  label={`+ ${addon.name || addon.addon?.name || 'Ad-on'} (PKR ${price})`}
+                                  onClick={() => toggleProductAddon(addon)}
+                                  sx={{
+                                    cursor: 'pointer',
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    bgcolor: '#ffffff',
+                                    color: '#334155',
+                                    border: '1px solid #cbd5e1',
+                                    '&:hover': {
+                                      bgcolor: '#f1f5f9',
+                                    }
+                                  }}
+                                />
+                              );
+                            })}
                             <Chip
-                              key={addonId}
                               size="small"
-                              label={`${isSelected ? '✓ ' : ''}${addon.name || addon.addon?.name || 'Ad-on'} (PKR ${price})`}
-                              onClick={() => toggleProductAddon(addon)}
+                              icon={<AddIcon sx={{ fontSize: '13px !important' }} />}
+                              label="More Ad-ons..."
+                              clickable
+                              onClick={() => setEntryAddonModalOpen(true)}
                               sx={{
-                                cursor: 'pointer',
                                 fontWeight: 700,
-                                fontSize: '0.75rem',
-                                bgcolor: isSelected ? '#059669' : '#f1f5f9',
-                                color: isSelected ? '#ffffff' : '#334155',
-                                border: isSelected ? '1px solid #047857' : '1px solid #cbd5e1',
-                                '&:hover': {
-                                  bgcolor: isSelected ? '#047857' : '#e2e8f0',
-                                }
+                                fontSize: '0.72rem',
+                                cursor: 'pointer',
+                                bgcolor: '#f0fdf4',
+                                color: '#15803d',
+                                border: '1px dashed #22c55e',
+                                '&:hover': { bgcolor: '#dcfce7' }
                               }}
                             />
-                          );
-                        });
+                          </>
+                        );
                       })()}
                     </Box>
                   </Box>
@@ -3028,12 +3136,21 @@ function QuotationsPageContent() {
                                       size="small"
                                       label={`${addon.name || addon.addon?.name} (+${aPrice})`}
                                       onDelete={() => removeRowAddon(product.id, aId)}
+                                      clickable
+                                      onClick={() => {
+                                        setActiveRowId(product.id);
+                                        setRowAddonTarget(product);
+                                        setRowAddonModalOpen(true);
+                                      }}
+                                      title="Click to edit add-on price"
                                       sx={{
                                         bgcolor: '#ecfdf5',
                                         color: '#065f46',
                                         fontWeight: 700,
                                         fontSize: '0.72rem',
-                                        border: '1px solid #a7f3d0'
+                                        border: '1px solid #a7f3d0',
+                                        cursor: 'pointer',
+                                        '&:hover': { bgcolor: '#d1fae5' }
                                       }}
                                     />
                                   );
@@ -3833,6 +3950,33 @@ function QuotationsPageContent() {
         }}
         title={`Ad On's for ${rowAddonTarget?.pro_title || 'Item'}`}
         subtitle="Select add-ons to add or remove for this specific row"
+      />
+
+      {/* Entry-Level Addon Picker Modal */}
+      <AddonPickerModal
+        open={entryAddonModalOpen}
+        onClose={() => setEntryAddonModalOpen(false)}
+        selectedAddonIds={(productFormData.selected_addons || []).map(a => a.id || a.addon_id)}
+        selectedAddons={productFormData.selected_addons || []}
+        onApply={(ids, selectedList) => {
+          setProductFormData(prev => {
+            const addonsTotal = selectedList.reduce(
+              (sum, a) => sum + (parseFloat(a.sale_price !== undefined ? a.sale_price : (a.addon?.sale_price || 0)) || 0),
+              0
+            );
+            const effectiveRate = (parseFloat(prev.rate) || 0) + addonsTotal;
+            const quantity = parseFloat(prev.quantity) || 0;
+            const amount = Number((quantity * effectiveRate).toFixed(0));
+
+            return {
+              ...prev,
+              selected_addons: selectedList,
+              amount: amount,
+            };
+          });
+        }}
+        title={`Ad On's for ${formSelectedProduct?.pro_title || 'New Item'}`}
+        subtitle="Select add-ons and customize prices"
       />
 
       {/* Duplicate Row Dialog */}

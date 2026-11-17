@@ -1130,6 +1130,7 @@ function SalesPageContent() {
   const [duplicateTargetRow, setDuplicateTargetRow] = useState(null);
   const [rowAddonModalOpen, setRowAddonModalOpen] = useState(false);
   const [rowAddonTarget, setRowAddonTarget] = useState(null);
+  const [entryAddonModalOpen, setEntryAddonModalOpen] = useState(false);
   const [lossConfirmOpen, setLossConfirmOpen] = useState(false);
   const [lossItems, setLossItems] = useState([]);
 
@@ -1756,7 +1757,33 @@ function SalesPageContent() {
         : [...(prev.selected_addons || []), addon];
 
       const addonsTotal = newSelected.reduce(
-        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        (sum, a) => sum + (parseFloat(a.sale_price !== undefined ? a.sale_price : (a.addon?.sale_price || 0)) || 0),
+        0
+      );
+      const effectiveRate = (parseFloat(prev.rate) || 0) + addonsTotal;
+      const quantity = parseFloat(prev.quantity) || 0;
+      const amount = Number((quantity * effectiveRate).toFixed(0));
+
+      return {
+        ...prev,
+        selected_addons: newSelected,
+        amount: amount,
+      };
+    });
+  };
+
+  // Update price of an add-on in the top product entry form
+  const updateProductFormAddonPrice = (addonId, newPrice) => {
+    setProductFormData(prev => {
+      const newSelected = (prev.selected_addons || []).map(a => {
+        if ((a.id || a.addon_id) === addonId) {
+          return { ...a, sale_price: newPrice, rate: newPrice };
+        }
+        return a;
+      });
+
+      const addonsTotal = newSelected.reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price !== undefined ? a.sale_price : (a.addon?.sale_price || 0)) || 0),
         0
       );
       const effectiveRate = (parseFloat(prev.rate) || 0) + addonsTotal;
@@ -7843,38 +7870,184 @@ function SalesPageContent() {
                     )}
                   </Box>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center', minHeight: 38 }}>
-                    {availableAddonsForProduct.length === 0 ? (
+                    {availableAddonsForProduct.length === 0 && (productFormData.selected_addons || []).length === 0 ? (
                       <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic', py: 0.5 }}>
                         {formSelectedProduct ? 'No associated ad-ons linked to this product' : 'Select a product to view and select ad-ons'}
                       </Typography>
                     ) : (
-                      availableAddonsForProduct.map((addon) => {
-                        const addonId = addon.id || addon.addon_id;
-                        const isSelected = (productFormData.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
-                        const price = parseFloat(addon.sale_price ?? addon.addon?.sale_price ?? 0);
-                        return (
-                          <Chip
-                            key={addonId}
-                            size="small"
-                            clickable
-                            onClick={() => toggleProductAddon(addon)}
-                            label={`${isSelected ? '✓ ' : '+ '} ${addon.name || addon.addon?.name} (PKR ${price})`}
-                            sx={{
-                              fontWeight: 700,
-                              fontSize: '0.75rem',
-                              cursor: 'pointer',
-                              bgcolor: isSelected ? '#10b981' : '#ffffff',
-                              color: isSelected ? '#ffffff' : '#334155',
-                              border: isSelected ? '1px solid #059669' : '1px solid #cbd5e1',
-                              boxShadow: isSelected ? '0 2px 4px rgba(16,185,129,0.3)' : 'none',
-                              '&:hover': {
-                                bgcolor: isSelected ? '#059669' : '#f1f5f9',
-                              }
-                            }}
-                          />
-                        );
-                      })
+                      <>
+                        {availableAddonsForProduct.map((addon) => {
+                          const addonId = addon.id || addon.addon_id;
+                          const isSelected = (productFormData.selected_addons || []).some(a => (a.id || a.addon_id) === addonId);
+                          const sel = (productFormData.selected_addons || []).find(a => (a.id || a.addon_id) === addonId);
+                          const price = sel?.sale_price !== undefined ? sel.sale_price : parseFloat(addon.sale_price ?? addon.addon?.sale_price ?? 0);
+
+                          if (isSelected) {
+                            return (
+                              <Box
+                                key={addonId}
+                                sx={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  bgcolor: '#10b981',
+                                  color: '#ffffff',
+                                  borderRadius: '16px',
+                                  pl: 1,
+                                  pr: 0.5,
+                                  py: 0.2,
+                                  gap: 0.5,
+                                  border: '1px solid #059669',
+                                  boxShadow: '0 2px 4px rgba(16,185,129,0.3)',
+                                }}
+                              >
+                                <Typography
+                                  sx={{
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    userSelect: 'none',
+                                  }}
+                                  onClick={() => toggleProductAddon(addon)}
+                                  title="Click to remove"
+                                >
+                                  ✓ {addon.name || addon.addon?.name}
+                                </Typography>
+                                <Box sx={{ display: 'inline-flex', alignItems: 'center', bgcolor: '#ffffff', borderRadius: '10px', px: 0.5, py: 0.1 }}>
+                                  <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#047857', mr: 0.25 }}>PKR</Typography>
+                                  <input
+                                    type="number"
+                                    value={price}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => updateProductFormAddonPrice(addonId, e.target.value)}
+                                    style={{
+                                      width: '45px',
+                                      border: 'none',
+                                      outline: 'none',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 800,
+                                      textAlign: 'center',
+                                      color: '#065f46',
+                                      backgroundColor: 'transparent',
+                                    }}
+                                  />
+                                </Box>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => toggleProductAddon(addon)}
+                                  sx={{ p: 0.2, color: 'white', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)' } }}
+                                  title="Remove"
+                                >
+                                  <CloseIcon sx={{ fontSize: 13 }} />
+                                </IconButton>
+                              </Box>
+                            );
+                          }
+
+                          return (
+                            <Chip
+                              key={addonId}
+                              size="small"
+                              clickable
+                              onClick={() => toggleProductAddon(addon)}
+                              label={`+ ${addon.name || addon.addon?.name} (PKR ${price})`}
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                bgcolor: '#ffffff',
+                                color: '#334155',
+                                border: '1px solid #cbd5e1',
+                                '&:hover': {
+                                  bgcolor: '#f1f5f9',
+                                }
+                              }}
+                            />
+                          );
+                        })}
+
+                        {/* Additional custom selected addons not in availableAddonsForProduct */}
+                        {(productFormData.selected_addons || [])
+                          .filter(a => !availableAddonsForProduct.some(av => (av.id || av.addon_id) === (a.id || a.addon_id)))
+                          .map(addon => {
+                            const addonId = addon.id || addon.addon_id;
+                            const price = addon.sale_price !== undefined ? addon.sale_price : parseFloat(addon.addon?.sale_price || 0);
+                            return (
+                              <Box
+                                key={addonId}
+                                sx={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  bgcolor: '#10b981',
+                                  color: '#ffffff',
+                                  borderRadius: '16px',
+                                  pl: 1,
+                                  pr: 0.5,
+                                  py: 0.2,
+                                  gap: 0.5,
+                                  border: '1px solid #059669',
+                                  boxShadow: '0 2px 4px rgba(16,185,129,0.3)',
+                                }}
+                              >
+                                <Typography
+                                  sx={{
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    userSelect: 'none',
+                                  }}
+                                  onClick={() => toggleProductAddon(addon)}
+                                  title="Click to remove"
+                                >
+                                  ✓ {addon.name || addon.addon?.name}
+                                </Typography>
+                                <Box sx={{ display: 'inline-flex', alignItems: 'center', bgcolor: '#ffffff', borderRadius: '10px', px: 0.5, py: 0.1 }}>
+                                  <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#047857', mr: 0.25 }}>PKR</Typography>
+                                  <input
+                                    type="number"
+                                    value={price}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => updateProductFormAddonPrice(addonId, e.target.value)}
+                                    style={{
+                                      width: '45px',
+                                      border: 'none',
+                                      outline: 'none',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 800,
+                                      textAlign: 'center',
+                                      color: '#065f46',
+                                      backgroundColor: 'transparent',
+                                    }}
+                                  />
+                                </Box>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => toggleProductAddon(addon)}
+                                  sx={{ p: 0.2, color: 'white', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)' } }}
+                                  title="Remove"
+                                >
+                                  <CloseIcon sx={{ fontSize: 13 }} />
+                                </IconButton>
+                              </Box>
+                            );
+                          })}
+                      </>
                     )}
+                    <Chip
+                      size="small"
+                      icon={<AddIcon sx={{ fontSize: '13px !important' }} />}
+                      label="More Ad-ons..."
+                      clickable
+                      onClick={() => setEntryAddonModalOpen(true)}
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.72rem',
+                        cursor: 'pointer',
+                        bgcolor: '#f0fdf4',
+                        color: '#15803d',
+                        border: '1px dashed #22c55e',
+                        '&:hover': { bgcolor: '#dcfce7' }
+                      }}
+                    />
                   </Box>
                 </Box>
               </Box>
@@ -8165,12 +8338,21 @@ function SalesPageContent() {
                                       size="small"
                                       label={`${addon.name || addon.addon?.name} (+${aPrice})`}
                                       onDelete={() => removeRowAddon(product.id, aId)}
+                                      clickable
+                                      onClick={() => {
+                                        setActiveRowId(product.id);
+                                        setRowAddonTarget(product);
+                                        setRowAddonModalOpen(true);
+                                      }}
+                                      title="Click to edit add-on price"
                                       sx={{
                                         bgcolor: '#ecfdf5',
                                         color: '#065f46',
                                         fontWeight: 700,
                                         fontSize: '0.72rem',
-                                        border: '1px solid #a7f3d0'
+                                        border: '1px solid #a7f3d0',
+                                        cursor: 'pointer',
+                                        '&:hover': { bgcolor: '#d1fae5' }
                                       }}
                                     />
                                   );
@@ -11615,263 +11797,6 @@ function SalesPageContent() {
                 bgcolor: activeReceiptCopy === 'CUTTER' ? '#b45309' : 'transparent',
                 borderColor: '#b45309',
                 color: activeReceiptCopy === 'CUTTER' ? '#fff' : '#b45309',
-                '&:hover': { bgcolor: activeReceiptCopy === 'CUTTER' ? '#92400e' : 'rgba(180,83,9,0.08)' }
-              }}
-            >
-              Cutter Copy
-            </Button>
-          </Box>
-
-          {selectedBill && (
-            <Box id="printable-invoice" sx={{ width: '100%', bgcolor: '#ffffff', p: 2 }}>
-              <CommercialInvoiceReceipt bill={selectedBill} copyType={activeReceiptCopy} />
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap', gap: 1 }} className="no-print">
-          <Button
-            onClick={handleCloseBillDialog}
-            variant="outlined"
-            sx={{ minWidth: 90 }}
-          >
-            Close
-          </Button>
-          {getLinkedOriginalSaleId(selectedBill) && (
-            <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<VisibilityIcon />}
-              onClick={() => handleViewOriginalSaleFromReturn(selectedBill)}
-              sx={{ minWidth: 140, textTransform: 'none', fontWeight: 600 }}
-            >
-              Original invoice
-            </Button>
-          )}
-          <Button
-            variant="contained"
-            startIcon={isSendingWhatsApp ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <WhatsAppIcon />}
-            sx={{
-              minWidth: 140,
-              bgcolor: '#25D366',
-              '&:hover': { bgcolor: '#1ebe5d' },
-              color: 'white',
-              fontWeight: 600,
-            }}
-            onClick={() => handleSendWhatsApp(selectedBill, null, 'printable-invoice')}
-            disabled={isSendingWhatsApp}
-            title={waSettings?.is_enabled ? 'Send customer invoice directly to WhatsApp' : 'Copy invoice to clipboard and open WhatsApp Desktop'}
-          >
-            {isSendingWhatsApp ? 'Sending...' : 'WhatsApp'}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<PrintIcon />}
-            sx={{
-              minWidth: 155,
-              bgcolor: '#1e40af',
-              '&:hover': { bgcolor: '#1e3a8a' },
-              color: 'white',
-              fontWeight: 700
-            }}
-            onClick={() => handlePrintCopy('OFFICE', true, selectedBill)}
-          >
-            Print Office Copy
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<PrintIcon />}
-            sx={{
-              minWidth: 170,
-              bgcolor: '#047857',
-              '&:hover': { bgcolor: '#065f46' },
-              color: 'white',
-              fontWeight: 700
-            }}
-            onClick={() => handlePrintCopy('CUSTOMER', true, selectedBill)}
-          >
-            Print Customer Copy
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<PrintIcon />}
-            sx={{
-              minWidth: 155,
-              bgcolor: '#b45309',
-              '&:hover': { bgcolor: '#92400e' },
-              color: 'white',
-              fontWeight: 700
-            }}
-            onClick={() => handlePrintCopy('CUTTER', true, selectedBill)}
-          >
-            Print Cutter Copy
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<PrintIcon />}
-            sx={{
-              minWidth: 130,
-              bgcolor: '#fd7e14',
-              '&:hover': { bgcolor: '#e8690b' },
-              color: 'white',
-              fontWeight: 600
-            }}
-            onClick={() => {
-              handlePrintBill('THERMAL', true, selectedBill);
-            }}
-          >
-            Print Thermal
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          body.print-thermal *,
-          body.print-a4 *,
-          body.print-existing * {
-            visibility: hidden !important;
-          }
-
-          /* Collapse height of all layout wrappers and background components when printing */
-          body.print-thermal .dashboard-layout-root,
-          body.print-thermal .MuiContainer-root,
-          body.print-thermal .MuiStack-root,
-          body.print-thermal .MuiCard-root,
-          body.print-thermal .MuiPaper-root,
-          body.print-thermal .MuiTableContainer-root,
-          body.print-thermal .MuiTable-root,
-          body.print-thermal .MuiDialog-root,
-          body.print-thermal .no-print,
-          body.print-a4 .dashboard-layout-root,
-          body.print-a4 .no-print,
-          body.print-existing .dashboard-layout-root,
-          body.print-existing .no-print {
-            height: 0 !important;
-            max-height: 0 !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-          }
-
-          /* Thermal Print Styling */
-          body.print-thermal #printable-invoice-thermal,
-          body.print-thermal #printable-invoice-thermal * {
-            visibility: visible !important;
-            height: auto !important;
-            max-height: none !important;
-            overflow: visible !important;
-          }
-
-          body.print-thermal #printable-invoice-thermal {
-            display: block !important;
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 78mm !important;
-            max-width: 78mm !important;
-            margin: 0 !important;
-            padding: 2mm !important;
-            box-sizing: border-box !important;
-            z-index: 999999 !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-          }
-
-          /* A4 Print Styling */
-          body.print-a4 #printable-invoice-a4,
-          body.print-a4 #printable-invoice-a4 * {
-            visibility: visible !important;
-            height: auto !important;
-          }
-
-          body.print-a4 #printable-invoice-a4 {
-            display: block !important;
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 148mm !important;
-            max-width: 148mm !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-            z-index: 999999 !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-            print-color-adjust: exact !important;
-            -webkit-print-color-adjust: exact !important;
-          }
-
-          body.print-a4 #printable-invoice-a4 *,
-          body.print-a4 #printable-invoice *,
-          body.print-existing #printable-invoice * {
-            print-color-adjust: exact !important;
-            -webkit-print-color-adjust: exact !important;
-          }
-
-          body.print-a4 #printable-invoice-a4 thead .MuiTableRow-root,
-          body.print-a4 #printable-invoice thead .MuiTableRow-root,
-          body.print-existing #printable-invoice thead .MuiTableRow-root {
-            background-color: #9e9e9e !important;
-            color: #000000 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          body.print-a4 #printable-invoice-a4 thead .MuiTableCell-root,
-          body.print-a4 #printable-invoice thead .MuiTableCell-root,
-          body.print-existing #printable-invoice thead .MuiTableCell-root {
-            background-color: #9e9e9e !important;
-            color: #000000 !important;
-            border-right: 1px solid #ffffff !important;
-            border-bottom: 1px solid #cbd5e1 !important;
-            font-weight: bold !important;
-            vertical-align: middle !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          body.print-a4 #printable-invoice-a4 .MuiTableBody-root .MuiTableCell-root,
-          body.print-a4 #printable-invoice .MuiTableBody-root .MuiTableCell-root,
-          body.print-existing #printable-invoice .MuiTableBody-root .MuiTableCell-root {
-            color: #000000 !important;
-            border-color: #e0e0e0 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          body.print-a4 #printable-invoice-a4 .cell-normal,
-          body.print-a4 #printable-invoice .cell-normal,
-          body.print-existing #printable-invoice .cell-normal,
-          .cell-normal {
-            font-weight: normal !important;
-          }
-
-          body.print-existing {
-            @page {
-              size: A5 portrait !important;
-              margin: 3mm 4mm !important;
-            }
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-            margin: 0;
-            padding: 0;
-          }
-          
-          /* Hide everything by default */
-          body.print-existing * {
-            visibility: hidden;
-          }
-
-          /* Collapse layout container height to prevent blank page generation */
-          body.print-existing .dashboard-layout-root {
-            height: 0 !important;
-            max-height: 0 !important;
-            overflow: hidden !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-
           /* Show only the printable invoice */
           body.print-existing #printable-invoice,
           body.print-existing #printable-invoice * {
@@ -12654,6 +12579,33 @@ function SalesPageContent() {
         }}
         title={`Ad On's for ${rowAddonTarget?.pro_title || 'Item'}`}
         subtitle="Select add-ons to add or remove for this specific row"
+      />
+
+      {/* Entry-Level Addon Picker Modal */}
+      <AddonPickerModal
+        open={entryAddonModalOpen}
+        onClose={() => setEntryAddonModalOpen(false)}
+        selectedAddonIds={(productFormData.selected_addons || []).map(a => a.id || a.addon_id)}
+        selectedAddons={productFormData.selected_addons || []}
+        onApply={(ids, selectedList) => {
+          setProductFormData(prev => {
+            const addonsTotal = selectedList.reduce(
+              (sum, a) => sum + (parseFloat(a.sale_price !== undefined ? a.sale_price : (a.addon?.sale_price || 0)) || 0),
+              0
+            );
+            const effectiveRate = (parseFloat(prev.rate) || 0) + addonsTotal;
+            const quantity = parseFloat(prev.quantity) || 0;
+            const amount = Number((quantity * effectiveRate).toFixed(0));
+
+            return {
+              ...prev,
+              selected_addons: selectedList,
+              amount: amount,
+            };
+          });
+        }}
+        title={`Ad On's for ${formSelectedProduct?.pro_title || 'New Item'}`}
+        subtitle="Select add-ons and customize prices"
       />
 
       {/* Duplicate Row Dialog */}
