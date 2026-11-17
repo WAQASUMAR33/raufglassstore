@@ -11797,7 +11797,234 @@ function SalesPageContent() {
                 bgcolor: activeReceiptCopy === 'CUTTER' ? '#b45309' : 'transparent',
                 borderColor: '#b45309',
                 color: activeReceiptCopy === 'CUTTER' ? '#fff' : '#b45309',
-          /* Show only the printable invoice */
+                '&:hover': { bgcolor: activeReceiptCopy === 'CUTTER' ? '#92400e' : 'rgba(180,83,9,0.08)' }
+              }}
+            >
+              Cutter Copy
+            </Button>
+          </Box>
+
+          {selectedBill && (
+            <Box id="printable-invoice" sx={{ width: '100%', bgcolor: '#ffffff', p: 2 }}>
+              <CommercialInvoiceReceipt bill={selectedBill} copyType={activeReceiptCopy} />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, bgcolor: 'grey.50', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap', gap: 1 }} className="no-print">
+          <Button
+            onClick={handleCloseBillDialog}
+            variant="outlined"
+            sx={{ minWidth: 90 }}
+          >
+            Close
+          </Button>
+          {getLinkedOriginalSaleId(selectedBill) && (
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<VisibilityIcon />}
+              onClick={() => handleViewOriginalSaleFromReturn(selectedBill)}
+              sx={{ minWidth: 140, textTransform: 'none', fontWeight: 600 }}
+            >
+              Original invoice
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            startIcon={isSendingWhatsApp ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <WhatsAppIcon />}
+            sx={{
+              minWidth: 140,
+              bgcolor: '#25D366',
+              '&:hover': { bgcolor: '#1ebe5d' },
+              color: 'white',
+              fontWeight: 600,
+            }}
+            onClick={() => handleSendWhatsApp(selectedBill, null, 'printable-invoice')}
+            disabled={isSendingWhatsApp}
+            title={waSettings?.is_enabled ? 'Send customer invoice directly to WhatsApp' : 'Copy invoice to clipboard and open WhatsApp Desktop'}
+          >
+            {isSendingWhatsApp ? 'Sending...' : 'WhatsApp'}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 155,
+              bgcolor: '#1e40af',
+              '&:hover': { bgcolor: '#1e3a8a' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('OFFICE', true, selectedBill)}
+          >
+            Print Office Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 170,
+              bgcolor: '#047857',
+              '&:hover': { bgcolor: '#065f46' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUSTOMER', true, selectedBill)}
+          >
+            Print Customer Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 155,
+              bgcolor: '#b45309',
+              '&:hover': { bgcolor: '#92400e' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => handlePrintCopy('CUTTER', true, selectedBill)}
+          >
+            Print Cutter Copy
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            sx={{
+              minWidth: 130,
+              bgcolor: '#fd7e14',
+              '&:hover': { bgcolor: '#e8690b' },
+              color: 'white',
+              fontWeight: 600
+            }}
+            onClick={() => {
+              handlePrintBill('THERMAL', true, selectedBill);
+            }}
+          >
+            Print Thermal
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          body.print-thermal *,
+          body.print-thermal {
+            visibility: hidden;
+          }
+
+          body.print-thermal #printable-invoice-thermal,
+          body.print-thermal #printable-invoice-thermal * {
+            visibility: visible !important;
+          }
+
+          body.print-thermal #printable-invoice-thermal {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 78mm !important;
+            max-width: 78mm !important;
+            margin: 0 !important;
+            padding: 2mm !important;
+            box-sizing: border-box !important;
+            z-index: 999999 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+
+          /* A4 Print Styling */
+          body.print-a4 #printable-invoice-a4,
+          body.print-a4 #printable-invoice-a4 * {
+            visibility: visible !important;
+            height: auto !important;
+          }
+
+          body.print-a4 #printable-invoice-a4 {
+            display: block !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 148mm !important;
+            max-width: 148mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            z-index: 999999 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            print-color-adjust: exact !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+
+          body.print-a4 #printable-invoice-a4 *,
+          body.print-a4 #printable-invoice *,
+          body.print-existing #printable-invoice * {
+            print-color-adjust: exact !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+
+          body.print-a4 #printable-invoice-a4 thead .MuiTableRow-root,
+          body.print-a4 #printable-invoice thead .MuiTableRow-root,
+          body.print-existing #printable-invoice thead .MuiTableRow-root {
+            background-color: #9e9e9e !important;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          body.print-a4 #printable-invoice-a4 thead .MuiTableCell-root,
+          body.print-a4 #printable-invoice thead .MuiTableCell-root,
+          body.print-existing #printable-invoice thead .MuiTableCell-root {
+            background-color: #9e9e9e !important;
+            color: #000000 !important;
+            border-right: 1px solid #ffffff !important;
+            border-bottom: 1px solid #cbd5e1 !important;
+            font-weight: bold !important;
+            vertical-align: middle !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          body.print-a4 #printable-invoice-a4 .MuiTableBody-root .MuiTableCell-root,
+          body.print-a4 #printable-invoice .MuiTableBody-root .MuiTableCell-root,
+          body.print-existing #printable-invoice .MuiTableBody-root .MuiTableCell-root {
+            color: #000000 !important;
+            border-color: #e0e0e0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          body.print-a4 #printable-invoice-a4 .cell-normal,
+          body.print-a4 #printable-invoice .cell-normal,
+          body.print-existing #printable-invoice .cell-normal,
+          .cell-normal {
+            font-weight: normal !important;
+          }
+
+          body.print-existing {
+            @page {
+              size: A5 portrait !important;
+              margin: 3mm 4mm !important;
+            }
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+            margin: 0;
+            padding: 0;
+          }
+          
+          /* Hide everything by default */
+          body.print-existing * {
+            visibility: hidden;
+          }
+
+          /* Collapse layout container height to prevent blank page generation */
+          body.print-existing .dashboard-layout-root {
+            height: 0 !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
           body.print-existing #printable-invoice,
           body.print-existing #printable-invoice * {
             visibility: visible !important;

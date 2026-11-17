@@ -34,7 +34,7 @@ import {
   Computer as ElectronicsIcon,
   Handyman as ToolsIcon,
   Category as OtherIcon,
-  Landmark as LandmarkIcon,
+  AccountBalance as LandmarkIcon,
 } from '@mui/icons-material';
 import DashboardLayout from '../components/dashboard-layout';
 
