@@ -1054,48 +1054,18 @@ export default function CommercialInvoiceReceipt({
 
       {/* ───────────────── BOTTOM SECTION ───────────────── */}
       {copy === 'CUTTER' ? (
-        /* CUTTER COPY BOTTOM: Workshop Details & Quality Verification (No financial details) */
+        /* CUTTER COPY BOTTOM: Quality & Cutter Sign-off (Assigned Cutter box removed) */
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1.25fr 1fr' },
-            gap: 1,
+            display: 'flex',
+            justifyContent: 'flex-end',
             pt: 0.5,
           }}
         >
-          {/* Left: Workshop & Glass Specs */}
-          <Box
-            sx={{
-              border: '1px solid #000000',
-              borderRadius: '4px',
-              p: 0.75,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0.4,
-              fontSize: '0.7rem',
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.25 }}>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#000' }}>Assigned Cutter:</Typography>
-              <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#b45309' }}>{cutterName}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.25 }}>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#333' }}>Total Glass Area:</Typography>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#000' }}>{fmtNum(totalSqFt)} Sq Ft</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', pb: 0.25 }}>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#333' }}>DC / Vehicle No:</Typography>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#000' }}>{dcNo}</Typography>
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#333' }}>Cutting Remarks:</Typography>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 500, color: '#000', mt: 0.1 }}>{remarks}</Typography>
-            </Box>
-          </Box>
-
           {/* Right: Cutter & Inspection Sign-off */}
           <Box
             sx={{
+              width: { xs: '100%', sm: '45%' },
               border: '1px solid #000000',
               borderRadius: '4px',
               p: 0.75,
