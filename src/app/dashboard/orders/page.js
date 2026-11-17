@@ -4978,13 +4978,13 @@ function OrdersPageContent() {
                     <TableRow sx={{ bgcolor: '#2e7d32', '& th': { bgcolor: '#2e7d32 !important' } }}>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">S#</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Entered Size (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Calc / Avail (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Comments</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 135 }} align="center">Entered Size (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 65 }} align="center">Pcs</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 135 }} align="center">Calc / Avail (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="center">Qty (Sq Ft)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 85 }} align="right">Glass Rate</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Glass Rate</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Glass Total</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 90 }} align="right">Ad Ons Total</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 95 }} align="right">Net Total</TableCell>
@@ -5105,17 +5105,67 @@ function OrdersPageContent() {
                                   width: '100%',
                                   minWidth: 140,
                                   '& .MuiInputBase-input': {
-                                    padding: '4px 8px',
+                                    padding: '5px 8px',
                                     textAlign: 'left',
-                                    fontSize: '0.85rem'
+                                    fontSize: '0.88rem'
                                   }
                                 }}
                               />
                             </TableCell>
-                            <TableCell sx={{ py: 0.5, minWidth: 110 }} align="center">
-                              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                                {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
-                              </Typography>
+                            <TableCell sx={{ py: 0.5, minWidth: 135 }} align="center">
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  value={product.width_in ?? ''}
+                                  placeholder="W"
+                                  onChange={(e) => updateRowEnteredDimension(product.id, 'width_in', e.target.value)}
+                                  onFocus={(e) => {
+                                    e.target.select();
+                                    setActiveRowId(product.id);
+                                  }}
+                                  sx={{
+                                    width: 54,
+                                    '& .MuiInputBase-input': {
+                                      padding: '5px 4px',
+                                      textAlign: 'center',
+                                      fontSize: '0.88rem',
+                                      fontWeight: 700,
+                                      color: '#1e293b',
+                                      bgcolor: 'rgba(255,255,255,0.95)',
+                                      border: '1px solid #94a3b8',
+                                      borderRadius: '4px'
+                                    }
+                                  }}
+                                  inputProps={{ min: 0, step: 'any' }}
+                                />
+                                <Typography variant="caption" sx={{ fontWeight: 900, color: '#64748b' }}>×</Typography>
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  value={product.height_in ?? ''}
+                                  placeholder="H"
+                                  onChange={(e) => updateRowEnteredDimension(product.id, 'height_in', e.target.value)}
+                                  onFocus={(e) => {
+                                    e.target.select();
+                                    setActiveRowId(product.id);
+                                  }}
+                                  sx={{
+                                    width: 54,
+                                    '& .MuiInputBase-input': {
+                                      padding: '5px 4px',
+                                      textAlign: 'center',
+                                      fontSize: '0.88rem',
+                                      fontWeight: 700,
+                                      color: '#1e293b',
+                                      bgcolor: 'rgba(255,255,255,0.95)',
+                                      border: '1px solid #94a3b8',
+                                      borderRadius: '4px'
+                                    }
+                                  }}
+                                  inputProps={{ min: 0, step: 'any' }}
+                                />
+                              </Box>
                             </TableCell>
                             <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
                               <TextField
@@ -5128,12 +5178,12 @@ function OrdersPageContent() {
                                   setActiveRowId(product.id);
                                 }}
                                 sx={{
-                                  width: 50,
+                                  width: 58,
                                   '& .MuiInputBase-input': {
-                                    padding: '3px 4px',
+                                    padding: '5px 4px',
                                     textAlign: 'center',
                                     fontWeight: 'bold',
-                                    fontSize: '0.85rem',
+                                    fontSize: '0.9rem',
                                     bgcolor: 'rgba(255,255,255,0.85)',
                                     border: '1px solid #cbd5e1',
                                     borderRadius: '4px'
@@ -5142,7 +5192,7 @@ function OrdersPageContent() {
                                 inputProps={{ min: 1, step: 1 }}
                               />
                             </TableCell>
-                            <TableCell sx={{ py: 0.5, minWidth: 105 }} align="center">
+                            <TableCell sx={{ py: 0.5, minWidth: 135 }} align="center">
                               {isManualCalcSize ? (
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
                                   <TextField
@@ -5156,11 +5206,11 @@ function OrdersPageContent() {
                                       setActiveRowId(product.id);
                                     }}
                                     sx={{
-                                      width: 46,
+                                      width: 54,
                                       '& .MuiInputBase-input': {
-                                        padding: '3px 4px',
+                                        padding: '5px 4px',
                                         textAlign: 'center',
-                                        fontSize: '0.8rem',
+                                        fontSize: '0.88rem',
                                         fontWeight: 700,
                                         color: '#15803d',
                                         bgcolor: '#f0fdf4',
@@ -5182,11 +5232,11 @@ function OrdersPageContent() {
                                       setActiveRowId(product.id);
                                     }}
                                     sx={{
-                                      width: 46,
+                                      width: 54,
                                       '& .MuiInputBase-input': {
-                                        padding: '3px 4px',
+                                        padding: '5px 4px',
                                         textAlign: 'center',
-                                        fontSize: '0.8rem',
+                                        fontSize: '0.88rem',
                                         fontWeight: 700,
                                         color: '#15803d',
                                         bgcolor: '#f0fdf4',
@@ -5198,7 +5248,7 @@ function OrdersPageContent() {
                                   />
                                 </Box>
                               ) : (
-                                <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#15803d' }}>
+                                <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, color: '#15803d' }}>
                                   {product.calc_width && product.calc_height ? `${product.calc_width}" × ${product.calc_height}"` : '-'}
                                 </Typography>
                               )}
@@ -5214,11 +5264,12 @@ function OrdersPageContent() {
                                   setActiveRowId(product.id);
                                 }}
                                 sx={{
-                                  width: 80,
+                                  width: 88,
                                   '& .MuiInputBase-input': {
-                                    padding: '4px 6px',
+                                    padding: '5px 6px',
                                     textAlign: 'center',
-                                    fontWeight: 'bold'
+                                    fontWeight: 'bold',
+                                    fontSize: '0.9rem'
                                   }
                                 }}
                                 inputProps={{ min: 0.01, step: 'any' }}
@@ -5286,11 +5337,12 @@ function OrdersPageContent() {
                                   setActiveRowId(product.id);
                                 }}
                                 sx={{
-                                  width: 85,
+                                  width: 90,
                                   '& .MuiInputBase-input': {
-                                    padding: '4px 6px',
+                                    padding: '5px 6px',
                                     textAlign: 'right',
-                                    fontWeight: 'bold'
+                                    fontWeight: 'bold',
+                                    fontSize: '0.95rem'
                                   }
                                 }}
                                 inputProps={{ min: 0, step: 'any' }}
