@@ -8,6 +8,13 @@ export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://zaintraders.cloud"),
   title: "Zain Traders - POS & ERP",
   description: "Zain Traders - Point of Sale and ERP System",
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }) {
