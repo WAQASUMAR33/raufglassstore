@@ -8,11 +8,14 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { categoryId, purchasePercentage, salePercentage } = body;
+    const { categoryId, productIds, purchasePercentage, salePercentage } = body;
 
-    // Validation
-    if (!categoryId) {
-      return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
+    const hasProductIds = Array.isArray(productIds) && productIds.length > 0;
+    const hasCategory = categoryId !== undefined && categoryId !== null && categoryId !== '';
+
+    // Validation: Require either categoryId or productIds
+    if (!hasCategory && !hasProductIds) {
+      return NextResponse.json({ error: 'Category ID or Product IDs required' }, { status: 400 });
     }
 
     // Require at least one percentage (allow negative/positive values)
@@ -28,14 +31,18 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Percentage values must be valid numbers' }, { status: 400 });
     }
 
-    // Get all products in the category
+    // Get all matching products
+    const where = hasProductIds
+      ? { pro_id: { in: productIds.map(id => parseInt(id)) } }
+      : { cat_id: parseInt(categoryId) };
+
     const products = await prisma.product.findMany({
-      where: { cat_id: parseInt(categoryId) }
+      where
     });
 
     if (products.length === 0) {
       return NextResponse.json({ 
-        message: 'No products found in this category',
+        message: 'No products found matching criteria',
         updatedCount: 0 
       }, { status: 200 });
     }

@@ -39,7 +39,8 @@ import {
   Select,
   MenuItem,
   Autocomplete,
-  Divider
+  Divider,
+  Checkbox
 } from '@mui/material';
 
 // Material Icons
@@ -65,7 +66,8 @@ import {
   Star as StarIcon,
   Visibility as EyeIcon,
   BarChart as BarChartIcon,
-  Extension as ExtensionIcon
+  Extension as ExtensionIcon,
+  Percent as PercentIcon
 } from '@mui/icons-material';
 import { AddonSelector, AddonChipsList, AddonPickerModal } from '@/components/addons';
 import { ProductFormModal } from '@/components/products';
@@ -127,6 +129,13 @@ export default function ProductsPage() {
   const [pickerProduct, setPickerProduct] = useState(null);
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
   const [pickerSaving, setPickerSaving] = useState(false);
+
+  // Batch Selection & Purchase Rate Adjustment States
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [adjustRateModalOpen, setAdjustRateModalOpen] = useState(false);
+  const [adjustPercentage, setAdjustPercentage] = useState('');
+  const [isAdjustingRate, setIsAdjustingRate] = useState(false);
+  const [adjustError, setAdjustError] = useState('');
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -576,6 +585,89 @@ export default function ProductsPage() {
 
   const handleSnackbarClose = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  // Batch selection handlers
+  const handleToggleProductSelect = (proId) => {
+    setSelectedProductIds(prev =>
+      prev.includes(proId) ? prev.filter(id => id !== proId) : [...prev, proId]
+    );
+  };
+
+  const handleToggleSelectAllVisible = () => {
+    const visibleIds = filteredAndSortedProducts.map(p => p.pro_id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedProductIds.includes(id));
+    if (allVisibleSelected) {
+      setSelectedProductIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    } else {
+      setSelectedProductIds(prev => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProductIds([]);
+  };
+
+  const handleSelectAllProducts = () => {
+    setSelectedProductIds(products.map(p => p.pro_id));
+  };
+
+  const handleOpenAdjustRateModal = () => {
+    if (selectedProductIds.length === 0) {
+      setSnackbar({
+        open: true,
+        message: 'Please select at least one product using the checkboxes first.',
+        severity: 'warning'
+      });
+      return;
+    }
+    setAdjustPercentage('');
+    setAdjustError('');
+    setAdjustRateModalOpen(true);
+  };
+
+  const handleApplyPurchaseRateAdjustment = async () => {
+    const pctVal = parseFloat(adjustPercentage);
+    if (adjustPercentage === '' || isNaN(pctVal)) {
+      setAdjustError('Please enter a valid percentage (e.g. 10 or 15).');
+      return;
+    }
+
+    try {
+      setIsAdjustingRate(true);
+      setAdjustError('');
+
+      const response = await fetch('/api/products/adjust-price', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productIds: selectedProductIds,
+          purchasePercentage: pctVal,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSnackbar({
+          open: true,
+          message: data.message || `Successfully adjusted purchase rate for ${data.updatedCount || selectedProductIds.length} products!`,
+          severity: 'success'
+        });
+        setAdjustRateModalOpen(false);
+        setSelectedProductIds([]);
+        await fetchData();
+      } else {
+        setAdjustError(data.error || 'Failed to adjust purchase rate');
+      }
+    } catch (err) {
+      console.error('Error adjusting purchase rate:', err);
+      setAdjustError('Failed to connect to server');
+    } finally {
+      setIsAdjustingRate(false);
+    }
   };
 
   // Quick action handlers
@@ -1081,18 +1173,75 @@ export default function ProductsPage() {
 
           {/* Products Table */}
           <Card sx={{ height: 600, display: 'flex', flexDirection: 'column', borderRadius: 2, border: '1px solid #e2e8f0' }}>
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#f8fafc' }}>
-              <Typography variant="h6" component="h3" sx={{ fontWeight: 700, color: '#334155' }}>
-                Products List
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                Showing {filteredAndSortedProducts.length} of {products.length} products
-              </Typography>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#f8fafc', flexWrap: 'wrap', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Typography variant="h6" component="h3" sx={{ fontWeight: 700, color: '#334155' }}>
+                  Products List
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                  Showing {filteredAndSortedProducts.length} of {products.length} products
+                </Typography>
+                {selectedProductIds.length > 0 && (
+                  <Chip
+                    size="small"
+                    color="primary"
+                    label={`${selectedProductIds.length} Selected`}
+                    onDelete={handleClearSelection}
+                    sx={{ fontWeight: 700, fontSize: '0.75rem', bgcolor: '#e0f2fe', color: '#0369a1', borderColor: '#7dd3fc', border: '1px solid' }}
+                  />
+                )}
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                {selectedProductIds.length > 0 && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="inherit"
+                    onClick={handleClearSelection}
+                    sx={{ textTransform: 'none', fontSize: '0.8rem', borderColor: '#cbd5e1', color: '#64748b' }}
+                  >
+                    Deselect All
+                  </Button>
+                )}
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<TrendingUpIcon />}
+                  onClick={handleOpenAdjustRateModal}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    bgcolor: selectedProductIds.length > 0 ? '#16a34a' : '#2563eb',
+                    '&:hover': { bgcolor: selectedProductIds.length > 0 ? '#15803d' : '#1d4ed8' },
+                    boxShadow: selectedProductIds.length > 0 ? '0 2px 6px rgba(22, 163, 74, 0.3)' : 'none'
+                  }}
+                >
+                  Adjust Purchase Rate (%){selectedProductIds.length > 0 ? ` (${selectedProductIds.length})` : ''}
+                </Button>
+              </Box>
             </Box>
             <TableContainer component={Paper} sx={{ flex: 1, overflow: 'auto', boxShadow: 'none' }}>
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
+                    <TableCell padding="checkbox" sx={{ pl: 2, width: 48, bgcolor: '#f8fafc' }}>
+                      <Checkbox
+                        indeterminate={
+                          filteredAndSortedProducts.length > 0 &&
+                          filteredAndSortedProducts.some(p => selectedProductIds.includes(p.pro_id)) &&
+                          !filteredAndSortedProducts.every(p => selectedProductIds.includes(p.pro_id))
+                        }
+                        checked={
+                          filteredAndSortedProducts.length > 0 &&
+                          filteredAndSortedProducts.every(p => selectedProductIds.includes(p.pro_id))
+                        }
+                        onChange={handleToggleSelectAllVisible}
+                        inputProps={{ 'aria-label': 'Select all visible products' }}
+                        size="small"
+                      />
+                    </TableCell>
                     <TableCell>No</TableCell>
                     <TableCell>Product</TableCell>
                     <TableCell>Store</TableCell>
@@ -1107,14 +1256,42 @@ export default function ProductsPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredAndSortedProducts.map((product, index) => (
-                    <TableRow key={product.pro_id} hover>
-                      {/* S. No */}
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                          {index + 1}
-                        </Typography>
+                  {filteredAndSortedProducts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={12} align="center" sx={{ py: 6, color: '#94a3b8' }}>
+                        No products found matching your filter criteria.
                       </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAndSortedProducts.map((product, index) => {
+                      const isSelected = selectedProductIds.includes(product.pro_id);
+                      return (
+                        <TableRow 
+                          key={product.pro_id} 
+                          hover
+                          selected={isSelected}
+                          sx={{
+                            bgcolor: isSelected ? 'rgba(34, 197, 94, 0.05)' : 'inherit',
+                            '&.Mui-selected, &.Mui-selected:hover': {
+                              bgcolor: 'rgba(34, 197, 94, 0.09) !important'
+                            }
+                          }}
+                        >
+                          {/* Checkbox */}
+                          <TableCell padding="checkbox" sx={{ pl: 2 }}>
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={() => handleToggleProductSelect(product.pro_id)}
+                              size="small"
+                            />
+                          </TableCell>
+
+                          {/* S. No */}
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                              {index + 1}
+                            </Typography>
+                          </TableCell>
 
                       {/* Product */}
                       <TableCell>
@@ -1262,7 +1439,8 @@ export default function ProductsPage() {
                         </Box>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  }))}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -1316,6 +1494,251 @@ export default function ProductsPage() {
             onSave={handleSaveAddonPicker}
             saving={pickerSaving}
           />
+
+          {/* Adjust Purchase Rate by Percentage Modal */}
+          <Dialog
+            open={adjustRateModalOpen}
+            onClose={() => !isAdjustingRate && setAdjustRateModalOpen(false)}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: { borderRadius: 3, overflow: 'hidden' }
+            }}
+          >
+            <DialogTitle sx={{ 
+              bgcolor: '#0f172a', 
+              color: '#ffffff', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              py: 2,
+              px: 3 
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', display: 'flex' }}>
+                  <TrendingUpIcon />
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff', lineHeight: 1.2 }}>
+                    Adjust Purchase Rate by Percentage
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                    Calculates purchase rate using base rate for {selectedProductIds.length} selected product{selectedProductIds.length !== 1 ? 's' : ''}
+                  </Typography>
+                </Box>
+              </Box>
+              <IconButton
+                size="small"
+                onClick={() => setAdjustRateModalOpen(false)}
+                disabled={isAdjustingRate}
+                sx={{ color: '#94a3b8', '&:hover': { color: '#fff' } }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </DialogTitle>
+
+            <DialogContent sx={{ p: 3, pt: '24px !important' }}>
+              {adjustError && (
+                <Alert severity="error" sx={{ mb: 2.5 }} onClose={() => setAdjustError('')}>
+                  {adjustError}
+                </Alert>
+              )}
+
+              {/* Formula explanation banner */}
+              <Box sx={{ 
+                p: 2, 
+                mb: 3, 
+                borderRadius: 2, 
+                bgcolor: '#f0fdf4', 
+                border: '1px solid #bbf7d0',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1.5
+              }}>
+                <Box sx={{ color: '#16a34a', mt: 0.25 }}>
+                  <PercentIcon sx={{ fontSize: 26 }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#166534' }}>
+                    Formula: New Purchase Rate = Base Rate + (Base Rate × Percentage / 100)
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#15803d', display: 'block', mt: 0.5 }}>
+                    Example: If Base Rate is PKR 745.04 and you enter +10%, New Purchase Rate will become PKR 819.54. Both Purchase Cost (CRate) and Cost Price will be updated in the system.
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Percentage input and presets */}
+              <Grid container spacing={2.5} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Adjustment Percentage"
+                    placeholder="e.g. 10 or 15 or -5"
+                    type="number"
+                    value={adjustPercentage}
+                    onChange={(e) => {
+                      setAdjustPercentage(e.target.value);
+                      setAdjustError('');
+                    }}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end" sx={{ fontWeight: 700, color: '#16a34a' }}>%</InputAdornment>,
+                      sx: { fontSize: '1.1rem', fontWeight: 600 }
+                    }}
+                    helperText="Enter a positive percentage to increase rate, or negative to decrease"
+                    autoFocus
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Quick Presets
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {['+5', '+10', '+12', '+15', '+20', '+25', '0', '-5'].map((val) => {
+                      const numVal = parseFloat(val);
+                      const isSelected = adjustPercentage === String(numVal) || adjustPercentage === val;
+                      return (
+                        <Chip
+                          key={val}
+                          label={`${val}%`}
+                          clickable
+                          onClick={() => {
+                            setAdjustPercentage(String(numVal));
+                            setAdjustError('');
+                          }}
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            bgcolor: isSelected ? '#16a34a' : '#f1f5f9',
+                            color: isSelected ? '#ffffff' : '#334155',
+                            border: isSelected ? '1px solid #16a34a' : '1px solid #e2e8f0',
+                            '&:hover': {
+                              bgcolor: isSelected ? '#15803d' : '#e2e8f0'
+                            }
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                </Grid>
+              </Grid>
+
+              {/* Impact Preview Table */}
+              <Box sx={{ border: '1px solid #e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
+                <Box sx={{ p: 1.5, px: 2, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#334155' }}>
+                    Preview Impact ({selectedProductIds.length} Selected)
+                  </Typography>
+                  {adjustPercentage !== '' && !isNaN(parseFloat(adjustPercentage)) && (
+                    <Chip
+                      size="small"
+                      label={`Applying ${parseFloat(adjustPercentage) >= 0 ? '+' : ''}${adjustPercentage}%`}
+                      sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700, fontSize: '0.75rem' }}
+                    />
+                  )}
+                </Box>
+
+                <TableContainer sx={{ maxHeight: 260 }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: '#f8fafc', fontSize: '0.78rem' }}>#</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: '#f8fafc', fontSize: '0.78rem' }}>Product Title</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: '#f8fafc', fontSize: '0.78rem' }} align="right">Base Rate</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: '#f8fafc', fontSize: '0.78rem' }} align="right">Current Purchase Rate</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: '#f8fafc', fontSize: '0.78rem' }} align="right">New Purchase Rate</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {products
+                        .filter(p => selectedProductIds.includes(p.pro_id))
+                        .map((product, idx) => {
+                          const basePrice = parseFloat(product.pro_baser_price) || 0;
+                          const currentPurchase = parseFloat(product.pro_crate || product.pro_cost_price || 0);
+                          const pctVal = parseFloat(adjustPercentage);
+                          const hasValidPct = adjustPercentage !== '' && !isNaN(pctVal);
+                          const newPurchase = hasValidPct
+                            ? Math.max(0, parseFloat((basePrice + (basePrice * (pctVal / 100))).toFixed(2)))
+                            : currentPurchase;
+                          const diff = newPurchase - currentPurchase;
+
+                          return (
+                            <TableRow key={product.pro_id} hover>
+                              <TableCell sx={{ fontSize: '0.8rem', color: '#64748b' }}>{idx + 1}</TableCell>
+                              <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                                {product.pro_title}
+                                {basePrice === 0 && (
+                                  <Typography variant="caption" sx={{ display: 'block', color: '#ef4444', fontSize: '0.7rem' }}>
+                                    (Base rate is 0 - result will be 0)
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#475569' }}>
+                                PKR {basePrice.toFixed(2)}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#64748b' }}>
+                                PKR {currentPurchase.toFixed(2)}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.85rem' }}>
+                                {hasValidPct ? (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
+                                    <Typography sx={{ fontWeight: 700, color: '#16a34a', fontSize: '0.85rem' }}>
+                                      PKR {newPurchase.toFixed(2)}
+                                    </Typography>
+                                    <Typography sx={{ 
+                                      fontSize: '0.7rem', 
+                                      fontWeight: 600,
+                                      color: diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#64748b' 
+                                    }}>
+                                      ({diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)})
+                                    </Typography>
+                                  </Box>
+                                ) : (
+                                  <Typography sx={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '0.8rem' }}>
+                                    Enter % above
+                                  </Typography>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid #e2e8f0', bgcolor: '#f8fafc', justifyContent: 'space-between' }}>
+              <Button
+                onClick={() => setAdjustRateModalOpen(false)}
+                disabled={isAdjustingRate}
+                variant="outlined"
+                sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                onClick={handleApplyPurchaseRateAdjustment}
+                disabled={isAdjustingRate || adjustPercentage === '' || isNaN(parseFloat(adjustPercentage))}
+                variant="contained"
+                startIcon={isAdjustingRate ? <CircularProgress size={16} color="inherit" /> : <TrendingUpIcon />}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  bgcolor: '#16a34a',
+                  '&:hover': { bgcolor: '#15803d' },
+                  px: 3
+                }}
+              >
+                {isAdjustingRate 
+                  ? 'Applying Changes...' 
+                  : `Apply to ${selectedProductIds.length} Product${selectedProductIds.length !== 1 ? 's' : ''}`
+                }
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           {/* Snackbar for notifications */}
           <Snackbar
