@@ -6993,6 +6993,17 @@ function SalesPageContent() {
                       >
                         Add Customer
                       </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        component="a"
+                        href="/dashboard/customers"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
+                      >
+                        Customers Page ↗
+                      </Button>
                     </Box>
                     {formSelectedCustomer && (
                       <Stack direction="row" spacing={1} alignItems="center">
@@ -7459,8 +7470,7 @@ function SalesPageContent() {
                         </Tooltip>
                       )}
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
                       <Button
                         size="small"
                         variant="text"
@@ -7469,6 +7479,17 @@ function SalesPageContent() {
                         sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
                       >
                         Add Product
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        component="a"
+                        href="/dashboard/products"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
+                      >
+                        Products Page ↗
                       </Button>
                     </Box>
                   </Box>

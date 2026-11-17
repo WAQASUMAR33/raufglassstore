@@ -4012,6 +4012,17 @@ function OrdersPageContent() {
                         >
                           Add Customer
                         </Button>
+                        <Button
+                          size="small"
+                          variant="text"
+                          component="a"
+                          href="/dashboard/customers"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
+                        >
+                          Customers Page ↗
+                        </Button>
                       </Box>
                       {formSelectedCustomer && (
                         <Box
@@ -4306,7 +4317,7 @@ function OrdersPageContent() {
                           </Tooltip>
                         )}
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                         <Button
                           size="small"
                           variant="text"
@@ -4315,6 +4326,17 @@ function OrdersPageContent() {
                           sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
                         >
                           Add Product
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="text"
+                          component="a"
+                          href="/dashboard/products"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
+                        >
+                          Products Page ↗
                         </Button>
 
                       </Box>

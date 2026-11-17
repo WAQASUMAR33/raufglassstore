@@ -442,6 +442,8 @@ function QuotationsPageContent() {
   const [customerPopupOpen, setCustomerPopupOpen] = useState(false);
   const [customerCategories, setCustomerCategories] = useState([]);
   const [cities, setCities] = useState([]);
+  const [productCategories, setProductCategories] = useState([]);
+  const [productSubcategories, setProductSubcategories] = useState([]);
   const [newCustomer, setNewCustomer] = useState({
     cus_name: '',
     cus_phone_no: '',
@@ -652,14 +654,16 @@ function QuotationsPageContent() {
         setSales([]);
       }
 
-      const [customersRes, productsRes, customerTypesRes, storesRes, customerCategoriesRes, citiesRes, formulasRes] = await Promise.all([
+      const [customersRes, productsRes, customerTypesRes, storesRes, customerCategoriesRes, citiesRes, formulasRes, catsRes, subCatsRes] = await Promise.all([
         fetch('/api/customers?dropdown=true'),
         fetch('/api/products?dropdown=true'),
         fetch('/api/customer-types'),
         fetch('/api/stores'),
         fetch('/api/customer-category'),
         fetch('/api/cities'),
-        fetch('/api/formulas')
+        fetch('/api/formulas'),
+        fetch('/api/categories'),
+        fetch('/api/subcategories')
       ]);
 
       await fetchTransportAccounts();
@@ -701,6 +705,16 @@ function QuotationsPageContent() {
       if (formulasRes && formulasRes.ok) {
         const formulasData = await formulasRes.json();
         setFormulas(Array.isArray(formulasData) ? formulasData : []);
+      }
+
+      if (catsRes && catsRes.ok) {
+        const catsData = await catsRes.json();
+        setProductCategories(Array.isArray(catsData) ? catsData : []);
+      }
+
+      if (subCatsRes && subCatsRes.ok) {
+        const subCatsData = await subCatsRes.json();
+        setProductSubcategories(Array.isArray(subCatsData) ? subCatsData : []);
       }
 
     } catch (error) {
@@ -2031,20 +2045,35 @@ function QuotationsPageContent() {
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomer.cus_name.trim()) {
+    if (!newCustomer.cus_name?.trim()) {
       showSnackbar('Customer name is required', 'error');
       return;
     }
-    if (!newCustomer.cus_phone_no.trim()) {
+    if (!newCustomer.cus_phone_no?.trim()) {
       showSnackbar('Phone number is required', 'error');
       return;
     }
 
     try {
+      const defaultCatId = customerCategories[0]?.cus_cat_id || 1;
+      const defaultTypeId = customerTypes[0]?.cus_type_id || 1;
+      const defaultCityId = cities[0]?.city_id || null;
+
       const customerData = {
-        ...newCustomer,
+        cus_name: newCustomer.cus_name.trim(),
+        cus_phone_no: newCustomer.cus_phone_no.trim(),
+        cus_phone_no2: (newCustomer.cus_phone_no2 || '').trim(),
+        cus_address: (newCustomer.cus_address || '').trim() || 'Mandi Bahauddin',
+        cus_reference: (newCustomer.cus_reference || '').trim(),
+        cus_account_info: (newCustomer.cus_account_info || '').trim(),
+        other: (newCustomer.other || '').trim(),
+        cus_category: newCustomer.cus_category ? parseInt(newCustomer.cus_category, 10) : defaultCatId,
+        cus_type: newCustomer.cus_type ? parseInt(newCustomer.cus_type, 10) : defaultTypeId,
         cus_balance: parseFloat(newCustomer.cus_balance) || 0,
-        city_id: newCustomer.city_id || null
+        CNIC: (newCustomer.CNIC || '').trim(),
+        NTN_NO: (newCustomer.NTN_NO || '').trim(),
+        name_urdu: (newCustomer.name_urdu || '').trim(),
+        city_id: newCustomer.city_id ? parseInt(newCustomer.city_id, 10) : defaultCityId
       };
 
       const response = await fetch('/api/customers', {
@@ -2054,12 +2083,27 @@ function QuotationsPageContent() {
       });
 
       if (response.ok) {
+        const createdCustomer = await response.json();
         showSnackbar('Customer created successfully', 'success');
         handleCloseCustomerPopup();
-        fetchData();
+
+        const newCustObj = createdCustomer?.customer || createdCustomer?.data || createdCustomer;
+        if (newCustObj?.cus_id) {
+          setCustomers(prev => [newCustObj, ...prev]);
+          setFormSelectedCustomer(newCustObj);
+        } else {
+          const updatedRes = await fetch('/api/customers?dropdown=true');
+          if (updatedRes.ok) {
+            const updatedData = await updatedRes.json();
+            const list = updatedData.value || updatedData;
+            setCustomers(Array.isArray(list) ? list : []);
+            const found = (Array.isArray(list) ? list : []).find(c => c.cus_name === customerData.cus_name);
+            if (found) setFormSelectedCustomer(found);
+          }
+        }
       } else {
         const errorData = await response.json();
-        showSnackbar(errorData.error || 'Error creating customer', 'error');
+        showSnackbar(errorData.error || errorData.message || 'Error creating customer', 'error');
       }
     } catch (error) {
       console.error('Error creating customer:', error);
@@ -2220,8 +2264,8 @@ function QuotationsPageContent() {
               <Grid container spacing={2} sx={{ mb: 2, alignItems: 'flex-end' }}>
                 <Grid item xs={12} md={3.2}>
                   <Box sx={{ position: 'relative' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                         <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
                           CUSTOMER
                         </Typography>
@@ -2233,6 +2277,17 @@ function QuotationsPageContent() {
                           sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
                         >
                           Add Customer
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="text"
+                          component="a"
+                          href="/dashboard/customers"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
+                        >
+                          Customers Page ↗
                         </Button>
                       </Box>
                       {formSelectedCustomer && (
@@ -2490,7 +2545,7 @@ function QuotationsPageContent() {
                         </Tooltip>
                       )}
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                       <Button
                         size="small"
                         variant="text"
@@ -2500,7 +2555,17 @@ function QuotationsPageContent() {
                       >
                         Add Product
                       </Button>
-
+                      <Button
+                        size="small"
+                        variant="text"
+                        component="a"
+                        href="/dashboard/products"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
+                      >
+                        Products Page ↗
+                      </Button>
                     </Box>
                   </Box>
                   <Autocomplete
@@ -3886,32 +3951,138 @@ function QuotationsPageContent() {
         {currentView === 'create' ? renderCreateView() : renderListView()}
       </Suspense>
 
-      {/* Customer Popup */}
-      <Dialog open={customerPopupOpen} onClose={handleCloseCustomerPopup} maxWidth="md" fullWidth>
-        <DialogTitle>Create New Customer</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
+      {/* Customer Creation Popup */}
+      <Dialog
+        open={customerPopupOpen}
+        onClose={handleCloseCustomerPopup}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          bgcolor: BRAND.supporting.periwinkle,
+          color: '#fff',
+          fontWeight: 800,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          py: 2
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>Add New Customer Account</Typography>
+          <IconButton onClick={handleCloseCustomerPopup} size="small" sx={{ color: '#fff' }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, bgcolor: '#f8fafc' }}>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Name"
+                required
+                label="Account Name"
                 value={newCustomer.cus_name}
                 onChange={(e) => setNewCustomer({ ...newCustomer, cus_name: e.target.value })}
+                placeholder="Enter customer name"
               />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Phone"
+                required
+                label="Phone Number"
                 value={newCustomer.cus_phone_no}
                 onChange={(e) => setNewCustomer({ ...newCustomer, cus_phone_no: e.target.value })}
+                placeholder="0300-1234567"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Secondary Phone (Optional)"
+                value={newCustomer.cus_phone_no2 || ''}
+                onChange={(e) => setNewCustomer({ ...newCustomer, cus_phone_no2: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Address"
+                value={newCustomer.cus_address || ''}
+                onChange={(e) => setNewCustomer({ ...newCustomer, cus_address: e.target.value })}
+                placeholder="City or Street Address"
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={newCustomer.cus_category || (customerCategories[0]?.cus_cat_id || '')}
+                  label="Category"
+                  onChange={(e) => setNewCustomer({ ...newCustomer, cus_category: e.target.value })}
+                >
+                  {customerCategories.map(cat => (
+                    <MenuItem key={cat.cus_cat_id} value={cat.cus_cat_id}>{cat.cus_cat_title}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Customer Type</InputLabel>
+                <Select
+                  value={newCustomer.cus_type || (customerTypes[0]?.cus_type_id || '')}
+                  label="Customer Type"
+                  onChange={(e) => setNewCustomer({ ...newCustomer, cus_type: e.target.value })}
+                >
+                  {customerTypes.map(t => (
+                    <MenuItem key={t.cus_type_id} value={t.cus_type_id}>{t.cus_type_title}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth size="small">
+                <InputLabel>City</InputLabel>
+                <Select
+                  value={newCustomer.city_id || (cities[0]?.city_id || '')}
+                  label="City"
+                  onChange={(e) => setNewCustomer({ ...newCustomer, city_id: e.target.value })}
+                >
+                  {cities.map(c => (
+                    <MenuItem key={c.city_id} value={c.city_id}>{c.city_name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Reference / Notes"
+                value={newCustomer.cus_reference || ''}
+                onChange={(e) => setNewCustomer({ ...newCustomer, cus_reference: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Opening Balance (PKR)"
+                value={newCustomer.cus_balance || 0}
+                onChange={(e) => setNewCustomer({ ...newCustomer, cus_balance: e.target.value })}
               />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseCustomerPopup}>Cancel</Button>
-          <Button onClick={handleCreateCustomer} variant="contained">Create</Button>
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f1f5f9', borderTop: '1px solid #e2e8f0' }}>
+          <Button onClick={handleCloseCustomerPopup} sx={{ color: '#64748b' }}>Cancel</Button>
+          <Button onClick={handleCreateCustomer} variant="contained" sx={{ bgcolor: BRAND.supporting.periwinkle, '&:hover': { bgcolor: '#4a57d4' } }}>
+            Create Customer
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -4070,6 +4241,10 @@ function QuotationsPageContent() {
       <ProductFormModal
         open={showAddProductModal}
         onClose={() => setShowAddProductModal(false)}
+        categories={productCategories}
+        subcategories={productSubcategories}
+        stores={stores}
+        formulas={formulas}
         onSuccess={(newProduct) => {
           if (newProduct) {
             setProducts(prev => [newProduct, ...prev]);
