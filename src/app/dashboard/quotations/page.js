@@ -2,7 +2,7 @@
 
 import ProductFormModal from '@/components/products/ProductFormModal';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { formatDatePK } from '@/lib/date-helper';
 import { BRAND, COMPANY } from '@/lib/brand-theme';
