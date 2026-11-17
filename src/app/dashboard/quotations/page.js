@@ -1022,6 +1022,68 @@ function QuotationsPageContent() {
     }));
   };
 
+  const updateRowEnteredDimension = (rowId, field, newVal) => {
+    setProductTableData(prev => prev.map(p => {
+      if (p.id !== rowId) return p;
+      const updated = { ...p, [field]: newVal };
+      const wVal = updated.width_in;
+      const hVal = updated.height_in;
+      const pcs = parseInt(updated.pieces, 10) || 1;
+
+      // Find product formula if available
+      const prodFormula = p.formula || products.find(prod => prod.pro_id === p.pro_id)?.formula || null;
+
+      const dimResult = calculateGlassDimensions({
+        width: wVal,
+        height: hVal,
+        pieces: pcs,
+        formula: prodFormula
+      });
+
+      const cW = dimResult.calc_width !== '' ? dimResult.calc_width : (parseFloat(updated.calc_width) || 0);
+      const cH = dimResult.calc_height !== '' ? dimResult.calc_height : (parseFloat(updated.calc_height) || 0);
+
+      let qty = parseFloat(p.quantity) || 0;
+      if (cW > 0 && cH > 0) {
+        qty = Number(((cW * cH / 144) * pcs).toFixed(2));
+      } else if (dimResult.quantity > 0) {
+        qty = dimResult.quantity;
+      }
+
+      const glassRate = parseFloat(p.rate || p.glass_rate || 0);
+      const addonsTotal = (p.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = glassRate + addonsTotal;
+      const glassAmount = Number((qty * glassRate).toFixed(0));
+      const addonsAmount = Number((qty * addonsTotal).toFixed(0));
+      const lineAmount = Number((qty * effectiveRate).toFixed(0));
+
+      let sizeStr = '';
+      if (updated.width_in && updated.height_in) {
+        sizeStr = `${updated.width_in}"×${updated.height_in}" (Avail: ${cW}"×${cH}") [${pcs} pcs]`;
+      } else if (cW > 0 && cH > 0) {
+        sizeStr = `(Avail: ${cW}"×${cH}") [${pcs} pcs]`;
+      }
+      if (p.comments) {
+        sizeStr = sizeStr ? `${sizeStr} - ${p.comments}` : p.comments;
+      }
+
+      return {
+        ...updated,
+        calc_width: cW,
+        calc_height: cH,
+        quantity: qty,
+        glass_amount: glassAmount,
+        addons_amount: addonsAmount,
+        effective_rate: effectiveRate,
+        amount: lineAmount,
+        size: sizeStr,
+      };
+    }));
+  };
+
   const updateRowCalcDimension = (rowId, field, newVal) => {
     setProductTableData(prev => prev.map(p => {
       if (p.id !== rowId) return p;
@@ -2884,7 +2946,7 @@ function QuotationsPageContent() {
                     }
                     label={
                       <Typography variant="caption" sx={{ fontWeight: 800, color: isManualCalcSize ? '#4a57d4' : '#64748b', userSelect: 'none' }}>
-                        ✏️ Edit Calc Size (W×H)
+                        ✏️ Edit Sizes (W×H)
                       </Typography>
                     }
                     sx={{ m: 0 }}
@@ -2900,8 +2962,8 @@ function QuotationsPageContent() {
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">S#</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 95 }} align="center">Entered Size (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 105 }} align="center">Calc / Avail (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Entered Size (W×H)</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Calc / Avail (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
@@ -3019,8 +3081,66 @@ function QuotationsPageContent() {
                                 }}
                               />
                             </TableCell>
-                            <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600 }} align="center">
-                              {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
+                            <TableCell sx={{ py: 0.5, minWidth: 110 }} align="center">
+                              {isManualCalcSize ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                                  <TextField
+                                    size="small"
+                                    type="number"
+                                    value={product.width_in ?? ''}
+                                    placeholder="W"
+                                    onChange={(e) => updateRowEnteredDimension(product.id, 'width_in', e.target.value)}
+                                    onFocus={(e) => {
+                                      e.target.select();
+                                      setActiveRowId(product.id);
+                                    }}
+                                    sx={{
+                                      width: 46,
+                                      '& .MuiInputBase-input': {
+                                        padding: '3px 4px',
+                                        textAlign: 'center',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700,
+                                        color: '#0369a1',
+                                        bgcolor: '#f0f9ff',
+                                        border: '1px solid #7dd3fc',
+                                        borderRadius: '4px'
+                                      }
+                                    }}
+                                    inputProps={{ min: 0, step: 'any' }}
+                                  />
+                                  <Typography variant="caption" sx={{ fontWeight: 900, color: '#0369a1' }}>×</Typography>
+                                  <TextField
+                                    size="small"
+                                    type="number"
+                                    value={product.height_in ?? ''}
+                                    placeholder="H"
+                                    onChange={(e) => updateRowEnteredDimension(product.id, 'height_in', e.target.value)}
+                                    onFocus={(e) => {
+                                      e.target.select();
+                                      setActiveRowId(product.id);
+                                    }}
+                                    sx={{
+                                      width: 46,
+                                      '& .MuiInputBase-input': {
+                                        padding: '3px 4px',
+                                        textAlign: 'center',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700,
+                                        color: '#0369a1',
+                                        bgcolor: '#f0f9ff',
+                                        border: '1px solid #7dd3fc',
+                                        borderRadius: '4px'
+                                      }
+                                    }}
+                                    inputProps={{ min: 0, step: 'any' }}
+                                  />
+                                </Box>
+                              ) : (
+                                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                  {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
+                                </Typography>
+                              )}
                             </TableCell>
                             <TableCell sx={{ py: 0.5, minWidth: 105 }} align="center">
                               {isManualCalcSize ? (
