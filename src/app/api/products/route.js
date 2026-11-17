@@ -84,6 +84,8 @@ export async function GET(request) {
         pro_unit: true,
         pro_packing: true,
         pro_stock_qnty: true,
+        formula_id: true,
+        formula: true,
         addons: {
           include: {
             addon: true

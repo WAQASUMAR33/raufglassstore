@@ -102,7 +102,7 @@ import {
 
 import { getOfflineSalesQueue, saveOfflineSale, syncOfflineSalesQueue } from '@/lib/offline-sales-helper';
 import { BRAND, COMPANY } from '@/lib/brand-theme';
-import { calculateGlassDimensions } from '@/lib/glass-formula';
+import { calculateGlassDimensions, getProductFormula, parseSizeDetails } from '@/lib/glass-formula';
 import ProductFormModal from '@/components/products/ProductFormModal';
 import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
@@ -442,34 +442,6 @@ const normalizeProductFormData = (data) => ({
   selected_addons: Array.isArray(data?.selected_addons) ? data.selected_addons : [],
 });
 
-const parseSizeDetails = (sizeStr) => {
-  if (!sizeStr || typeof sizeStr !== 'string') {
-    return { width_in: '', height_in: '', calc_width: '', calc_height: '', pieces: 1, comments: '' };
-  }
-  let comments = '';
-  let dimensionsPart = sizeStr;
-  if (sizeStr.includes(' - ')) {
-    const parts = sizeStr.split(' - ');
-    dimensionsPart = parts[0];
-    comments = parts.slice(1).join(' - ');
-  } else if (!dimensionsPart.includes('x') && !dimensionsPart.includes('×')) {
-    return { width_in: '', height_in: '', calc_width: '', calc_height: '', pieces: 1, comments: sizeStr };
-  }
-
-  const match = dimensionsPart.match(/([0-9.]+)\s*["']?\s*[x×]\s*([0-9.]+)/i);
-  if (match) {
-    const w = match[1];
-    const h = match[2];
-    const cW = Math.ceil(parseFloat(w) || 0);
-    const cH = Math.ceil(parseFloat(h) || 0);
-    const pcsMatch = dimensionsPart.match(/\[(\d+)\s*pcs\]/i);
-    const pcs = pcsMatch ? parseInt(pcsMatch[1], 10) : 1;
-    return { width_in: w, height_in: h, calc_width: cW, calc_height: cH, pieces: pcs, comments };
-  }
-
-  return { width_in: '', height_in: '', calc_width: '', calc_height: '', pieces: 1, comments: sizeStr };
-};
-
 const EMPTY_CUSTOMER_FORM = {
   cus_name: '',
   cus_phone_no: '',
@@ -776,6 +748,7 @@ function SalesPageContent() {
   const [productCategories, setProductCategories] = useState([]);
   const [productSubcategories, setProductSubcategories] = useState([]);
   const [stores, setStores] = useState([]);
+  const [formulas, setFormulas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formRefLoading, setFormRefLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
@@ -952,19 +925,27 @@ function SalesPageContent() {
 
           // Map Products if available (reversed order)
           if (fullQuotation.sale_details && Array.isArray(fullQuotation.sale_details) && fullQuotation.sale_details.length > 0) {
-            const mappedProducts = fullQuotation.sale_details.slice().reverse().map((item, index) => ({
-              id: Date.now() + index,
-              pro_id: item.pro_id,
-              pro_title: item.product ? (item.product.pro_title || item.product.pro_name) : 'Unknown Product',
-              quantity: parseFloat(item.qnty || 0),
-              rate: parseFloat(item.unit_rate || 0),
-              amount: parseFloat(item.total_amount || 0),
-              crate: item.product ? (item.product.pro_crate || '') : '',
-              cost_price: getProductCostPrice(item.product),
-              stock: 0,
-              storeid: fullQuotation.store_id || selectedStore?.storeid,
-              store_name: selectedStore ? selectedStore.store_name : 'Unknown'
-            }));
+            const mappedProducts = fullQuotation.sale_details.slice().reverse().map((item, index) => {
+              const prod = item.product || products.find(p => p.pro_id === item.pro_id);
+              const parsed = parseSizeDetails(item.size, prod, formulas);
+              return {
+                id: Date.now() + index,
+                pro_id: item.pro_id,
+                pro_title: prod ? (prod.pro_title || prod.pro_name) : 'Unknown Product',
+                product: prod,
+                quantity: parseFloat(item.qnty || 0),
+                rate: parseFloat(item.unit_rate || 0),
+                amount: parseFloat(item.total_amount || 0),
+                crate: prod ? (prod.pro_crate || '') : '',
+                cost_price: getProductCostPrice(prod),
+                stock: 0,
+                storeid: fullQuotation.store_id || selectedStore?.storeid,
+                store_name: selectedStore ? selectedStore.store_name : 'Unknown',
+                ...parsed,
+                size: item.size || '',
+                formula: getProductFormula(prod, products, formulas)
+              };
+            });
             setProductTableData(mappedProducts);
           }
 
@@ -1733,7 +1714,7 @@ function SalesPageContent() {
         width: wVal,
         height: hVal,
         pieces: pcsVal,
-        formula: formSelectedProduct?.formula || null
+        formula: getProductFormula(formSelectedProduct, products, formulas)
       });
 
       const calcW = dimResult.calc_width || '';
@@ -1906,7 +1887,7 @@ function SalesPageContent() {
           width: prev.width_in,
           height: prev.height_in,
           pieces: prev.pieces,
-          formula: selectedProduct?.formula || null
+          formula: getProductFormula(selectedProduct, products, formulas)
         });
         const calcW = dimResult.calc_width || '';
         const calcH = dimResult.calc_height || '';
@@ -2067,7 +2048,7 @@ function SalesPageContent() {
       const pcs = parseInt(updated.pieces, 10) || 1;
 
       // Find product formula if available
-      const prodFormula = p.formula || products.find(prod => prod.pro_id === p.pro_id)?.formula || null;
+      const prodFormula = getProductFormula(p, products, formulas);
 
       const dimResult = calculateGlassDimensions({
         width: wVal,
@@ -2537,7 +2518,8 @@ function SalesPageContent() {
       amount: lineAmount,
       stock: productFormData.stock,
       size: sizeStr,
-      cost_price: getProductCostPrice(formSelectedProduct)
+      cost_price: getProductCostPrice(formSelectedProduct),
+      formula: getProductFormula(formSelectedProduct, products, formulas)
     };
 
     setProductTableData(prev => [newProduct, ...prev]);
@@ -3052,18 +3034,23 @@ function SalesPageContent() {
       // Map products (reversed order)
       if (fullQuotation.sale_details) {
         const mappedProducts = fullQuotation.sale_details.slice().reverse().map((detail, index) => {
+          const prod = detail.product || products.find(p => p.pro_id === detail.pro_id);
+          const parsed = parseSizeDetails(detail.size, prod, formulas);
           return {
             id: Date.now() + index + Math.random(),
             pro_id: detail.pro_id,
-            pro_title: detail.product?.pro_title || detail.pro_title || 'Unknown Product',
+            pro_title: prod?.pro_title || prod?.pro_name || detail.pro_title || 'Unknown Product',
+            product: prod,
             storeid: selectedStore?.storeid,
             store_name: selectedStore?.store_name || 'Store',
             quantity: parseFloat(detail.qnty) || 0,
             rate: parseFloat(detail.unit_rate) || 0,
             amount: parseFloat(detail.total_amount) || 0,
-            cost_price: getProductCostPrice(detail.product),
+            cost_price: getProductCostPrice(prod),
+            ...parsed,
             size: detail.size || '',
-            stock: 0 // We don't have current stock here, could fetch it but for now 0 is safe
+            stock: 0,
+            formula: getProductFormula(prod, products, formulas)
           };
         });
         setProductTableData(mappedProducts);
@@ -4536,12 +4523,13 @@ function SalesPageContent() {
         const needStores = stores.length === 0;
         const needCustomerCategories = customerCategories.length === 0;
 
-        const [customersRes, productsRes, customerTypesRes, storesRes, customerCategoriesRes] = await Promise.all([
+        const [customersRes, productsRes, customerTypesRes, storesRes, customerCategoriesRes, formulasRes] = await Promise.all([
           needCustomers ? fetch('/api/customers?dropdown=true') : Promise.resolve(null),
           needProducts ? fetch('/api/products?dropdown=true&noStoreStock=true') : Promise.resolve(null),
           needCustomerTypes ? fetch('/api/customer-types') : Promise.resolve(null),
           needStores ? fetch('/api/stores') : Promise.resolve(null),
-          needCustomerCategories ? fetch('/api/customer-category') : Promise.resolve(null)
+          needCustomerCategories ? fetch('/api/customer-category') : Promise.resolve(null),
+          fetch('/api/formulas')
         ]);
 
         let customersArrayForRefetch = customers.length > 0 ? customers : null;
@@ -4597,6 +4585,11 @@ function SalesPageContent() {
           } else {
             setCustomerCategories([]);
           }
+        }
+
+        if (formulasRes && formulasRes.ok) {
+          const formulasData = await formulasRes.json();
+          setFormulas(Array.isArray(formulasData) ? formulasData : []);
         }
 
         if (customersArrayForRefetch && customersArrayForRefetch.length > 0) {
@@ -6987,9 +6980,20 @@ function SalesPageContent() {
               <Box sx={billType === 'SALE_RETURN' ? SALE_ENTRY_ROW1_RETURN_SX : SALE_ENTRY_ROW1_SX}>
                 <Box sx={SALE_ENTRY_CELL_SX}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75, gap: 1, minHeight: 22, flexWrap: 'wrap' }}>
-                    <Typography sx={{ ...SALE_ENTRY_LABEL_SX, mb: 0 }}>
-                      CUSTOMER
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ ...SALE_ENTRY_LABEL_SX, mb: 0 }}>
+                        CUSTOMER
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                        onClick={() => handleOpenCustomerPopup('customer')}
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                      >
+                        Add Customer
+                      </Button>
+                    </Box>
                     {formSelectedCustomer && (
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Typography
@@ -7464,7 +7468,7 @@ function SalesPageContent() {
                         onClick={() => setShowAddProductPopup(true)}
                         sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
                       >
-                        + Add Product
+                        Add Product
                       </Button>
                     </Box>
                   </Box>
@@ -8158,8 +8162,8 @@ function SalesPageContent() {
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Entered Size (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Calc / Avail (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Calc / Avail (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 85 }} align="right">Glass Rate</TableCell>
@@ -8290,65 +8294,34 @@ function SalesPageContent() {
                               />
                             </TableCell>
                             <TableCell sx={{ py: 0.5, minWidth: 110 }} align="center">
-                              {isManualCalcSize ? (
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    value={product.width_in ?? ''}
-                                    placeholder="W"
-                                    onChange={(e) => updateRowEnteredDimension(product.id, 'width_in', e.target.value)}
-                                    onFocus={(e) => {
-                                      e.target.select();
-                                      setActiveRowId(product.id);
-                                    }}
-                                    sx={{
-                                      width: 46,
-                                      '& .MuiInputBase-input': {
-                                        padding: '3px 4px',
-                                        textAlign: 'center',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        color: '#0369a1',
-                                        bgcolor: '#f0f9ff',
-                                        border: '1px solid #7dd3fc',
-                                        borderRadius: '4px'
-                                      }
-                                    }}
-                                    inputProps={{ min: 0, step: 'any' }}
-                                  />
-                                  <Typography variant="caption" sx={{ fontWeight: 900, color: '#0369a1' }}>×</Typography>
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    value={product.height_in ?? ''}
-                                    placeholder="H"
-                                    onChange={(e) => updateRowEnteredDimension(product.id, 'height_in', e.target.value)}
-                                    onFocus={(e) => {
-                                      e.target.select();
-                                      setActiveRowId(product.id);
-                                    }}
-                                    sx={{
-                                      width: 46,
-                                      '& .MuiInputBase-input': {
-                                        padding: '3px 4px',
-                                        textAlign: 'center',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        color: '#0369a1',
-                                        bgcolor: '#f0f9ff',
-                                        border: '1px solid #7dd3fc',
-                                        borderRadius: '4px'
-                                      }
-                                    }}
-                                    inputProps={{ min: 0, step: 'any' }}
-                                  />
-                                </Box>
-                              ) : (
-                                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                                  {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
-                                </Typography>
-                              )}
+                              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={product.pieces || 1}
+                                onChange={(e) => updateRowPieces(product.id, e.target.value)}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
+                                sx={{
+                                  width: 50,
+                                  '& .MuiInputBase-input': {
+                                    padding: '3px 4px',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    bgcolor: 'rgba(255,255,255,0.85)',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '4px'
+                                  }
+                                }}
+                                inputProps={{ min: 1, step: 1 }}
+                              />
                             </TableCell>
                             <TableCell sx={{ py: 0.5, minWidth: 105 }} align="center">
                               {isManualCalcSize ? (
@@ -8410,31 +8383,6 @@ function SalesPageContent() {
                                   {product.calc_width && product.calc_height ? `${product.calc_width}" × ${product.calc_height}"` : '-'}
                                 </Typography>
                               )}
-                            </TableCell>
-                            <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
-                              <TextField
-                                size="small"
-                                type="number"
-                                value={product.pieces || 1}
-                                onChange={(e) => updateRowPieces(product.id, e.target.value)}
-                                onFocus={(e) => {
-                                  e.target.select();
-                                  setActiveRowId(product.id);
-                                }}
-                                sx={{
-                                  width: 50,
-                                  '& .MuiInputBase-input': {
-                                    padding: '3px 4px',
-                                    textAlign: 'center',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.85rem',
-                                    bgcolor: 'rgba(255,255,255,0.85)',
-                                    border: '1px solid #cbd5e1',
-                                    borderRadius: '4px'
-                                  }
-                                }}
-                                inputProps={{ min: 1, step: 1 }}
-                              />
                             </TableCell>
                             <TableCell sx={{ py: 1 }} align="center">
                               <TextField

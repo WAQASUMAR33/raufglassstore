@@ -539,7 +539,8 @@ export async function GET(request) {
                 product: {
                   include: {
                     category: true,
-                    sub_category: true
+                    sub_category: true,
+                    formula: true
                   }
                 }
               }
@@ -603,7 +604,8 @@ export async function GET(request) {
                   product: {
                     include: {
                       category: true,
-                      sub_category: true
+                      sub_category: true,
+                      formula: true
                     }
                   }
                 }
@@ -1029,7 +1031,8 @@ export async function GET(request) {
                     product: {
                       include: {
                         category: true,
-                        sub_category: true
+                        sub_category: true,
+                        formula: true
                       }
                     }
                   }

@@ -5,7 +5,7 @@ import ProductFormModal from '@/components/products/ProductFormModal';
 import { useState, useEffect, useMemo, useCallback, Suspense, useRef, useLayoutEffect } from 'react';
 import { getCreatedByName } from '@/lib/date-helper';
 import { BRAND } from '@/lib/brand-theme';
-import { calculateGlassDimensions } from '@/lib/glass-formula';
+import { calculateGlassDimensions, getProductFormula, parseSizeDetails } from '@/lib/glass-formula';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../components/dashboard-layout';
 import DateFilterInput from '../components/date-filter-input';
@@ -573,6 +573,8 @@ function OrdersPageContent() {
   const [products, setProducts] = useState([]);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [stores, setStores] = useState([]);
+  const [formulas, setFormulas] = useState([]);
+  const loadedQuotationIdRef = useRef(null);
   const [listLoading, setListLoading] = useState(true);
   const formCatalogLoadedRef = useRef(false);
   const [savingBill, setSavingBill] = useState(false);
@@ -684,6 +686,74 @@ function OrdersPageContent() {
       setShowTrashOrders(false);
     }
   }, [searchParams, stores]);
+
+  // Load quotation into order form when quotationId is in URL
+  const quotationId = searchParams?.get('quotationId');
+
+  useEffect(() => {
+    if (quotationId && quotationId !== loadedQuotationIdRef.current && customers.length > 0 && currentView === 'create') {
+      const loadQuotationIntoOrder = async () => {
+        try {
+          loadedQuotationIdRef.current = quotationId;
+          const res = await fetch(`/api/sales?id=${quotationId}`);
+          if (!res.ok) throw new Error('Failed to fetch quotation details');
+          const fullQuotation = await res.json();
+          const qData = Array.isArray(fullQuotation) ? fullQuotation[0] : fullQuotation;
+
+          if (qData.customer) {
+            const matchingCustomer = customers.find(c => c.cus_id === qData.customer.cus_id);
+            setFormSelectedCustomer(matchingCustomer || qData.customer);
+          } else if (qData.cus_id) {
+            const customer = customers.find(c => c.cus_id === qData.cus_id);
+            if (customer) setFormSelectedCustomer(customer);
+          }
+
+          let selectedStore = stores.find(s => s.storeid === qData.store_id) || (stores.length > 0 ? stores[0] : null);
+          if (selectedStore) setFormSelectedStore(selectedStore);
+
+          if (qData.sale_details && Array.isArray(qData.sale_details) && qData.sale_details.length > 0) {
+            const mapped = qData.sale_details.slice().reverse().map((item, index) => {
+              const prod = item.product || products.find(p => p.pro_id === item.pro_id);
+              const parsed = parseSizeDetails(item.size, prod, formulas);
+              const qnty = parseFloat(item.qnty || 0);
+              const rate = parseFloat(item.unit_rate || 0);
+              const amt = parseFloat(item.total_amount || 0) || (qnty * rate);
+              return {
+                id: Date.now() + index,
+                pro_id: item.pro_id,
+                pro_title: prod ? (prod.pro_title || prod.pro_name) : 'Unknown Product',
+                product: prod,
+                quantity: qnty,
+                rate: rate,
+                glass_rate: rate,
+                amount: amt,
+                stock: 0,
+                storeid: qData.store_id || selectedStore?.storeid,
+                store_name: selectedStore?.store_name || 'Store',
+                ...parsed,
+                size: item.size || '',
+                formula: getProductFormula(prod, products, formulas)
+              };
+            });
+            setProductTableData(mapped);
+          }
+
+          setPaymentData(prev => ({
+            ...prev,
+            discount: parseFloat(qData.discount || 0) || '',
+            notes: qData.reference ? `${qData.reference} (Ref Quotation #${quotationId})` : `Ref Quotation #${quotationId}`,
+          }));
+
+          showSnackbar(`Quotation #${quotationId} details loaded into Order.`, 'info');
+        } catch (err) {
+          console.error('Error loading quotation into order:', err);
+          showSnackbar('Failed to load quotation details', 'error');
+          loadedQuotationIdRef.current = null;
+        }
+      };
+      loadQuotationIntoOrder();
+    }
+  }, [quotationId, customers, stores, currentView, formulas]);
 
   // WhatsApp state
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
@@ -1512,7 +1582,7 @@ function OrdersPageContent() {
       const pcs = parseInt(updated.pieces, 10) || 1;
 
       // Find product formula if available
-      const prodFormula = p.formula || products.find(prod => prod.pro_id === p.pro_id)?.formula || null;
+      const prodFormula = getProductFormula(p, products, formulas);
 
       const dimResult = calculateGlassDimensions({
         width: wVal,
@@ -1857,7 +1927,7 @@ function OrdersPageContent() {
         width: wVal,
         height: hVal,
         pieces: pcsVal,
-        formula: formSelectedProduct?.formula || null
+        formula: getProductFormula(formSelectedProduct, products, formulas)
       });
 
       const calcW = dimResult.calc_width || '';
@@ -1927,7 +1997,7 @@ function OrdersPageContent() {
           width: prev.width_in,
           height: prev.height_in,
           pieces: prev.pieces,
-          formula: selectedProduct?.formula || null
+          formula: getProductFormula(selectedProduct, products, formulas)
         });
         const calcW = dimResult.calc_width || '';
         const calcH = dimResult.calc_height || '';
@@ -2137,7 +2207,8 @@ function OrdersPageContent() {
       amount: lineAmount,
       stock: productFormData.stock,
       pro_wholesale_price: formSelectedProduct.pro_wholesale_price,
-      pro_sale_price: formSelectedProduct.pro_sale_price
+      pro_sale_price: formSelectedProduct.pro_sale_price,
+      formula: getProductFormula(formSelectedProduct, products, formulas)
     };
 
     setProductTableData(prev => [...prev, newProduct]);
@@ -2907,11 +2978,12 @@ function OrdersPageContent() {
   const fetchFormCatalog = async () => {
     if (formCatalogLoadedRef.current) return;
     try {
-      const [productsRes, customerTypesRes, citiesRes, customersRes] = await Promise.all([
+      const [productsRes, customerTypesRes, citiesRes, customersRes, formulasRes] = await Promise.all([
         fetch('/api/products?dropdown=true'),
         fetch('/api/customer-types'),
         fetch('/api/cities'),
         fetch('/api/customers?dropdown=true'),
+        fetch('/api/formulas'),
       ]);
       if (productsRes.ok) {
         const productsData = await productsRes.json();
@@ -2925,6 +2997,10 @@ function OrdersPageContent() {
       if (citiesRes.ok) {
         const citiesData = await citiesRes.json();
         setCities(citiesData || []);
+      }
+      if (formulasRes && formulasRes.ok) {
+        const formulasData = await formulasRes.json();
+        setFormulas(Array.isArray(formulasData) ? formulasData : []);
       }
       await parseCustomersJson(customersRes);
       formCatalogLoadedRef.current = true;
@@ -3531,17 +3607,30 @@ function OrdersPageContent() {
       if (store) setFormSelectedStore(store);
 
       // 3. Populate Product Table
-      const tableData = saleData.sale_details.map((d, index) => ({
-        id: Date.now() + index, // Unique ID
-        pro_id: d.pro_id,
-        pro_title: d.product?.pro_title || d.product?.pro_name || 'Unknown Product',
-        storeid: store?.storeid,
-        store_name: store?.store_name,
-        quantity: parseFloat(d.qnty),
-        rate: parseFloat(d.unit_rate),
-        amount: parseFloat(d.total_amount),
-        stock: 0 // Will be updated by store stock fetch
-      }));
+      const tableData = (saleData.sale_details || []).map((d, index) => {
+        const prod = d.product || products.find(p => p.pro_id === d.pro_id);
+        const parsed = parseSizeDetails(d.size, prod, formulas);
+        const qnty = parseFloat(d.qnty) || 0;
+        const rate = parseFloat(d.unit_rate) || 0;
+        const amt = parseFloat(d.total_amount) || (qnty * rate) || 0;
+        const prodFormula = getProductFormula(prod, products, formulas);
+        return {
+          id: d.sale_detail_id || (Date.now() + index),
+          pro_id: d.pro_id,
+          pro_title: prod?.pro_title || prod?.pro_name || d.pro_title || 'Unknown Product',
+          product: prod || { pro_id: d.pro_id, pro_title: d.pro_title },
+          storeid: store?.storeid,
+          store_name: store?.store_name,
+          quantity: qnty,
+          rate: rate,
+          glass_rate: rate,
+          amount: amt,
+          stock: 0,
+          ...parsed,
+          size: d.size || '',
+          formula: prodFormula
+        };
+      });
       setProductTableData(tableData);
 
       // 4. Populate Payment Data
@@ -3910,9 +3999,20 @@ function OrdersPageContent() {
                 </Box>
                 <Box sx={ORDER_ENTRY_CELL_SX}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75, gap: 1, minHeight: 22, flexWrap: 'wrap' }}>
-                      <Typography sx={{ ...ORDER_ENTRY_LABEL_SX, mb: 0 }}>
-                        CUSTOMER
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography sx={{ ...ORDER_ENTRY_LABEL_SX, mb: 0 }}>
+                          CUSTOMER
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                          onClick={() => handleOpenCustomerPopup('customer')}
+                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                        >
+                          Add Customer
+                        </Button>
+                      </Box>
                       {formSelectedCustomer && (
                         <Box
                           component="span"
@@ -4214,7 +4314,7 @@ function OrdersPageContent() {
                           onClick={() => setShowAddProductModal(true)}
                           sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
                         >
-                          + Add Product
+                          Add Product
                         </Button>
 
                       </Box>
@@ -4909,7 +5009,7 @@ function OrdersPageContent() {
                     }
                     label={
                       <Typography variant="caption" sx={{ fontWeight: 800, color: isManualCalcSize ? '#15803d' : '#64748b', userSelect: 'none' }}>
-                        ✏️ Edit Sizes (W×H)
+                        ✏️ Edit Calc Size (W×H)
                       </Typography>
                     }
                     sx={{ m: 0 }}
@@ -4926,8 +5026,8 @@ function OrdersPageContent() {
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Entered Size (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Calc / Avail (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Calc / Avail (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 85 }} align="right">Glass Rate</TableCell>
@@ -5059,65 +5159,34 @@ function OrdersPageContent() {
                               />
                             </TableCell>
                             <TableCell sx={{ py: 0.5, minWidth: 110 }} align="center">
-                              {isManualCalcSize ? (
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    value={product.width_in ?? ''}
-                                    placeholder="W"
-                                    onChange={(e) => updateRowEnteredDimension(product.id, 'width_in', e.target.value)}
-                                    onFocus={(e) => {
-                                      e.target.select();
-                                      setActiveRowId(product.id);
-                                    }}
-                                    sx={{
-                                      width: 46,
-                                      '& .MuiInputBase-input': {
-                                        padding: '3px 4px',
-                                        textAlign: 'center',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        color: '#0369a1',
-                                        bgcolor: '#f0f9ff',
-                                        border: '1px solid #7dd3fc',
-                                        borderRadius: '4px'
-                                      }
-                                    }}
-                                    inputProps={{ min: 0, step: 'any' }}
-                                  />
-                                  <Typography variant="caption" sx={{ fontWeight: 900, color: '#0369a1' }}>×</Typography>
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    value={product.height_in ?? ''}
-                                    placeholder="H"
-                                    onChange={(e) => updateRowEnteredDimension(product.id, 'height_in', e.target.value)}
-                                    onFocus={(e) => {
-                                      e.target.select();
-                                      setActiveRowId(product.id);
-                                    }}
-                                    sx={{
-                                      width: 46,
-                                      '& .MuiInputBase-input': {
-                                        padding: '3px 4px',
-                                        textAlign: 'center',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        color: '#0369a1',
-                                        bgcolor: '#f0f9ff',
-                                        border: '1px solid #7dd3fc',
-                                        borderRadius: '4px'
-                                      }
-                                    }}
-                                    inputProps={{ min: 0, step: 'any' }}
-                                  />
-                                </Box>
-                              ) : (
-                                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                                  {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
-                                </Typography>
-                              )}
+                              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={product.pieces || 1}
+                                onChange={(e) => updateRowPieces(product.id, e.target.value)}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
+                                sx={{
+                                  width: 50,
+                                  '& .MuiInputBase-input': {
+                                    padding: '3px 4px',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    bgcolor: 'rgba(255,255,255,0.85)',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '4px'
+                                  }
+                                }}
+                                inputProps={{ min: 1, step: 1 }}
+                              />
                             </TableCell>
                             <TableCell sx={{ py: 0.5, minWidth: 105 }} align="center">
                               {isManualCalcSize ? (
@@ -5179,31 +5248,6 @@ function OrdersPageContent() {
                                   {product.calc_width && product.calc_height ? `${product.calc_width}" × ${product.calc_height}"` : '-'}
                                 </Typography>
                               )}
-                            </TableCell>
-                            <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
-                              <TextField
-                                size="small"
-                                type="number"
-                                value={product.pieces || 1}
-                                onChange={(e) => updateRowPieces(product.id, e.target.value)}
-                                onFocus={(e) => {
-                                  e.target.select();
-                                  setActiveRowId(product.id);
-                                }}
-                                sx={{
-                                  width: 50,
-                                  '& .MuiInputBase-input': {
-                                    padding: '3px 4px',
-                                    textAlign: 'center',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.85rem',
-                                    bgcolor: 'rgba(255,255,255,0.85)',
-                                    border: '1px solid #cbd5e1',
-                                    borderRadius: '4px'
-                                  }
-                                }}
-                                inputProps={{ min: 1, step: 1 }}
-                              />
                             </TableCell>
                             <TableCell sx={{ py: 1 }} align="center">
                               <TextField

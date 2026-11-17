@@ -148,3 +148,118 @@ export function calculateGlassDimensions({
   };
 }
 
+/**
+ * Resolves the appropriate formula configuration for a given product
+ * Checks product.formula, productsList lookup, or formulasList lookup by formula_id
+ */
+export function getProductFormula(product, productsList = [], formulasList = []) {
+  if (!product) return null;
+
+  // 1. Direct formula object on product
+  if (product.formula && typeof product.formula === 'object' && (product.formula.width_steps || product.formula.name)) {
+    return product.formula;
+  }
+
+  // 2. Lookup in productsList if product only has pro_id
+  const proId = product.pro_id || product.id;
+  const fullProd = Array.isArray(productsList) ? productsList.find(p => p.pro_id === proId || p.id === proId) : null;
+  if (fullProd?.formula && typeof fullProd.formula === 'object' && (fullProd.formula.width_steps || fullProd.formula.name)) {
+    return fullProd.formula;
+  }
+
+  // 3. Resolve by formula_id
+  const formulaId = product.formula_id || fullProd?.formula_id;
+  if (formulaId && Array.isArray(formulasList) && formulasList.length > 0) {
+    const matched = formulasList.find(f => f.id === formulaId || f.id === parseInt(formulaId, 10));
+    if (matched) return matched;
+  }
+
+  // 4. Default active formula in formulasList
+  if (Array.isArray(formulasList) && formulasList.length > 0) {
+    const defaultF = formulasList.find(f => f.is_default && f.is_active);
+    if (defaultF) return defaultF;
+    const firstActive = formulasList.find(f => f.is_active);
+    if (firstActive) return firstActive;
+  }
+
+  return null;
+}
+
+/**
+ * Parses size string from DB (e.g. '15"×14" (Avail: 15"×15") [1 pcs] - particular comments')
+ * into individual dimensions: width_in, height_in, calc_width, calc_height, pieces, comments.
+ */
+export function parseSizeDetails(sizeStr, product = null, formulasList = []) {
+  if (!sizeStr || typeof sizeStr !== 'string') {
+    return { width_in: '', height_in: '', calc_width: '', calc_height: '', pieces: 1, comments: '' };
+  }
+
+  let comments = '';
+  let mainPart = sizeStr.trim();
+
+  // Extract comments after ' - '
+  if (mainPart.includes(' - ')) {
+    const parts = mainPart.split(' - ');
+    mainPart = parts[0].trim();
+    comments = parts.slice(1).join(' - ').trim();
+  }
+
+  // Extract pieces from [X pcs]
+  let pieces = 1;
+  const pcsMatch = mainPart.match(/\[(\d+)\s*pcs\]/i);
+  if (pcsMatch) {
+    pieces = parseInt(pcsMatch[1], 10) || 1;
+    mainPart = mainPart.replace(pcsMatch[0], '').trim();
+  }
+
+  // Extract Avail (calc_width x calc_height)
+  // Format: (Avail: 15"×15") or (Avail: 15"x15") or (Avail: 15×15)
+  let calc_width = '';
+  let calc_height = '';
+  const availMatch = mainPart.match(/\(Avail:\s*([0-9.]+)\s*["']?\s*[x×]\s*([0-9.]+)\s*["']?\)/i);
+  if (availMatch) {
+    calc_width = parseFloat(availMatch[1]) || '';
+    calc_height = parseFloat(availMatch[2]) || '';
+    mainPart = mainPart.replace(availMatch[0], '').trim();
+  }
+
+  // Extract Entered Size (width_in x height_in)
+  // Format: 15"×14" or 15"x14" or 15x14
+  let width_in = '';
+  let height_in = '';
+  const enteredMatch = mainPart.match(/([0-9.]+)\s*["']?\s*[x×]\s*([0-9.]+)/i);
+  if (enteredMatch) {
+    width_in = parseFloat(enteredMatch[1]) || '';
+    height_in = parseFloat(enteredMatch[2]) || '';
+  }
+
+  // If no calc sizes found from string but we have entered sizes:
+  // calculate calc_width and calc_height using product formula if available
+  if ((calc_width === '' || calc_height === '') && width_in !== '' && height_in !== '') {
+    const formula = getProductFormula(product, [], formulasList);
+    const calculated = calculateGlassDimensions({
+      width: width_in,
+      height: height_in,
+      pieces,
+      formula
+    });
+    calc_width = calculated.calc_width;
+    calc_height = calculated.calc_height;
+  }
+
+  // If sizeStr didn't contain dimensions at all (e.g. General product), keep it as comments if comments is empty
+  if (width_in === '' && height_in === '' && calc_width === '' && calc_height === '' && !comments) {
+    comments = sizeStr;
+  }
+
+  return {
+    width_in: width_in !== '' ? String(width_in) : '',
+    height_in: height_in !== '' ? String(height_in) : '',
+    calc_width: calc_width !== '' ? String(calc_width) : '',
+    calc_height: calc_height !== '' ? String(calc_height) : '',
+    pieces,
+    comments
+  };
+}
+
+

@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { formatDatePK } from '@/lib/date-helper';
 import { BRAND, COMPANY } from '@/lib/brand-theme';
-import { calculateGlassDimensions } from '@/lib/glass-formula';
+import { calculateGlassDimensions, getProductFormula, parseSizeDetails } from '@/lib/glass-formula';
 import { openAccountLedgerTab, FINANCE_LEDGER_PATH } from '@/lib/ledger-tabs';
 import DashboardLayout from '../components/dashboard-layout';
 import DateFilterInput from '../components/date-filter-input';
@@ -436,6 +436,7 @@ function QuotationsPageContent() {
 
   // Edit sale state
   const [editSaleId, setEditSaleId] = useState(null);
+  const [formulas, setFormulas] = useState([]);
 
   // Customer creation popup state
   const [customerPopupOpen, setCustomerPopupOpen] = useState(false);
@@ -651,13 +652,14 @@ function QuotationsPageContent() {
         setSales([]);
       }
 
-      const [customersRes, productsRes, customerTypesRes, storesRes, customerCategoriesRes, citiesRes] = await Promise.all([
+      const [customersRes, productsRes, customerTypesRes, storesRes, customerCategoriesRes, citiesRes, formulasRes] = await Promise.all([
         fetch('/api/customers?dropdown=true'),
         fetch('/api/products?dropdown=true'),
         fetch('/api/customer-types'),
         fetch('/api/stores'),
         fetch('/api/customer-category'),
-        fetch('/api/cities')
+        fetch('/api/cities'),
+        fetch('/api/formulas')
       ]);
 
       await fetchTransportAccounts();
@@ -694,6 +696,11 @@ function QuotationsPageContent() {
       if (citiesRes.ok) {
         const citiesData = await citiesRes.json();
         setCities(citiesData || []);
+      }
+
+      if (formulasRes && formulasRes.ok) {
+        const formulasData = await formulasRes.json();
+        setFormulas(Array.isArray(formulasData) ? formulasData : []);
       }
 
     } catch (error) {
@@ -799,17 +806,30 @@ function QuotationsPageContent() {
       const store = stores.find(s => s.storeid == storeId) || (stores.length > 0 ? stores[0] : null);
       if (store) setFormSelectedStore(store);
 
-      const tableData = saleData.sale_details.map((d, index) => ({
-        id: Date.now() + index,
-        pro_id: d.pro_id,
-        pro_title: d.product?.pro_title || d.product?.pro_name || 'Unknown Product',
-        storeid: store?.storeid,
-        store_name: store?.store_name,
-        quantity: parseFloat(d.qnty),
-        rate: parseFloat(d.unit_rate),
-        amount: parseFloat(d.total_amount),
-        stock: 0
-      }));
+      const tableData = (saleData.sale_details || []).map((d, index) => {
+        const prod = d.product || products.find(p => p.pro_id === d.pro_id);
+        const parsed = parseSizeDetails(d.size, prod, formulas);
+        const qnty = parseFloat(d.qnty) || 0;
+        const rate = parseFloat(d.unit_rate) || 0;
+        const amt = parseFloat(d.total_amount) || (qnty * rate) || 0;
+        const prodFormula = getProductFormula(prod, products, formulas);
+        return {
+          id: d.sale_detail_id || (Date.now() + index),
+          pro_id: d.pro_id,
+          pro_title: prod?.pro_title || prod?.pro_name || d.pro_title || 'Unknown Product',
+          product: prod || { pro_id: d.pro_id, pro_title: d.pro_title },
+          storeid: store?.storeid,
+          store_name: store?.store_name,
+          quantity: qnty,
+          rate: rate,
+          glass_rate: rate,
+          amount: amt,
+          stock: 0,
+          ...parsed,
+          size: d.size || '',
+          formula: prodFormula
+        };
+      });
       setProductTableData(tableData);
 
       setPaymentData({
@@ -1031,7 +1051,7 @@ function QuotationsPageContent() {
       const pcs = parseInt(updated.pieces, 10) || 1;
 
       // Find product formula if available
-      const prodFormula = p.formula || products.find(prod => prod.pro_id === p.pro_id)?.formula || null;
+      const prodFormula = getProductFormula(p, products, formulas);
 
       const dimResult = calculateGlassDimensions({
         width: wVal,
@@ -1377,7 +1397,7 @@ function QuotationsPageContent() {
         width: wVal,
         height: hVal,
         pieces: pcsVal,
-        formula: formSelectedProduct?.formula || null
+        formula: getProductFormula(formSelectedProduct, products, formulas)
       });
 
       const calcW = dimResult.calc_width || '';
@@ -1417,7 +1437,7 @@ function QuotationsPageContent() {
           width: prev.width_in,
           height: prev.height_in,
           pieces: prev.pieces,
-          formula: selectedProduct?.formula || null
+          formula: getProductFormula(selectedProduct, products, formulas)
         });
         const calcW = dimResult.calc_width || '';
         const calcH = dimResult.calc_height || '';
@@ -1607,7 +1627,8 @@ function QuotationsPageContent() {
       addons_amount: addonsAmount,
       effective_rate: effectiveRate,
       amount: netTotal,
-      stock: productFormData.stock
+      stock: productFormData.stock,
+      formula: getProductFormula(formSelectedProduct, products, formulas)
     };
 
     setProductTableData(prev => [...prev, newProduct]);
@@ -2090,21 +2111,57 @@ function QuotationsPageContent() {
                 </Typography>
               </Box>
             </Box>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={handleOpenCustomerPopup}
-              sx={{
-                borderColor: BRAND.supporting.periwinkle,
-                color: BRAND.text.periwinkle,
-                fontWeight: 700,
-                textTransform: 'none',
-                borderRadius: 2,
-                '&:hover': { borderColor: '#4a57d4', bgcolor: BRAND.tint.periwinkle },
-              }}
-            >
-              New Customer
-            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              {editSaleId && (
+                <>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<ReceiptLongIcon />}
+                    onClick={() => router.push(`/dashboard/sales?view=create&quotationId=${editSaleId}`)}
+                    sx={{
+                      bgcolor: BRAND.primary.green,
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: 2,
+                      '&:hover': { bgcolor: '#047857' }
+                    }}
+                  >
+                    Convert to Sale
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<ShoppingCartIcon />}
+                    onClick={() => router.push(`/dashboard/orders?view=create&quotationId=${editSaleId}`)}
+                    sx={{
+                      bgcolor: '#0284c7',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: 2,
+                      '&:hover': { bgcolor: '#0369a1' }
+                    }}
+                  >
+                    Convert to Order
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={handleOpenCustomerPopup}
+                sx={{
+                  borderColor: BRAND.supporting.periwinkle,
+                  color: BRAND.text.periwinkle,
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  '&:hover': { borderColor: '#4a57d4', bgcolor: BRAND.tint.periwinkle },
+                }}
+              >
+                New Customer
+              </Button>
+            </Box>
           </Box>
 
           <Card sx={QUOTE_PAGE_CARD_SX}>
@@ -2164,9 +2221,20 @@ function QuotationsPageContent() {
                 <Grid item xs={12} md={3.2}>
                   <Box sx={{ position: 'relative' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
-                        CUSTOMER
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
+                          CUSTOMER
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                          onClick={handleOpenCustomerPopup}
+                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                        >
+                          Add Customer
+                        </Button>
+                      </Box>
                       {formSelectedCustomer && (
                         <Typography variant="body2" sx={{
                           fontWeight: 'bold',
@@ -2430,7 +2498,7 @@ function QuotationsPageContent() {
                         onClick={() => setShowAddProductModal(true)}
                         sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
                       >
-                        + Add Product
+                        Add Product
                       </Button>
 
                     </Box>
@@ -2963,8 +3031,8 @@ function QuotationsPageContent() {
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Product</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 130 }}>Comments</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Entered Size (W×H)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Calc / Avail (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 55 }} align="center">Pcs</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 110 }} align="center">Calc / Avail (W×H)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 80 }} align="center">Qty (Sq Ft)</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', minWidth: 140 }}>Ad On&apos;s</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', py: 1, color: 'white', width: 85 }} align="right">Glass Rate</TableCell>
@@ -3082,65 +3150,34 @@ function QuotationsPageContent() {
                               />
                             </TableCell>
                             <TableCell sx={{ py: 0.5, minWidth: 110 }} align="center">
-                              {isManualCalcSize ? (
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    value={product.width_in ?? ''}
-                                    placeholder="W"
-                                    onChange={(e) => updateRowEnteredDimension(product.id, 'width_in', e.target.value)}
-                                    onFocus={(e) => {
-                                      e.target.select();
-                                      setActiveRowId(product.id);
-                                    }}
-                                    sx={{
-                                      width: 46,
-                                      '& .MuiInputBase-input': {
-                                        padding: '3px 4px',
-                                        textAlign: 'center',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        color: '#0369a1',
-                                        bgcolor: '#f0f9ff',
-                                        border: '1px solid #7dd3fc',
-                                        borderRadius: '4px'
-                                      }
-                                    }}
-                                    inputProps={{ min: 0, step: 'any' }}
-                                  />
-                                  <Typography variant="caption" sx={{ fontWeight: 900, color: '#0369a1' }}>×</Typography>
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    value={product.height_in ?? ''}
-                                    placeholder="H"
-                                    onChange={(e) => updateRowEnteredDimension(product.id, 'height_in', e.target.value)}
-                                    onFocus={(e) => {
-                                      e.target.select();
-                                      setActiveRowId(product.id);
-                                    }}
-                                    sx={{
-                                      width: 46,
-                                      '& .MuiInputBase-input': {
-                                        padding: '3px 4px',
-                                        textAlign: 'center',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        color: '#0369a1',
-                                        bgcolor: '#f0f9ff',
-                                        border: '1px solid #7dd3fc',
-                                        borderRadius: '4px'
-                                      }
-                                    }}
-                                    inputProps={{ min: 0, step: 'any' }}
-                                  />
-                                </Box>
-                              ) : (
-                                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                                  {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
-                                </Typography>
-                              )}
+                              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                {product.width_in && product.height_in ? `${product.width_in}" × ${product.height_in}"` : '-'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={product.pieces || 1}
+                                onChange={(e) => updateRowPieces(product.id, e.target.value)}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  setActiveRowId(product.id);
+                                }}
+                                sx={{
+                                  width: 50,
+                                  '& .MuiInputBase-input': {
+                                    padding: '3px 4px',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    bgcolor: 'rgba(255,255,255,0.85)',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '4px'
+                                  }
+                                }}
+                                inputProps={{ min: 1 }}
+                              />
                             </TableCell>
                             <TableCell sx={{ py: 0.5, minWidth: 105 }} align="center">
                               {isManualCalcSize ? (
@@ -3202,31 +3239,6 @@ function QuotationsPageContent() {
                                   {product.calc_width && product.calc_height ? `${product.calc_width}" × ${product.calc_height}"` : '-'}
                                 </Typography>
                               )}
-                            </TableCell>
-                            <TableCell sx={{ py: 0.5, px: 0.5 }} align="center">
-                              <TextField
-                                size="small"
-                                type="number"
-                                value={product.pieces || 1}
-                                onChange={(e) => updateRowPieces(product.id, e.target.value)}
-                                onFocus={(e) => {
-                                  e.target.select();
-                                  setActiveRowId(product.id);
-                                }}
-                                sx={{
-                                  width: 50,
-                                  '& .MuiInputBase-input': {
-                                    padding: '3px 4px',
-                                    textAlign: 'center',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.85rem',
-                                    bgcolor: 'rgba(255,255,255,0.85)',
-                                    border: '1px solid #cbd5e1',
-                                    borderRadius: '4px'
-                                  }
-                                }}
-                                inputProps={{ min: 1, step: 1 }}
-                              />
                             </TableCell>
                             <TableCell sx={{ py: 1 }} align="center">
                               <TextField
@@ -3829,6 +3841,11 @@ function QuotationsPageContent() {
                                 <ReceiptLongIcon sx={{ fontSize: 17 }} />
                               </IconButton>
                             </Tooltip>
+                            <Tooltip title="Convert to Order">
+                              <IconButton size="small" sx={{ color: '#0284c7', p: 0.4 }} onClick={() => router.push(`/dashboard/orders?view=create&quotationId=${sale.sale_id}`)}>
+                                <ShoppingCartIcon sx={{ fontSize: 17 }} />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title="View / Print">
                               <IconButton size="small" color="primary" sx={{ p: 0.4 }} onClick={() => handleViewReceipt(sale)}>
                                 <ReceiptIcon sx={{ fontSize: 17 }} />
@@ -4012,8 +4029,34 @@ function QuotationsPageContent() {
             </Paper>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 1 }}>
           <Button onClick={() => setReceiptDialogOpen(false)} sx={{ color: '#64748b' }}>Close</Button>
+          {currentBillData?.sale_id && (
+            <>
+              <Button
+                onClick={() => {
+                  setReceiptDialogOpen(false);
+                  router.push(`/dashboard/sales?view=create&quotationId=${currentBillData.sale_id}`);
+                }}
+                startIcon={<ReceiptLongIcon />}
+                variant="contained"
+                sx={{ bgcolor: BRAND.primary.green, '&:hover': { bgcolor: '#047857' } }}
+              >
+                Convert to Sale
+              </Button>
+              <Button
+                onClick={() => {
+                  setReceiptDialogOpen(false);
+                  router.push(`/dashboard/orders?view=create&quotationId=${currentBillData.sale_id}`);
+                }}
+                startIcon={<ShoppingCartIcon />}
+                variant="contained"
+                sx={{ bgcolor: '#0284c7', '&:hover': { bgcolor: '#0369a1' } }}
+              >
+                Convert to Order
+              </Button>
+            </>
+          )}
           <Button onClick={() => handlePrintBill('A4')} startIcon={<PrintIcon />} variant="outlined" sx={{ borderColor: BRAND.supporting.periwinkle, color: BRAND.text.periwinkle }}>
             Print A5
           </Button>
