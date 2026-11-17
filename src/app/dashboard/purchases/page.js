@@ -122,7 +122,9 @@ const EMPTY_PRODUCT_FORM_DATA = {
   qnty: '1',
   unit_rate: '',
   crate: '',
+  temper_amount: '',
   cost_rate: '',
+  comments: '',
 };
 
 const normalizeProductFormData = (data) => ({
@@ -132,7 +134,9 @@ const normalizeProductFormData = (data) => ({
   qnty: data?.qnty ?? EMPTY_PRODUCT_FORM_DATA.qnty,
   unit_rate: data?.unit_rate ?? '',
   crate: data?.crate ?? '',
+  temper_amount: data?.temper_amount ?? '',
   cost_rate: data?.cost_rate ?? '',
+  comments: data?.comments ?? '',
 });
 
 const PURCHASE_PAGE_CARD_SX = {
@@ -247,6 +251,8 @@ function slimPurchaseDetailsForApi(details) {
     unit_rate: d.unit_rate ?? d.rate,
     prate: d.prate,
     crate: d.crate,
+    temper_amount: d.temper_amount,
+    comments: d.comments,
     total_amount: d.total_amount,
     store_id: d.store_id,
     cost_rate: d.cost_rate,
@@ -1959,6 +1965,8 @@ function PurchasesPageContent() {
       rate: productFormData.unit_rate,
       unit_rate: productFormData.unit_rate, // Keep for backward compatibility
       crate: productFormData.crate || productFormData.unit_rate, // Use crate value or fallback to unit_rate
+      temper_amount: productFormData.temper_amount || '',
+      comments: productFormData.comments || '',
       original_crate: (productFormData.crate || productFormData.unit_rate), // preserve baseline purchase rate
       // COST RATE fields — initialize from product's stored cost price
       original_cost_rate: productFormData.cost_rate || (selectedProduct?.pro_cost_price ? String(selectedProduct.pro_cost_price) : (productFormData.crate || productFormData.unit_rate || '0')),
@@ -4595,6 +4603,19 @@ function PurchasesPageContent() {
                   </Box>
 
                   <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>COMMENTS</Typography>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="Particular comments..."
+                        value={productFormData.comments ?? ''}
+                        onChange={(e) => setProductFormData(prev => ({ ...prev, comments: e.target.value }))}
+                        onFocus={(e) => e.target.select()}
+                        sx={PURCHASE_ENTRY_CONTROL_SX}
+                      />
+                  </Box>
+
+                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
                       <Typography sx={PURCHASE_ENTRY_LABEL_SX}>STORE</Typography>
                       <Autocomplete
                         size="small"
@@ -4730,7 +4751,13 @@ function PurchasesPageContent() {
                         size="small"
                         type="number"
                         value={productFormData.crate || productFormData.unit_rate || ''}
-                        onChange={(e) => setProductFormData(prev => ({ ...prev, crate: e.target.value, cost_rate: e.target.value }))}
+                        onChange={(e) => {
+                          const newCrate = e.target.value;
+                          const tempAmt = parseFloat(productFormData.temper_amount || 0);
+                          const crateVal = parseFloat(newCrate || 0);
+                          const calculatedCost = (crateVal + tempAmt).toFixed(2);
+                          setProductFormData(prev => ({ ...prev, crate: newCrate, cost_rate: calculatedCost }));
+                        }}
                         onFocus={(e) => e.target.select()}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -4739,18 +4766,41 @@ function PurchasesPageContent() {
                             addProductToPurchase();
                           } else if (e.key === 'Tab') {
                             e.preventDefault();
-                            // Move focus to the next numeric input (Cost Rate should be next)
-                            const allInputs = document.querySelectorAll('input[type="number"]');
-                            const currentInput = e.target;
-                            let foundCurrent = false;
-                            for (let i = 0; i < allInputs.length; i++) {
-                              if (allInputs[i] === currentInput) { foundCurrent = true; continue; }
-                              if (foundCurrent) { allInputs[i].focus(); return; }
-                            }
+                            // Move focus to Temper Amount
+                            const temperInput = document.getElementById('temper-amount-input');
+                            if (temperInput) temperInput.focus();
+                          }
+                        }}
+                        inputProps={{ min: 0, step: 'any' }}
+                        sx={PURCHASE_ENTRY_CONTROL_SX}
+                      />
+                  </Box>
 
-                            // Fallback: focus + button
-                            const addBtnFallback = document.getElementById('add-product-btn');
-                            if (addBtnFallback) addBtnFallback.focus();
+                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>TEMPER AMOUNT</Typography>
+                      <TextField
+                        id="temper-amount-input"
+                        fullWidth
+                        size="small"
+                        type="number"
+                        placeholder="0.00"
+                        value={productFormData.temper_amount ?? ''}
+                        onChange={(e) => {
+                          const newTemp = e.target.value;
+                          const tempAmt = parseFloat(newTemp || 0);
+                          const crateVal = parseFloat(productFormData.crate || productFormData.unit_rate || 0);
+                          const calculatedCost = (crateVal + tempAmt).toFixed(2);
+                          setProductFormData(prev => ({
+                            ...prev,
+                            temper_amount: newTemp,
+                            cost_rate: calculatedCost
+                          }));
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addProductToPurchase();
                           }
                         }}
                         inputProps={{ min: 0, step: 'any' }}
@@ -4891,12 +4941,14 @@ function PurchasesPageContent() {
                       <TableRow sx={{ bgcolor: '#dce6f1', '& th': { bgcolor: '#dce6f1 !important' } }}>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>S. No</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Product</TableCell>
+                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Comments</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Store</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Width</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Height</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Pcs</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Qty (Ft)</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>PURCHASE RATE</TableCell>
+                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>TEMPER AMT</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>COST RATE</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Sale Rate</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Amount</TableCell>
@@ -4922,6 +4974,23 @@ function PurchasesPageContent() {
                                   <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                                     {product?.pro_title || 'Unknown Product'}
                                   </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    size="small"
+                                    placeholder="Comments..."
+                                    value={detail.comments || ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        purchase_details: prev.purchase_details.map((d, i) =>
+                                          i === index ? { ...d, comments: val } : d
+                                        )
+                                      }));
+                                    }}
+                                    sx={{ minWidth: 120 }}
+                                  />
                                 </TableCell>
                                 <TableCell>
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -5053,18 +5122,20 @@ function PurchasesPageContent() {
                                     onChange={(e) => {
                                       const newCrate = e.target.value;
                                       setFormData(prev => {
-                                        const baseUpdated = prev.purchase_details.map((d, i) =>
-                                          i === index
-                                            ? {
-                                              ...d,
-                                              crate: newCrate,
-                                              original_crate: newCrate,
-                                              cost_rate: newCrate,
-                                              original_cost_rate: newCrate,
-                                              total_amount: (parseFloat(d.qnty) * parseFloat(newCrate)).toFixed(2)
-                                            }
-                                            : d
-                                        );
+                                        const baseUpdated = prev.purchase_details.map((d, i) => {
+                                          if (i !== index) return d;
+                                          const crateVal = parseFloat(newCrate || 0);
+                                          const tempVal = parseFloat(d.temper_amount || 0);
+                                          const computedCost = (crateVal + tempVal).toFixed(2);
+                                          return {
+                                            ...d,
+                                            crate: newCrate,
+                                            original_crate: newCrate,
+                                            cost_rate: computedCost,
+                                            original_cost_rate: computedCost,
+                                            total_amount: (parseFloat(d.qnty) * crateVal).toFixed(2)
+                                          };
+                                        });
                                         // Re-distribute charges on top of new base cost rate
                                         const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
                                         return { ...prev, purchase_details: updatedDetails };
@@ -5073,6 +5144,35 @@ function PurchasesPageContent() {
                                     inputProps={{ min: 0, step: "any" }}
                                     size="small"
                                     sx={{ width: 100 }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={detail.temper_amount || ''}
+                                    onChange={(e) => {
+                                      const newTemp = e.target.value;
+                                      setFormData(prev => {
+                                        const baseUpdated = prev.purchase_details.map((d, i) => {
+                                          if (i !== index) return d;
+                                          const crateVal = parseFloat(d.crate || d.unit_rate || 0);
+                                          const tempVal = parseFloat(newTemp || 0);
+                                          const computedCost = (crateVal + tempVal).toFixed(2);
+                                          return {
+                                            ...d,
+                                            temper_amount: newTemp,
+                                            cost_rate: computedCost,
+                                            original_cost_rate: computedCost
+                                          };
+                                        });
+                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
+                                        return { ...prev, purchase_details: updatedDetails };
+                                      });
+                                    }}
+                                    inputProps={{ min: 0, step: "any" }}
+                                    size="small"
+                                    sx={{ width: 85 }}
                                   />
                                 </TableCell>
                                 <TableCell>
@@ -5145,8 +5245,9 @@ function PurchasesPageContent() {
 
                           {/* Totals row */}
                           <TableRow sx={{ bgcolor: 'grey.50' }}>
-                            <TableCell colSpan={3} sx={{ fontWeight: 'bold' }}>Totals</TableCell>
+                            <TableCell colSpan={7} sx={{ fontWeight: 'bold' }}>Totals</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>{calculateTotalQuantity()}</TableCell>
+                            <TableCell />
                             <TableCell />
                             <TableCell />
                             <TableCell />
@@ -5156,7 +5257,7 @@ function PurchasesPageContent() {
                         </>
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                          <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
                             <Typography variant="body2" color="text.secondary">
                               No products added yet
                             </Typography>

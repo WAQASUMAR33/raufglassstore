@@ -6108,8 +6108,8 @@ function SalesPageContent() {
         styleElement.textContent = `
           @media print {
             @page {
-              size: A4 portrait !important;
-              margin: 0.5cm 1cm !important;
+              size: A5 portrait !important;
+              margin: 3mm 4mm !important;
             }
           }
         `;
@@ -9301,7 +9301,7 @@ function SalesPageContent() {
                   onClick={() => handlePrintBill('A4')}
                   disabled={!currentBillData}
                 >
-                  Print A4
+                  Print A5
                 </Button>
                 <Button
                   variant="contained"
@@ -10314,7 +10314,7 @@ function SalesPageContent() {
                                   <PrintIcon sx={{ fontSize: 17 }} />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Print A4 Invoice">
+                              <Tooltip title="Print A5 Invoice">
                                 <IconButton
                                   size="small"
                                   color="primary"
@@ -11791,9 +11791,9 @@ function SalesPageContent() {
             position: fixed !important;
             left: 0 !important;
             top: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
+            width: 148mm !important;
+            max-width: 148mm !important;
+            margin: 0 auto !important;
             padding: 0 !important;
             z-index: 999999 !important;
             background: #ffffff !important;
@@ -11849,8 +11849,8 @@ function SalesPageContent() {
 
           body.print-existing {
             @page {
-              size: A4;
-              margin: 0.5cm 1cm;
+              size: A5 portrait !important;
+              margin: 3mm 4mm !important;
             }
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
@@ -11883,9 +11883,8 @@ function SalesPageContent() {
             position: absolute;
             left: 0;
             top: 0;
-            width: 21cm;
-            min-height: 29.7cm;
-            max-width: 21cm;
+            width: 148mm;
+            max-width: 148mm;
             background: white;
             padding: 0;
             margin: 0;
@@ -12647,6 +12646,7 @@ function SalesPageContent() {
           setRowAddonTarget(null);
         }}
         selectedAddonIds={(rowAddonTarget?.selected_addons || []).map(a => a.id || a.addon_id)}
+        selectedAddons={rowAddonTarget?.selected_addons || []}
         onApply={(ids, selectedList) => {
           if (rowAddonTarget) {
             applyRowAddons(rowAddonTarget.id, selectedList);

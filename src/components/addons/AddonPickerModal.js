@@ -39,6 +39,7 @@ export default function AddonPickerModal({
   open = false,
   onClose,
   selectedAddonIds = [],
+  selectedAddons = [],
   onApply,
   title = "Select Ad On's",
   subtitle = "Choose one or more add-ons to apply",
@@ -48,10 +49,23 @@ export default function AddonPickerModal({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set(selectedAddonIds || []));
+  const [customPrices, setCustomPrices] = useState({});
 
   useEffect(() => {
     setSelectedIds(new Set(selectedAddonIds || []));
-  }, [selectedAddonIds, open]);
+    // Pre-populate custom prices from existing selectedAddons
+    if (Array.isArray(selectedAddons) && selectedAddons.length > 0) {
+      const priceMap = {};
+      selectedAddons.forEach((a) => {
+        const id = a.id || a.addon_id || a.addon?.id;
+        const price = a.sale_price !== undefined ? a.sale_price : (a.rate !== undefined ? a.rate : a.addon?.sale_price);
+        if (id && price !== undefined) {
+          priceMap[id] = price;
+        }
+      });
+      setCustomPrices((prev) => ({ ...prev, ...priceMap }));
+    }
+  }, [selectedAddonIds, selectedAddons, open]);
 
   useEffect(() => {
     if (availableAddons && Array.isArray(availableAddons)) {
@@ -91,8 +105,14 @@ export default function AddonPickerModal({
   };
 
   const selectedList = useMemo(() => {
-    return addonsList.filter((a) => selectedIds.has(a.id));
-  }, [addonsList, selectedIds]);
+    return addonsList
+      .filter((a) => selectedIds.has(a.id))
+      .map((a) => ({
+        ...a,
+        sale_price: customPrices[a.id] !== undefined && customPrices[a.id] !== '' ? customPrices[a.id] : a.sale_price,
+        rate: customPrices[a.id] !== undefined && customPrices[a.id] !== '' ? customPrices[a.id] : a.sale_price,
+      }));
+  }, [addonsList, selectedIds, customPrices]);
 
   const totalSale = selectedList.reduce((sum, a) => sum + parseFloat(a.sale_price || 0), 0);
   const totalCost = selectedList.reduce((sum, a) => sum + parseFloat(a.cost_price || 0), 0);
@@ -244,10 +264,42 @@ export default function AddonPickerModal({
                     </Box>
                   </Box>
 
-                  <Box sx={{ textAlign: 'right', shrink: 0 }}>
-                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#1A55E3' }}>
-                      PKR {fmtAmt(addon.sale_price)}
+                  <Box
+                    sx={{ textAlign: 'right', shrink: 0, display: 'flex', alignItems: 'center', gap: 0.75 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>
+                      PKR
                     </Typography>
+                    <TextField
+                      size="small"
+                      type="number"
+                      placeholder={String(addon.sale_price ?? '0')}
+                      value={customPrices[addon.id] !== undefined ? customPrices[addon.id] : (addon.sale_price ?? '')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomPrices((prev) => ({ ...prev, [addon.id]: val }));
+                        if (!selectedIds.has(addon.id)) {
+                          setSelectedIds((prev) => new Set([...prev, addon.id]));
+                        }
+                      }}
+                      onFocus={(e) => e.target.select()}
+                      inputProps={{ min: 0, step: 'any' }}
+                      sx={{
+                        width: 95,
+                        '& .MuiInputBase-input': {
+                          py: 0.4,
+                          px: 1,
+                          textAlign: 'right',
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          color: '#1A55E3',
+                          bgcolor: '#ffffff',
+                          borderRadius: '4px',
+                          border: '1px solid #cbd5e1'
+                        }
+                      }}
+                    />
                   </Box>
                 </Box>
               );

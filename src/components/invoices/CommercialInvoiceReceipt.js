@@ -267,6 +267,36 @@ export default function CommercialInvoiceReceipt({
   const totalSqFt = lines.filter(item => !item.isAddon).reduce((sum, item) => sum + (item.qtySqFt || 0), 0);
   const totalItemsValue = lines.reduce((sum, item) => sum + (item.amount || 0), 0);
 
+  // Group lines by product for per-group sub totals
+  const productGroups = React.useMemo(() => {
+    if (!lines || lines.length === 0) return [];
+    const map = new Map();
+    const groupOrder = [];
+
+    lines.forEach((item) => {
+      const key = item.pro_id ? `id_${item.pro_id}` : `name_${(item.itemName || '').trim().toLowerCase()}`;
+      if (!map.has(key)) {
+        const group = {
+          key,
+          itemName: item.itemName,
+          items: [],
+          totalPcs: 0,
+          totalSqFt: 0,
+          totalAmount: 0,
+        };
+        map.set(key, group);
+        groupOrder.push(group);
+      }
+      const group = map.get(key);
+      group.items.push(item);
+      group.totalPcs += (typeof item.pcs === 'number' ? item.pcs : 0);
+      group.totalSqFt += (item.qtySqFt || 0);
+      group.totalAmount += (item.amount || 0);
+    });
+
+    return groupOrder;
+  }, [lines]);
+
   // Extract Cutter / Fitter
   const fitterMatch = String(bill.reference || bill.notes || '').match(/\[Fitter:\s*([^\]]+)\]/i);
   const fitterName = bill.fitter_name || (fitterMatch ? fitterMatch[1].trim() : '') || (Array.isArray(bill.fitter_details) && bill.fitter_details[0]?.accountName) || '';
@@ -324,20 +354,28 @@ export default function CommercialInvoiceReceipt({
     <Box
       sx={{
         width: '100%',
-        maxWidth: '820px',
+        maxWidth: '148mm',
         mx: 'auto',
-        p: { xs: 1.5, sm: 2.5 },
+        p: { xs: 1, sm: 1.75 },
         bgcolor: '#ffffff',
         color: '#000000',
         fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         boxSizing: 'border-box',
         '@media print': {
-          p: '0.2cm',
+          p: '2mm 3mm',
           maxWidth: '100%',
           width: '100%',
         },
       }}
     >
+      <style>{`
+        @media print {
+          @page {
+            size: A5 portrait !important;
+            margin: 3mm 4mm !important;
+          }
+        }
+      `}</style>
       {/* ───────────────── HEADER SECTION ───────────────── */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
         {/* Left: Brand Identity */}
@@ -675,153 +713,234 @@ export default function CommercialInvoiceReceipt({
           </thead>
 
           <tbody>
-            {lines.length > 0 ? (
-              lines.map((item, index) => {
-                const prevItem = index > 0 ? lines[index - 1] : null;
-                const isRepeatedProduct = index > 0 && (
-                  (item.pro_id && item.pro_id === prevItem?.pro_id) ||
-                  (item.itemName && item.itemName === prevItem?.itemName)
-                );
-                const currentAddonsStr = (item.addons || []).map(a => `${a.name}:${a.rate}`).sort().join('|');
-                const prevAddonsStr = (prevItem?.addons || []).map(a => `${a.name}:${a.rate}`).sort().join('|');
-                const isRepeatedAddons = isRepeatedProduct && currentAddonsStr === prevAddonsStr;
+            {productGroups.length > 0 ? (() => {
+              let runningRowIndex = 0;
+              return productGroups.map((group) => (
+                <React.Fragment key={group.key}>
+                  {group.items.map((item, itemIdxInGroup) => {
+                    runningRowIndex++;
+                    const prevItem = itemIdxInGroup > 0 ? group.items[itemIdxInGroup - 1] : null;
+                    const currentAddonsStr = (item.addons || []).map(a => `${a.name}:${a.rate}`).sort().join('|');
+                    const prevAddonsStr = (prevItem?.addons || []).map(a => `${a.name}:${a.rate}`).sort().join('|');
+                    const isRepeatedAddons = itemIdxInGroup > 0 && currentAddonsStr === prevAddonsStr;
 
-                const actualSizeStr = formatDimension(item.actualHeight, item.actualWidth);
-                const standardSizeStr = formatDimension(item.calcHeight, item.calcWidth);
+                    const actualSizeStr = formatDimension(item.actualHeight, item.actualWidth);
+                    const standardSizeStr = formatDimension(item.calcHeight, item.calcWidth);
 
-                return (
-                  <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    {/* # */}
+                    return (
+                      <tr key={`${group.key}-${itemIdxInGroup}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        {/* # */}
+                        <td
+                          style={{
+                            border: '1px solid #000000',
+                            padding: '6px 4px',
+                            textAlign: 'center',
+                            fontWeight: 600,
+                            color: '#000',
+                          }}
+                        >
+                          {runningRowIndex}
+                        </td>
+
+                        {/* Item Name */}
+                        <td
+                          style={{
+                            border: '1px solid #000000',
+                            padding: '6px 8px',
+                            fontWeight: 400,
+                            color: '#000',
+                          }}
+                        >
+                          {itemIdxInGroup === 0 ? (
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.itemName}</span>
+                          ) : (
+                            <div style={{ textAlign: 'center', color: '#64748b', fontWeight: 700, fontSize: '1rem', lineHeight: 1 }}>"</div>
+                          )}
+                          {item.addons && item.addons.length > 0 && !isRepeatedAddons && (
+                            <div style={{ fontSize: '0.72rem', color: '#475569', fontStyle: 'italic', marginTop: '2px' }}>
+                              {item.addons.map(a => `${a.name}${copy === 'OFFICE' && a.rate ? ` (${fmtAmt(a.rate)})` : ''}`).join(', ')}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Job Description */}
+                        <td
+                          style={{
+                            border: '1px solid #000000',
+                            padding: '6px 8px',
+                            color: '#333',
+                            fontWeight: 400,
+                          }}
+                        >
+                          {item.jobDesc}
+                        </td>
+
+                        {/* Actual Size (H × W) */}
+                        <td
+                          style={{
+                            border: '1px solid #000000',
+                            padding: '6px 4px',
+                            textAlign: 'center',
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {actualSizeStr}
+                        </td>
+
+                        {/* Number of Pieces (pcs) */}
+                        <td
+                          style={{
+                            border: '1px solid #000000',
+                            padding: '6px 4px',
+                            textAlign: 'center',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {item.pcs}
+                        </td>
+
+                        {/* Office-only: Standard (H × W) */}
+                        {copy === 'OFFICE' && (
+                          <td
+                            style={{
+                              border: '1px solid #000000',
+                              padding: '6px 4px',
+                              textAlign: 'center',
+                              fontWeight: 500,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {standardSizeStr}
+                          </td>
+                        )}
+
+                        {/* Office-only: Qty (SqFt) */}
+                        {copy === 'OFFICE' && (
+                          <td
+                            style={{
+                              border: '1px solid #000000',
+                              padding: '6px 6px',
+                              textAlign: 'right',
+                              fontWeight: 400,
+                            }}
+                          >
+                            {fmtNum(item.qtySqFt)}
+                          </td>
+                        )}
+
+                        {/* Office-only: Rate */}
+                        {copy === 'OFFICE' && (
+                          <td
+                            style={{
+                              border: '1px solid #000000',
+                              padding: '6px 6px',
+                              textAlign: 'right',
+                              fontWeight: 400,
+                            }}
+                          >
+                            {fmtAmt(item.rate)}
+                          </td>
+                        )}
+
+                        {/* Value (Office & Customer copies only) */}
+                        {copy !== 'CUTTER' && (
+                          <td
+                            style={{
+                              border: '1px solid #000000',
+                              padding: '6px 8px',
+                              textAlign: 'right',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {fmtAmt(item.amount)}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+
+                  {/* ────────── PRODUCT GROUP SUB TOTAL ROW ────────── */}
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #000000', fontWeight: 600 }}>
+                    <td
+                      colSpan={4}
+                      style={{
+                        border: '1px solid #000000',
+                        padding: '5px 8px',
+                        textAlign: 'right',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        color: '#1e293b',
+                      }}
+                    >
+                      Sub Total ({group.itemName}):
+                    </td>
                     <td
                       style={{
                         border: '1px solid #000000',
-                        padding: '6px 4px',
+                        padding: '5px 4px',
                         textAlign: 'center',
-                        fontWeight: 600,
-                        color: '#000',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        color: '#000000',
                       }}
                     >
-                      {index + 1}
+                      {group.totalPcs}
                     </td>
-
-                    {/* Item Name */}
-                    <td
-                      style={{
-                        border: '1px solid #000000',
-                        padding: '6px 8px',
-                        fontWeight: 400,
-                        color: '#000',
-                      }}
-                    >
-                      {!isRepeatedProduct ? (
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.itemName}</span>
-                      ) : (
-                        <div style={{ textAlign: 'center', color: '#64748b', fontWeight: 700, fontSize: '1rem', lineHeight: 1 }}>"</div>
-                      )}
-                      {item.addons && item.addons.length > 0 && !isRepeatedAddons && (
-                        <div style={{ fontSize: '0.72rem', color: '#475569', fontStyle: 'italic', marginTop: '2px' }}>
-                          {item.addons.map(a => `${a.name}${copy !== 'CUTTER' && a.rate ? ` (${fmtAmt(a.rate)})` : ''}`).join(', ')}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Job Description */}
-                    <td
-                      style={{
-                        border: '1px solid #000000',
-                        padding: '6px 8px',
-                        color: '#333',
-                        fontWeight: 400,
-                      }}
-                    >
-                      {item.jobDesc}
-                    </td>
-
-                    {/* Actual Size (H × W) */}
-                    <td
-                      style={{
-                        border: '1px solid #000000',
-                        padding: '6px 4px',
-                        textAlign: 'center',
-                        fontWeight: 500,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {actualSizeStr}
-                    </td>
-
-                    {/* Number of Pieces (pcs) */}
-                    <td
-                      style={{
-                        border: '1px solid #000000',
-                        padding: '6px 4px',
-                        textAlign: 'center',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {item.pcs}
-                    </td>
-
-                    {/* Office-only: Standard (H × W) */}
                     {copy === 'OFFICE' && (
-                      <td
-                        style={{
-                          border: '1px solid #000000',
-                          padding: '6px 4px',
-                          textAlign: 'center',
-                          fontWeight: 500,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {standardSizeStr}
-                      </td>
+                      <>
+                        <td
+                          style={{
+                            border: '1px solid #000000',
+                            padding: '5px 4px',
+                            textAlign: 'center',
+                            color: '#64748b',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          —
+                        </td>
+                        <td
+                          style={{
+                            border: '1px solid #000000',
+                            padding: '5px 6px',
+                            textAlign: 'right',
+                            fontWeight: 700,
+                            fontSize: '0.8rem',
+                          }}
+                        >
+                          {fmtNum(group.totalSqFt)}
+                        </td>
+                        <td
+                          style={{
+                            border: '1px solid #000000',
+                            padding: '5px 6px',
+                            textAlign: 'right',
+                            color: '#64748b',
+                          }}
+                        >
+                          —
+                        </td>
+                      </>
                     )}
-
-                    {/* Office-only: Qty (SqFt) */}
-                    {copy === 'OFFICE' && (
-                      <td
-                        style={{
-                          border: '1px solid #000000',
-                          padding: '6px 6px',
-                          textAlign: 'right',
-                          fontWeight: 400,
-                        }}
-                      >
-                        {fmtNum(item.qtySqFt)}
-                      </td>
-                    )}
-
-                    {/* Office-only: Rate */}
-                    {copy === 'OFFICE' && (
-                      <td
-                        style={{
-                          border: '1px solid #000000',
-                          padding: '6px 6px',
-                          textAlign: 'right',
-                          fontWeight: 400,
-                        }}
-                      >
-                        {fmtAmt(item.rate)}
-                      </td>
-                    )}
-
-                    {/* Value (Office & Customer copies only) */}
                     {copy !== 'CUTTER' && (
                       <td
                         style={{
                           border: '1px solid #000000',
-                          padding: '6px 8px',
+                          padding: '5px 8px',
                           textAlign: 'right',
-                          fontWeight: 500,
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          color: '#000000',
                         }}
                       >
-                        {fmtAmt(item.amount)}
+                        {fmtAmt(group.totalAmount)}
                       </td>
                     )}
                   </tr>
-                );
-              })
-            ) : (
+                </React.Fragment>
+              ));
+            })() : (
               <tr>
                 <td colSpan={copy === 'OFFICE' ? 9 : copy === 'CUSTOMER' ? 6 : 5} style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
                   No items in this invoice
@@ -829,90 +948,8 @@ export default function CommercialInvoiceReceipt({
               </tr>
             )}
 
-            {/* ────────── TOTAL ROW ────────── */}
-            <tr style={{ borderTop: '2px solid #000000', fontWeight: 600, backgroundColor: '#fafafa' }}>
-              <td
-                colSpan={3}
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 8px',
-                  textAlign: 'right',
-                  fontWeight: 600,
-                }}
-              >
-                {copy === 'CUTTER' ? 'Total Pieces' : 'Total'}
-              </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 4px',
-                  textAlign: 'center',
-                  color: '#666',
-                  fontSize: '0.75rem',
-                }}
-              >
-                —
-              </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '6px 4px',
-                  textAlign: 'center',
-                  fontWeight: 700,
-                }}
-              >
-                {totalPcs}
-              </td>
-              {copy === 'OFFICE' && (
-                <>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 4px',
-                      textAlign: 'center',
-                      color: '#666',
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    —
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 6px',
-                      textAlign: 'right',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {fmtNum(totalSqFt)}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '6px 6px',
-                      textAlign: 'right',
-                    }}
-                  >
-                    —
-                  </td>
-                </>
-              )}
-              {copy !== 'CUTTER' && (
-                <td
-                  style={{
-                    border: '1px solid #000000',
-                    padding: '6px 8px',
-                    textAlign: 'right',
-                    fontWeight: 600,
-                  }}
-                >
-                  {fmtAmt(totalItemsValue)}
-                </td>
-              )}
-            </tr>
-
             {/* ────────── GRAND TOTAL ROW ────────── */}
-            <tr style={{ borderBottom: '2px solid #000000', fontWeight: 700, backgroundColor: '#f1f5f9' }}>
+            <tr style={{ borderTop: '2px solid #000000', borderBottom: '2px solid #000000', fontWeight: 700, backgroundColor: '#f1f5f9' }}>
               <td
                 colSpan={4}
                 style={{
@@ -981,7 +1018,7 @@ export default function CommercialInvoiceReceipt({
                     fontSize: '0.875rem',
                   }}
                 >
-                  {fmtAmt(billValue)}
+                  {fmtAmt(billValue || totalItemsValue)}
                 </td>
               )}
             </tr>

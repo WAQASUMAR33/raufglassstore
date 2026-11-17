@@ -1846,7 +1846,7 @@ function QuotationsPageContent() {
 
       styleElement.textContent = actualMode === 'THERMAL'
         ? `@media print { @page { size: 80mm portrait !important; margin: 0 !important; } body { margin: 0 !important; padding: 0 !important; } }`
-        : `@media print { @page { size: A4 portrait !important; margin: 0.5cm 1cm !important; } }`;
+        : `@media print { @page { size: A5 portrait !important; margin: 3mm 4mm !important; } }`;
 
       document.body.classList.add(className);
 
@@ -3593,7 +3593,7 @@ function QuotationsPageContent() {
                                 <ReceiptIcon sx={{ fontSize: 17 }} />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Print A4">
+                            <Tooltip title="Print A5">
                               <IconButton size="small" sx={{ color: '#64748b', p: 0.4 }} onClick={() => handlePrintFromList(sale, 'A4')}>
                                 <PrintIcon sx={{ fontSize: 17 }} />
                               </IconButton>
@@ -3774,7 +3774,7 @@ function QuotationsPageContent() {
         <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
           <Button onClick={() => setReceiptDialogOpen(false)} sx={{ color: '#64748b' }}>Close</Button>
           <Button onClick={() => handlePrintBill('A4')} startIcon={<PrintIcon />} variant="outlined" sx={{ borderColor: BRAND.supporting.periwinkle, color: BRAND.text.periwinkle }}>
-            Print A4
+            Print A5
           </Button>
           <Button onClick={() => handlePrintBill('THERMAL')} startIcon={<PrintIcon />} variant="contained" sx={{ bgcolor: BRAND.supporting.periwinkle, '&:hover': { bgcolor: '#4a57d4' } }}>
             Print Thermal
@@ -3825,6 +3825,7 @@ function QuotationsPageContent() {
           setRowAddonTarget(null);
         }}
         selectedAddonIds={(rowAddonTarget?.selected_addons || []).map(a => a.id || a.addon_id)}
+        selectedAddons={rowAddonTarget?.selected_addons || []}
         onApply={(ids, selectedList) => {
           if (rowAddonTarget) {
             applyRowAddons(rowAddonTarget.id, selectedList);
