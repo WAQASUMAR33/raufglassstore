@@ -15,7 +15,8 @@ export async function GET() {
         has_token: Boolean(settings.api_token),
         auto_send_on_sale: settings.auto_send_on_sale,
         custom_caption: settings.custom_caption,
-        api_provider: settings.api_provider || 'ultramsg',
+        api_provider: settings.api_provider || 'green-api',
+        api_url: settings.api_url || 'https://api.green-api.com',
       },
       connection: connectionStatus,
     });
@@ -42,7 +43,8 @@ export async function POST(req) {
       api_token: apiToken,
       auto_send_on_sale: body.auto_send_on_sale,
       custom_caption: body.custom_caption,
-      api_provider: body.api_provider || 'ultramsg',
+      api_provider: body.api_provider || 'green-api',
+      api_url: body.api_url || 'https://api.green-api.com',
     });
 
     const connection = await checkWhatsAppConnection();

@@ -134,9 +134,10 @@ export default function SettingsPage() {
     is_enabled: false,
     instance_id: '',
     api_token: '',
+    api_url: 'https://api.green-api.com',
     auto_send_on_sale: true,
     custom_caption: 'Assalam-o-Alaikum, here is your bill from Zain Traders Mandi Bahauddin. Thank you for your business! Ph: 0302-2133218, 0347-7743218',
-    api_provider: 'ultramsg',
+    api_provider: 'green-api',
   });
   const [waConnection, setWaConnection] = useState({ checked: false, connected: false, message: '' });
   const [waLoading, setWaLoading] = useState(false);
@@ -976,12 +977,27 @@ export default function SettingsPage() {
                           <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
                               <TextField
+                                select
                                 fullWidth
                                 size="small"
                                 label="Gateway Provider"
-                                value="UltraMsg (Recommended for Vercel/Next.js)"
-                                disabled
-                                helperText="UltraMsg REST API Engine"
+                                value={waConfig.api_provider || 'green-api'}
+                                onChange={(e) => setWaConfig({ ...waConfig, api_provider: e.target.value })}
+                                helperText="Select Green-API (Free Plan) or UltraMsg"
+                              >
+                                <MenuItem value="green-api">Green-API (Recommended — Free Plan / $12)</MenuItem>
+                                <MenuItem value="ultramsg">UltraMsg (Legacy — $39/mo)</MenuItem>
+                              </TextField>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                fullWidth
+                                size="small"
+                                label="API URL / Host"
+                                placeholder="https://api.green-api.com"
+                                value={waConfig.api_url || 'https://api.green-api.com'}
+                                onChange={(e) => setWaConfig({ ...waConfig, api_url: e.target.value })}
+                                helperText="From Green-API console (default: https://api.green-api.com)"
                               />
                             </Grid>
                             <Grid item xs={12} sm={6}>
@@ -989,26 +1005,27 @@ export default function SettingsPage() {
                                 fullWidth
                                 size="small"
                                 required={waConfig.is_enabled}
-                                label="Instance ID"
-                                placeholder="e.g. instance104821"
+                                label={waConfig.api_provider === 'green-api' ? "idInstance" : "Instance ID"}
+                                placeholder={waConfig.api_provider === 'green-api' ? "e.g. 1101823456" : "e.g. instance104821"}
                                 value={waConfig.instance_id || ''}
                                 onChange={(e) => setWaConfig({ ...waConfig, instance_id: e.target.value })}
-                                helperText="From your UltraMsg dashboard"
+                                helperText={waConfig.api_provider === 'green-api' ? "From Green-API console (Instance ID)" : "From your UltraMsg dashboard"}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                fullWidth
+                                size="small"
+                                type="password"
+                                required={waConfig.is_enabled}
+                                label={waConfig.api_provider === 'green-api' ? "apiTokenInstance" : "API Token"}
+                                placeholder={waConfig.api_provider === 'green-api' ? "Enter Green-API apiTokenInstance" : "Enter UltraMsg API token"}
+                                value={waConfig.api_token || ''}
+                                onChange={(e) => setWaConfig({ ...waConfig, api_token: e.target.value })}
+                                helperText="Stored securely in database for automated bill dispatch"
                               />
                             </Grid>
                           </Grid>
-
-                          <TextField
-                            fullWidth
-                            size="small"
-                            type="password"
-                            required={waConfig.is_enabled}
-                            label="API Token"
-                            placeholder="Enter UltraMsg API token"
-                            value={waConfig.api_token || ''}
-                            onChange={(e) => setWaConfig({ ...waConfig, api_token: e.target.value })}
-                            helperText="Stored securely in database for automated bill dispatch"
-                          />
 
                           <TextField
                             fullWidth
@@ -1090,27 +1107,27 @@ export default function SettingsPage() {
                       {/* Setup Instructions */}
                       <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#f8fafc' }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <InfoIcon color="info" fontSize="small" /> Quick 2-Minute Setup
+                          <InfoIcon color="info" fontSize="small" /> Quick Green-API Setup ($0 Free)
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                          To connect Zain Traders to WhatsApp Cloud:
+                          To connect Zain Traders to Green-API (No Meta template approval needed):
                         </Typography>
                         <Box component="ol" sx={{ pl: 2.5, m: 0, '& li': { mb: 1, fontSize: '0.85rem', color: '#475569' } }}>
                           <li>
-                            Open <strong>UltraMsg.com</strong> and create a free account.
+                            Open <strong>green-api.com</strong> and create a free account (choose <strong>Developer Free</strong> plan).
                           </li>
                           <li>
-                            Scan the QR code from your phone's WhatsApp (Linked Devices).
+                            Create an instance and scan the QR code from WhatsApp on your phone (<strong>Linked Devices</strong>).
                           </li>
                           <li>
-                            Copy your <strong>Instance ID</strong> and <strong>Token</strong> from UltraMsg dashboard into the fields on the left.
+                            Copy your <strong>API URL</strong>, <strong>idInstance</strong>, and <strong>apiTokenInstance</strong> from Green-API console into the fields on the left.
                           </li>
                           <li>
-                            Toggle <strong>Enable WhatsApp Cloud Automation</strong> ON and click <strong>Save</strong>!
+                            Toggle <strong>Enable WhatsApp Cloud Automation</strong> ON, click <strong>Save WhatsApp Settings</strong>, and test with your phone number!
                           </li>
                         </Box>
                         <Alert severity="success" sx={{ mt: 2, py: 0.5, borderRadius: 2, fontSize: '0.8rem' }}>
-                          Bills will be automatically sent to customers immediately when you click <strong>Save Sale</strong>!
+                          Bills will be automatically sent to customers immediately when you click <strong>Save Sale</strong> — completely free with no template approvals!
                         </Alert>
                       </Card>
                     </Stack>
