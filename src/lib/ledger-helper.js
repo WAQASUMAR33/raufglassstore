@@ -17,10 +17,14 @@ export const ACCOUNT_NATURE = {
  * - PAYABLE (suppliers): bill/purchase = debit, payment = credit; balance negative when we owe
  *   closing = opening - debit + credit (e.g. bill 2500 → -2500, pay 1000 credit → -1500)
  */
-export function calculateClosingBalance(openingBalance, debitAmount = 0, creditAmount = 0) {
+export function calculateClosingBalance(openingBalance, debitAmount = 0, creditAmount = 0, account_nature = ACCOUNT_NATURE.RECEIVABLE) {
   const opening = parseFloat(openingBalance || 0);
   const debit = parseFloat(debitAmount || 0);
   const credit = parseFloat(creditAmount || 0);
+
+  if (account_nature === ACCOUNT_NATURE.PAYABLE) {
+    return opening - debit + credit;
+  }
 
   return opening + debit - credit;
 }
@@ -63,7 +67,9 @@ export function createLedgerEntry(config) {
     throw new Error('Customer ID (cus_id) is required for ledger entry');
   }
 
-  const closing_balance = calculateClosingBalance(opening_balance, debit_amount, credit_amount, account_nature);
+  const closing_balance = config.closing_balance !== undefined
+    ? Number(parseFloat(config.closing_balance).toFixed(2))
+    : calculateClosingBalance(opening_balance, debit_amount, credit_amount, account_nature);
 
   let finalLedgerType = ledger_type;
   if (!finalLedgerType && bill_no) {

@@ -22,24 +22,24 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../components/dashboard-layout';
 import { Autocomplete, TextField } from '@mui/material';
 import {
-  fmtAmt,
-  formatCurrency,
-  formatDate,
-  getCurrentMonthKey,
-  getUnpaidRebateMonths,
-  buildFullMonthOptions,
-  customerOptionKey,
-  isSameCustomerOption,
-  rebateEntryKey,
-  RebateStatusBadge,
+    fmtAmt,
+    formatCurrency,
+    formatDate,
+    getCurrentMonthKey,
+    getUnpaidRebateMonths,
+    buildFullMonthOptions,
+    customerOptionKey,
+    isSameCustomerOption,
+    rebateEntryKey,
+    RebateStatusBadge,
 } from '@/lib/rebate-utils';
 import RebateMonthSelect from './components/rebate-month-select';
 import {
-  REBATE_THEME,
-  REBATE_GRID,
-  REBATE_FIELD_SX,
-  rebateKpiCard,
-  rebateBtnPrimary,
+    REBATE_THEME,
+    REBATE_GRID,
+    REBATE_FIELD_SX,
+    rebateKpiCard,
+    rebateBtnPrimary,
 } from '@/lib/rebate-theme';
 import { BRAND } from '@/lib/brand-theme';
 
@@ -224,7 +224,7 @@ function RebateReportContent() {
         const monthLabel = reportData.summary.monthLabel || selectedMonth;
         let csv = 'Zain Traders Mandi Bahauddin\n';
         csv += 'Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.\n';
-        csv += 'Phone: 0302-2133218, 0347-7743218\n\n';
+        csv += 'Phone: 0302-2133218, 0315-4533218\n\n';
         csv += 'Rebate Report\n';
         csv += `Supplier: ${reportData.summary.supplierName}\n`;
         csv += `Month: ${monthLabel}\n\n`;
@@ -445,7 +445,7 @@ function RebateReportContent() {
                                 <div className="hidden print:block border-b-2 border-black pb-4 mb-4">
                                     <div className="text-center">
                                         <h1 className="text-2xl font-bold tracking-wider">ZAIN TRADERS MANDI BAHAUDDIN</h1>
-                                        <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</p>
+                                        <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0315-4533218</p>
                                         <div className="mt-3 py-2 bg-black text-white">
                                             <h2 className="text-lg font-bold tracking-widest">REBATE REPORT — {reportData.summary.monthLabel}</h2>
                                         </div>
@@ -550,18 +550,17 @@ function RebateReportContent() {
                                                     tab.id === 'products'
                                                         ? reportData.products.length
                                                         : tab.id === 'purchases'
-                                                          ? reportData.purchases.length
-                                                          : reportData.rebateHistory.length;
+                                                            ? reportData.purchases.length
+                                                            : reportData.rebateHistory.length;
                                                 return (
                                                     <button
                                                         key={tab.id}
                                                         type="button"
                                                         onClick={() => setActiveTab(tab.id)}
-                                                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-t-xl transition-all border ${
-                                                            isActive
-                                                                ? 'bg-white border-[#e2e8f0] border-b-white -mb-px shadow-sm'
-                                                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/70'
-                                                        }`}
+                                                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-t-xl transition-all border ${isActive
+                                                            ? 'bg-white border-[#e2e8f0] border-b-white -mb-px shadow-sm'
+                                                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/70'
+                                                            }`}
                                                         style={isActive ? { color: BRAND.primary.blue } : undefined}
                                                     >
                                                         <Icon className="w-4 h-4" style={isActive ? { color: BRAND.primary.blue } : undefined} />
@@ -967,17 +966,17 @@ function RebateReportContent() {
 }
 
 export default function RebateReport() {
-  return (
-    <Suspense
-      fallback={
-        <DashboardLayout>
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: BRAND.primary.blue }} />
-          </div>
-        </DashboardLayout>
-      }
-    >
-      <RebateReportContent />
-    </Suspense>
-  );
+    return (
+        <Suspense
+            fallback={
+                <DashboardLayout>
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: BRAND.primary.blue }} />
+                    </div>
+                </DashboardLayout>
+            }
+        >
+            <RebateReportContent />
+        </Suspense>
+    );
 }

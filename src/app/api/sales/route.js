@@ -5,7 +5,7 @@ import { getNextId } from '@/lib/id-helper';
 export const dynamic = 'force-dynamic';
 import { Prisma } from '@prisma/client';
 import { updateStoreStock, bulkUpdateStoreStock, getStoreStock, checkStockAvailability } from '@/lib/storeStock';
-import { calculateClosingBalance, createLedgerEntry } from '@/lib/ledger-helper';
+import { calculateClosingBalance, createLedgerEntry, ACCOUNT_NATURE } from '@/lib/ledger-helper';
 import { initBranchScope, resolveUpdatedByUserId } from '@/lib/branch-server';
 import { rejectIfDayClosed } from '@/lib/day-end-guard';
 import { fetchPaginatedSalesList } from '@/lib/sales-list-query';
@@ -434,7 +434,8 @@ async function recalculateLedgerBalances(tx, cus_id, startFromDate = null) {
     const opening = runningBalance;
     const debit = parseFloat(entry.debit_amount || 0);
     const credit = parseFloat(entry.credit_amount || 0);
-    const change = debit - credit;
+    // Sale transactions: Debit deducts balance, Credit adds balance
+    const change = credit - debit;
     const closing = opening + change;
 
     if (
@@ -1785,16 +1786,18 @@ export async function POST(request) {
               opening_balance: runningBalance,
               debit_amount: debitAmount,
               credit_amount: 0,
+              closing_balance: Number((runningBalance - debitAmount).toFixed(2)),
               bill_no: sale.sale_id.toString(),
               trnx_type: 'DEBIT',
               details: billDetails,
               payments: 0,
-              updated_by: validatedUpdatedBy
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
             saleLog(`📝 Bill Entry Created: Opening=${billEntry.opening_balance}, Debit=${billEntry.debit_amount}, Closing=${billEntry.closing_balance}`);
             saleLog(`   Details: ${billDetails}`);
             ledgerEntries.push(billEntry);
-            runningBalance = billEntry.closing_balance;  // Update running balance
+            runningBalance = billEntry.closing_balance;  // Update running balance (deducted)
           }
         } else if (isOrder) {
           saleLog(`⏭️ SKIPPED: Debit entry for ORDER — only advance payment ledger will be created`);
@@ -1810,13 +1813,15 @@ export async function POST(request) {
               opening_balance: runningBalance,
               debit_amount: orderTotal,
               credit_amount: 0,
+              closing_balance: Number((runningBalance - orderTotal).toFixed(2)),
               bill_no: sale.sale_id.toString(),
               trnx_type: 'DEBIT',
               details: billDetails,
               payments: 0,
-              updated_by: validatedUpdatedBy
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
-            saleLog(`📝 Bill Entry (order conversion, full amount): Opening=${billEntry.opening_balance}, Credit=${billEntry.credit_amount}, Closing=${billEntry.closing_balance}`);
+            saleLog(`📝 Bill Entry (order conversion, full amount): Opening=${billEntry.opening_balance}, Debit=${billEntry.debit_amount}, Closing=${billEntry.closing_balance}`);
             ledgerEntries.push(billEntry);
             runningBalance = billEntry.closing_balance;
           }
@@ -1848,13 +1853,15 @@ export async function POST(request) {
               opening_balance: runningBalance,
               debit_amount: 0,
               credit_amount: totalNewPayment,
+              closing_balance: Number((runningBalance + totalNewPayment).toFixed(2)),
               bill_no: sale.sale_id.toString(),
               trnx_type: 'CREDIT',
               details: `Payment Received - ${bill_type || 'BILL'} - Customer Account (Credit) [${paymentParts.join(', ')}]`,
               payments: totalNewPayment,
               cash_payment: cashAmount,
               bank_payment: bankAmount,
-              updated_by: validatedUpdatedBy
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
             saleLog(`💳 Combined payment credit: ${totalNewPayment}, remaining=${remaining}, Closing=${combinedPayEntry.closing_balance}`);
             ledgerEntries.push(combinedPayEntry);
@@ -1875,13 +1882,15 @@ export async function POST(request) {
             opening_balance: runningBalance,
             debit_amount: 0,
             credit_amount: totalPaymentForCustomer,
+            closing_balance: Number((runningBalance + totalPaymentForCustomer).toFixed(2)),
             bill_no: sale.sale_id.toString(),
             trnx_type: 'CREDIT',
             details: `Payment Received - ${billLabel} - Customer Account (Credit)${salePaymentDesc}`,
             payments: totalPaymentForCustomer,
             cash_payment: cashAmount,
             bank_payment: bankAmount,
-            updated_by: validatedUpdatedBy
+            updated_by: validatedUpdatedBy,
+            account_nature: ACCOUNT_NATURE.PAYABLE
           });
           saleLog(`💳 Payment Entry: Opening=${paymentEntry.opening_balance}, Credit=${paymentEntry.credit_amount}, Closing=${paymentEntry.closing_balance}`);
           ledgerEntries.push(paymentEntry);
@@ -1898,6 +1907,7 @@ export async function POST(request) {
             opening_balance: runningBalance,
             debit_amount: 0,
             credit_amount: totalAdvance,
+            closing_balance: Number((runningBalance + totalAdvance).toFixed(2)),
             bill_no: sale.sale_id.toString(),
             trnx_type: 'CREDIT',
             details: `Advance Payment — ${advanceParts.join(' + ')}`,
@@ -1905,7 +1915,8 @@ export async function POST(request) {
             cash_payment: cashAmount,
             bank_payment: bankAmount,
             updated_by: validatedUpdatedBy,
-            ledger_type: 'Order'
+            ledger_type: 'Order',
+            account_nature: ACCOUNT_NATURE.PAYABLE
           });
           saleLog(`💳 ORDER advance: Credit=${orderAdvanceEntry.credit_amount}, Closing=${orderAdvanceEntry.closing_balance}, Desc="${orderAdvanceEntry.details}"`);
           ledgerEntries.push(orderAdvanceEntry);
@@ -1965,47 +1976,53 @@ export async function POST(request) {
             usedBankAccountId = bankAccountToUse.cus_id;  // Store the bank ID we're using
             saleLog(`🏦 Bank Account Before: ID=${bankAccountToUse.cus_id}, Name=${bankAccountToUse.cus_name}, Balance=${bankAccountToUse.cus_balance}`);
 
+            const bankOpening = await getRunningBalanceForAccount(bankAccountToUse.cus_id);
+            const bankAmt = Number(eff_bank.toFixed(2));
             const bankEntry = createLedgerEntry({
               cus_id: bankAccountToUse.cus_id,
-              opening_balance: await getRunningBalanceForAccount(bankAccountToUse.cus_id),
-              debit_amount: Number(eff_bank.toFixed(2)),
-              credit_amount: 0,
+              opening_balance: bankOpening,
+              debit_amount: 0,
+              credit_amount: bankAmt,
+              closing_balance: Number((bankOpening + bankAmt).toFixed(2)),
               bill_no: sale.sale_id.toString(),
-              trnx_type: 'DEBIT',
-              details: `Payment Received - ${isOrder ? 'ORDER' : (bill_type || 'BILL')} - ${customer?.cus_name || 'Customer'} - BANK Account: ${bankAccountToUse.cus_name} (Debit)`,
-              payments: Number(eff_bank.toFixed(2)),
+              trnx_type: 'CREDIT',
+              details: `Payment Received - ${isOrder ? 'ORDER' : (bill_type || 'BILL')} - ${customer?.cus_name || 'Customer'} - BANK Account: ${bankAccountToUse.cus_name} (Credit)`,
+              payments: bankAmt,
               cash_payment: 0,
-              bank_payment: Number(eff_bank.toFixed(2)),  // Mark as bank payment
+              bank_payment: bankAmt,  // Mark as bank payment
               updated_by: validatedUpdatedBy,
-              ledger_type: isOrder ? 'Order' : 'Sale'
+              ledger_type: isOrder ? 'Order' : 'Sale',
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
-            saleLog(`🏦 Bank Ledger Entry: Opening=${bankEntry.opening_balance}, Debit=${bankEntry.debit_amount}, Closing=${bankEntry.closing_balance}`);
+            saleLog(`🏦 Bank Ledger Entry: Opening=${bankEntry.opening_balance}, Credit=${bankEntry.credit_amount}, Closing=${bankEntry.closing_balance}`);
             ledgerEntries.push(bankEntry);
           }
         }
 
-        // 4. Cash Account - DEBIT (when cash payment is received)
-        // When cash payment is received, cash account balance INCREASES (debit increases asset)
-        // Always create ledger entry for cash payments
+        // 4. Cash Account - CREDIT (when cash payment is received, balance increases)
         if (eff_cash > 0 && specialAccounts.cash) {
           saleLog(`💵 CASH PAYMENT DETECTED: ${eff_cash}`);
           saleLog(`💵 Cash Account Before: ID=${specialAccounts.cash.cus_id}, Name=${specialAccounts.cash.cus_name}, Balance=${specialAccounts.cash.cus_balance}`);
 
+          const cashOpening = await getRunningBalanceForAccount(specialAccounts.cash.cus_id);
+          const cashAmt = Number(eff_cash.toFixed(2));
           const cashEntry = createLedgerEntry({
             cus_id: specialAccounts.cash.cus_id,
-            opening_balance: await getRunningBalanceForAccount(specialAccounts.cash.cus_id),
-            debit_amount: Number(eff_cash.toFixed(2)),
-            credit_amount: 0,
+            opening_balance: cashOpening,
+            debit_amount: 0,
+            credit_amount: cashAmt,
+            closing_balance: Number((cashOpening + cashAmt).toFixed(2)),
             bill_no: sale.sale_id.toString(),
-            trnx_type: 'DEBIT',
-            details: `Payment Received - ${isOrder ? 'ORDER' : (bill_type || 'BILL')} - ${customer?.cus_name || 'Customer'} - CASH Account (Debit)`,
-            payments: Number(eff_cash.toFixed(2)),
-            cash_payment: Number(eff_cash.toFixed(2)),  // Mark as cash payment
+            trnx_type: 'CREDIT',
+            details: `Payment Received - ${isOrder ? 'ORDER' : (bill_type || 'BILL')} - ${customer?.cus_name || 'Customer'} - CASH Account (Credit)`,
+            payments: cashAmt,
+            cash_payment: cashAmt,  // Mark as cash payment
             bank_payment: 0,
             updated_by: validatedUpdatedBy,
-            ledger_type: isOrder ? 'Order' : 'Sale'
+            ledger_type: isOrder ? 'Order' : 'Sale',
+            account_nature: ACCOUNT_NATURE.PAYABLE
           });
-          saleLog(`💵 Cash Ledger Entry: Opening=${cashEntry.opening_balance}, Debit=${cashEntry.debit_amount}, Closing=${cashEntry.closing_balance}`);
+          saleLog(`💵 Cash Ledger Entry: Opening=${cashEntry.opening_balance}, Credit=${cashEntry.credit_amount}, Closing=${cashEntry.closing_balance}`);
           ledgerEntries.push(cashEntry);
         } else if (eff_cash > 0) {
           console.error(
@@ -2028,16 +2045,20 @@ export async function POST(request) {
               continue;
             }
 
+            const transportOpening = await getRunningBalanceForAccount(transportAccount.cus_id);
+            const tAmt = Number(transportAmount.toFixed(2));
             const transportEntry = createLedgerEntry({
               cus_id: transportAccount.cus_id,
-              opening_balance: await getRunningBalanceForAccount(transportAccount.cus_id),
+              opening_balance: transportOpening,
               debit_amount: 0,
-              credit_amount: Number(transportAmount.toFixed(2)),
+              credit_amount: tAmt,
+              closing_balance: Number((transportOpening + tAmt).toFixed(2)),
               bill_no: sale.sale_id.toString(),
               trnx_type: 'CREDIT',
               details: `Transport Charges - ${bill_type || 'BILL'} - ${customer?.cus_name || 'Customer'} (Credit)`,
               payments: 0,
-              updated_by: validatedUpdatedBy
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
 
             ledgerEntries.push(transportEntry);
@@ -2061,16 +2082,20 @@ export async function POST(request) {
               continue;
             }
 
+            const fitterOpening = await getRunningBalanceForAccount(fitterAccount.cus_id);
+            const fAmt = Number(fitterAmount.toFixed(2));
             const fitterEntry = createLedgerEntry({
               cus_id: fitterAccount.cus_id,
-              opening_balance: await getRunningBalanceForAccount(fitterAccount.cus_id),
+              opening_balance: fitterOpening,
               debit_amount: 0,
-              credit_amount: Number(fitterAmount.toFixed(2)),
+              credit_amount: fAmt,
+              closing_balance: Number((fitterOpening + fAmt).toFixed(2)),
               bill_no: sale.sale_id.toString(),
               trnx_type: 'CREDIT',
               details: `Fitting Charges - ${bill_type || 'BILL'} - ${customer?.cus_name || 'Customer'} (Credit)`,
               payments: 0,
-              updated_by: validatedUpdatedBy
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
 
             ledgerEntries.push(fitterEntry);
@@ -2082,16 +2107,20 @@ export async function POST(request) {
         // 5c. Hardware account entry — credit hardware account for hardware charges
         if (parseFloat(hardware_amount || 0) > 0 && hardwareAccount) {
           const hwAmt = parseFloat(hardware_amount);
+          const hardwareOpening = await getRunningBalanceForAccount(hardwareAccount.cus_id);
+          const hAmt = Number(hwAmt.toFixed(2));
           const hardwareEntry = createLedgerEntry({
             cus_id: hardwareAccount.cus_id,
-            opening_balance: await getRunningBalanceForAccount(hardwareAccount.cus_id),
+            opening_balance: hardwareOpening,
             debit_amount: 0,
-            credit_amount: Number(hwAmt.toFixed(2)),
+            credit_amount: hAmt,
+            closing_balance: Number((hardwareOpening + hAmt).toFixed(2)),
             bill_no: sale.sale_id.toString(),
             trnx_type: 'CREDIT',
             details: `Hardware Charges - ${bill_type || 'BILL'} - ${customer?.cus_name || 'Customer'} (Credit)`,
             payments: 0,
-            updated_by: validatedUpdatedBy
+            updated_by: validatedUpdatedBy,
+            account_nature: ACCOUNT_NATURE.PAYABLE
           });
 
           ledgerEntries.push(hardwareEntry);
@@ -2603,9 +2632,9 @@ export async function PUT(request) {
           if (detailsLower.includes('advance payment') || detailsLower.includes('payment received - order')) {
             // For legacy entries: CASH / BANK_TRANSFER; for new entries: DEBIT with cash_payment or bank_payment
             const isCashEntry = entry.trnx_type === 'CASH' || 
-              (entry.trnx_type === 'DEBIT' && parseFloat(entry.cash_payment || 0) > 0 && parseFloat(entry.bank_payment || 0) === 0);
+              (['DEBIT', 'CREDIT'].includes(entry.trnx_type) && parseFloat(entry.cash_payment || 0) > 0 && parseFloat(entry.bank_payment || 0) === 0);
             const isBankEntry = entry.trnx_type === 'BANK_TRANSFER' ||
-              (entry.trnx_type === 'DEBIT' && parseFloat(entry.bank_payment || 0) > 0);
+              (['DEBIT', 'CREDIT'].includes(entry.trnx_type) && parseFloat(entry.bank_payment || 0) > 0);
             
             if (isCashEntry) {
               oldAdvanceCash = parseFloat(entry.debit_amount || entry.credit_amount || 0);
@@ -2797,11 +2826,13 @@ export async function PUT(request) {
             opening_balance: runningBalance,
             debit_amount: debitAmount,
             credit_amount: 0,
+            closing_balance: Number((runningBalance - debitAmount).toFixed(2)),
             bill_no: sale.sale_id.toString(),
             trnx_type: 'DEBIT',
             details: billDetails,
             payments: 0,
-            updated_by: validatedUpdatedBy
+            updated_by: validatedUpdatedBy,
+            account_nature: ACCOUNT_NATURE.PAYABLE
           });
           saleLog(`   📝 Bill Debit: ${debitAmount}, Closing=${billEntry.closing_balance}`);
           ledgerEntries.push(billEntry);
@@ -2831,6 +2862,7 @@ export async function PUT(request) {
             opening_balance: runningBalance,
             debit_amount: 0,
             credit_amount: advPaymentAmt,
+            closing_balance: Number((runningBalance + advPaymentAmt).toFixed(2)),
             bill_no: sale.sale_id.toString(),
             trnx_type: 'CREDIT',
             details: `Advance Payment — ${advanceParts.join(' + ')}`,
@@ -2838,13 +2870,14 @@ export async function PUT(request) {
             cash_payment: advCash,
             bank_payment: advBank,
             updated_by: validatedUpdatedBy,
-            ledger_type: 'Order'
+            ledger_type: 'Order',
+            account_nature: ACCOUNT_NATURE.PAYABLE
           });
           saleLog(`   💳 Advance Credit: ${advPaymentAmt}, Closing=${orderAdvanceEntry.closing_balance}`);
           ledgerEntries.push(orderAdvanceEntry);
           runningBalance = orderAdvanceEntry.closing_balance;
 
-          // Bank debit for advance
+          // Bank credit for advance
           if (advBank > 0) {
             let bankAccountToUse = null;
             if (debit_account_id) {
@@ -2872,43 +2905,49 @@ export async function PUT(request) {
 
             if (bankAccountToUse) {
               const currentBankBalance = await getRunningBalanceForAccount(bankAccountToUse.cus_id);
+              const advBankAmt = Number(advBank.toFixed(2));
               const bankEntry = createLedgerEntry({
                 cus_id: bankAccountToUse.cus_id,
                 opening_balance: currentBankBalance,
-                debit_amount: Number(advBank.toFixed(2)),
-                credit_amount: 0,
+                debit_amount: 0,
+                credit_amount: advBankAmt,
+                closing_balance: Number((currentBankBalance + advBankAmt).toFixed(2)),
                 bill_no: sale.sale_id.toString(),
-                trnx_type: 'DEBIT',
-                details: `Payment Received - ORDER - ${freshCustomer.cus_name} - BANK Account: ${bankAccountToUse.cus_name} (Debit)`,
-                payments: Number(advBank.toFixed(2)),
+                trnx_type: 'CREDIT',
+                details: `Payment Received - ORDER - ${freshCustomer.cus_name} - BANK Account: ${bankAccountToUse.cus_name} (Credit)`,
+                payments: advBankAmt,
                 cash_payment: 0,
-                bank_payment: Number(advBank.toFixed(2)),
+                bank_payment: advBankAmt,
                 updated_by: validatedUpdatedBy,
-                ledger_type: 'Order'
+                ledger_type: 'Order',
+                account_nature: ACCOUNT_NATURE.PAYABLE
               });
-              saleLog(`   🏦 Advance Bank Debit: ${advBank}, Closing=${bankEntry.closing_balance}`);
+              saleLog(`   🏦 Advance Bank Credit: ${advBank}, Closing=${bankEntry.closing_balance}`);
               ledgerEntries.push(bankEntry);
             }
           }
 
-          // Cash debit for advance
+          // Cash credit for advance
           if (advCash > 0 && specialAccounts?.cash) {
             const currentCashBalance = await getRunningBalanceForAccount(specialAccounts.cash.cus_id);
+            const advCashAmt = Number(advCash.toFixed(2));
             const cashEntry = createLedgerEntry({
               cus_id: specialAccounts.cash.cus_id,
               opening_balance: currentCashBalance,
-              debit_amount: Number(advCash.toFixed(2)),
-              credit_amount: 0,
+              debit_amount: 0,
+              credit_amount: advCashAmt,
+              closing_balance: Number((currentCashBalance + advCashAmt).toFixed(2)),
               bill_no: sale.sale_id.toString(),
-              trnx_type: 'DEBIT',
-              details: `Payment Received - ORDER - ${freshCustomer.cus_name} - CASH Account (Debit)`,
-              payments: Number(advCash.toFixed(2)),
-              cash_payment: Number(advCash.toFixed(2)),
+              trnx_type: 'CREDIT',
+              details: `Payment Received - ORDER - ${freshCustomer.cus_name} - CASH Account (Credit)`,
+              payments: advCashAmt,
+              cash_payment: advCashAmt,
               bank_payment: 0,
               updated_by: validatedUpdatedBy,
-              ledger_type: 'Order'
+              ledger_type: 'Order',
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
-            saleLog(`   💵 Advance Cash Debit: ${advCash}, Closing=${cashEntry.closing_balance}`);
+            saleLog(`   💵 Advance Cash Credit: ${advCash}, Closing=${cashEntry.closing_balance}`);
             ledgerEntries.push(cashEntry);
           }
         }
@@ -2939,6 +2978,7 @@ export async function PUT(request) {
             opening_balance: runningBalance,
             debit_amount: 0,
             credit_amount: totalPaymentForCustomer,
+            closing_balance: Number((runningBalance + totalPaymentForCustomer).toFixed(2)),
             bill_no: sale.sale_id.toString(),
             trnx_type: 'CREDIT',
             details: paymentDetails,
@@ -2946,14 +2986,15 @@ export async function PUT(request) {
             cash_payment: cashAmount,
             bank_payment: bankAmount,
             updated_by: validatedUpdatedBy,
-            ledger_type: isOrder ? 'Order' : 'Sale'
+            ledger_type: isOrder ? 'Order' : 'Sale',
+            account_nature: ACCOUNT_NATURE.PAYABLE
           });
           saleLog(`   💳 Payment Credit: ${totalPaymentForCustomer}, Closing=${paymentEntry.closing_balance}`);
           ledgerEntries.push(paymentEntry);
           runningBalance = paymentEntry.closing_balance;
         }
 
-        // ── 4d. Bank Account DEBIT (bank payment received) ──
+        // ── 4d. Bank Account CREDIT (bank payment received) ──
         let usedBankAccountId = null;
 
         if (eff_bank > 0) {
@@ -2991,45 +3032,51 @@ export async function PUT(request) {
           if (bankAccountToUse) {
             usedBankAccountId = bankAccountToUse.cus_id;
             const currentBankBalance = await getRunningBalanceForAccount(bankAccountToUse.cus_id);
+            const effBankAmt = Number(eff_bank.toFixed(2));
 
             const bankEntry = createLedgerEntry({
               cus_id: bankAccountToUse.cus_id,
               opening_balance: currentBankBalance,
-              debit_amount: Number(eff_bank.toFixed(2)),
-              credit_amount: 0,
+              debit_amount: 0,
+              credit_amount: effBankAmt,
+              closing_balance: Number((currentBankBalance + effBankAmt).toFixed(2)),
               bill_no: sale.sale_id.toString(),
-              trnx_type: 'DEBIT',
-              details: `Payment Received - ${bill_type || 'BILL'} - ${freshCustomer.cus_name} - BANK Account: ${bankAccountToUse.cus_name} (Debit)`,
-              payments: Number(eff_bank.toFixed(2)),
+              trnx_type: 'CREDIT',
+              details: `Payment Received - ${bill_type || 'BILL'} - ${freshCustomer.cus_name} - BANK Account: ${bankAccountToUse.cus_name} (Credit)`,
+              payments: effBankAmt,
               cash_payment: 0,
-              bank_payment: Number(eff_bank.toFixed(2)),
+              bank_payment: effBankAmt,
               updated_by: validatedUpdatedBy,
-              ledger_type: isOrder ? 'Order' : 'Sale'
+              ledger_type: isOrder ? 'Order' : 'Sale',
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
-            saleLog(`   🏦 Bank Debit: ${eff_bank}, Closing=${bankEntry.closing_balance}`);
+            saleLog(`   🏦 Bank Credit: ${eff_bank}, Closing=${bankEntry.closing_balance}`);
             ledgerEntries.push(bankEntry);
           }
         }
 
-        // ── 4e. Cash Account DEBIT (cash payment received) ──
+        // ── 4e. Cash Account CREDIT (cash payment received) ──
         if (eff_cash > 0 && specialAccounts?.cash) {
           const currentCashBalance = await getRunningBalanceForAccount(specialAccounts.cash.cus_id);
+          const effCashAmt = Number(eff_cash.toFixed(2));
 
           const cashEntry = createLedgerEntry({
             cus_id: specialAccounts.cash.cus_id,
             opening_balance: currentCashBalance,
-            debit_amount: Number(eff_cash.toFixed(2)),
-            credit_amount: 0,
+            debit_amount: 0,
+            credit_amount: effCashAmt,
+            closing_balance: Number((currentCashBalance + effCashAmt).toFixed(2)),
             bill_no: sale.sale_id.toString(),
-            trnx_type: 'DEBIT',
-            details: `Payment Received - ${isOrder ? 'ORDER' : (bill_type || 'BILL')} - ${freshCustomer.cus_name} - CASH Account (Debit)`,
-            payments: Number(eff_cash.toFixed(2)),
-            cash_payment: Number(eff_cash.toFixed(2)),
+            trnx_type: 'CREDIT',
+            details: `Payment Received - ${isOrder ? 'ORDER' : (bill_type || 'BILL')} - ${freshCustomer.cus_name} - CASH Account (Credit)`,
+            payments: effCashAmt,
+            cash_payment: effCashAmt,
             bank_payment: 0,
             updated_by: validatedUpdatedBy,
-            ledger_type: isOrder ? 'Order' : 'Sale'
+            ledger_type: isOrder ? 'Order' : 'Sale',
+            account_nature: ACCOUNT_NATURE.PAYABLE
           });
-          saleLog(`   💵 Cash Debit: ${eff_cash}, Closing=${cashEntry.closing_balance}`);
+          saleLog(`   💵 Cash Credit: ${eff_cash}, Closing=${cashEntry.closing_balance}`);
           ledgerEntries.push(cashEntry);
         }
 
@@ -3046,17 +3093,20 @@ export async function PUT(request) {
             if (!transportAccount) continue;
 
             const currentTransportBalance = await getRunningBalanceForAccount(transportAccount.cus_id);
+            const tAmt = Number(transportAmount.toFixed(2));
 
             const transportEntry = createLedgerEntry({
               cus_id: transportAccount.cus_id,
               opening_balance: currentTransportBalance,
               debit_amount: 0,
-              credit_amount: Number(transportAmount.toFixed(2)),
+              credit_amount: tAmt,
+              closing_balance: Number((currentTransportBalance + tAmt).toFixed(2)),
               bill_no: sale.sale_id.toString(),
               trnx_type: 'CREDIT',
               details: `Transport Charges - ${bill_type || 'BILL'} - ${freshCustomer.cus_name} (Credit)`,
               payments: 0,
-              updated_by: validatedUpdatedBy
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
             ledgerEntries.push(transportEntry);
 
@@ -3077,17 +3127,20 @@ export async function PUT(request) {
             if (!fitterAccount) continue;
 
             const currentFitterBalance = await getRunningBalanceForAccount(fitterAccount.cus_id);
+            const fAmt = Number(fitterAmount.toFixed(2));
 
             const fitterEntry = createLedgerEntry({
               cus_id: fitterAccount.cus_id,
               opening_balance: currentFitterBalance,
               debit_amount: 0,
-              credit_amount: Number(fitterAmount.toFixed(2)),
+              credit_amount: fAmt,
+              closing_balance: Number((currentFitterBalance + fAmt).toFixed(2)),
               bill_no: sale.sale_id.toString(),
               trnx_type: 'CREDIT',
               details: `Fitting Charges - ${bill_type || 'BILL'} - ${freshCustomer.cus_name} (Credit)`,
               payments: 0,
-              updated_by: validatedUpdatedBy
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
             ledgerEntries.push(fitterEntry);
             affectedCusIds.add(fitterAccount.cus_id);
@@ -3109,16 +3162,19 @@ export async function PUT(request) {
           if (hardwareAccount) {
             const hwAmt = parseFloat(hardware_amount);
             const currentHwBalance = await getRunningBalanceForAccount(hardwareAccount.cus_id);
+            const hAmt = Number(hwAmt.toFixed(2));
             const hardwareEntry = createLedgerEntry({
               cus_id: hardwareAccount.cus_id,
               opening_balance: currentHwBalance,
               debit_amount: 0,
-              credit_amount: Number(hwAmt.toFixed(2)),
+              credit_amount: hAmt,
+              closing_balance: Number((currentHwBalance + hAmt).toFixed(2)),
               bill_no: sale.sale_id.toString(),
               trnx_type: 'CREDIT',
               details: `Hardware Charges - ${bill_type || 'BILL'} - ${freshCustomer.cus_name} (Credit)`,
               payments: 0,
-              updated_by: validatedUpdatedBy
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
             });
             ledgerEntries.push(hardwareEntry);
             affectedCusIds.add(hardwareAccount.cus_id);
