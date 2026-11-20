@@ -100,7 +100,7 @@ import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
 import CommercialInvoiceReceipt from '@/components/invoices/CommercialInvoiceReceipt';
-import GlassLabelPrintDialog from '@/components/invoices/GlassLabelPrintDialog';
+import { printDirectBillLabels } from '@/lib/print-glass-label';
 import { printReceiptReport, downloadReceiptPdf } from '@/lib/invoice-report-service';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
@@ -590,9 +590,6 @@ function OrdersPageContent() {
   // Bill view state
   const [viewBillDialog, setViewBillDialog] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
-  const [labelModalOpen, setLabelModalOpen] = useState(false);
-  const [labelModalBill, setLabelModalBill] = useState(null);
-  const [labelModalItemIndex, setLabelModalItemIndex] = useState('all');
   const [currentView, setCurrentView] = useState(initialView);
   const lastCreateUrlRef = useRef('');
 
@@ -6197,11 +6194,9 @@ function OrdersPageContent() {
                   background: 'linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%)',
                 }
               }}
-              onClick={() => {
+              onClick={async () => {
                 if (currentBillData) {
-                  setLabelModalBill(currentBillData);
-                  setLabelModalItemIndex('all');
-                  setLabelModalOpen(true);
+                  await printDirectBillLabels({ bill: currentBillData });
                 }
               }}
             >
@@ -7677,11 +7672,9 @@ function OrdersPageContent() {
                 background: 'linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%)',
               }
             }}
-            onClick={() => {
+            onClick={async () => {
               if (selectedBill) {
-                setLabelModalBill(selectedBill);
-                setLabelModalItemIndex('all');
-                setLabelModalOpen(true);
+                await printDirectBillLabels({ bill: selectedBill });
               }
             }}
           >
@@ -8450,13 +8443,6 @@ function OrdersPageContent() {
         );
       })()}
 
-      {/* 2" x 2" Glass Label Print Modal */}
-      <GlassLabelPrintDialog
-        open={labelModalOpen}
-        onClose={() => setLabelModalOpen(false)}
-        bill={labelModalBill}
-        initialItemIndex={labelModalItemIndex}
-      />
     </>
   );
 }

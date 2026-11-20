@@ -117,14 +117,22 @@ export function buildGlassStickerHtml({
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     ">
-      <!-- Line 1: Logo & Company Name in Urdu -->
-      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #000; padding-bottom: 2px;">
-        <!-- Circular Urdu Logo -->
+      <!-- Line 1: Logo before Urdu Brand Name (centered together, increased Urdu font size) -->
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        direction: rtl;
+        gap: 6px;
+        border-bottom: 1.5px solid #000000;
+        padding-bottom: 2px;
+      ">
+        <!-- Circular Urdu Logo (displayed before Urdu brand name in RTL flow) -->
         <div style="
-          width: 22px;
-          height: 22px;
+          width: 24px;
+          height: 24px;
           border-radius: 50%;
-          border: 1.5px solid #000;
+          border: 1.5px solid #000000;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -132,41 +140,39 @@ export function buildGlassStickerHtml({
           background: #ffffff;
           text-align: center;
         ">
-          <span style="font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif; font-size: 11px; font-weight: 900; line-height: 1; color: #000;">زین</span>
+          <span style="font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif; font-size: 12px; font-weight: 900; line-height: 1; color: #000000;">زین</span>
         </div>
 
-        <!-- Company Name in Urdu -->
+        <!-- Company Name in Urdu (Increased size) -->
         <div style="
           font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif;
-          font-size: 12px;
+          font-size: 15.5px;
           font-weight: 900;
           direction: rtl;
           text-align: right;
           color: #000000;
-          line-height: 1.1;
+          line-height: 1.15;
           letter-spacing: -0.2px;
+          white-space: nowrap;
         ">
-          ${companyNameUr}
+          ${escapeHtml(companyNameUr)}
         </div>
       </div>
 
-      <!-- Line 2: Serial Number & Product Name -->
-      <div style="display: flex; align-items: baseline; gap: 4px; padding-top: 1px; min-width: 0;">
+      <!-- Line 2: Serial Number & Product Name (NO background) -->
+      <div style="display: flex; align-items: baseline; gap: 5px; padding-top: 1px; min-width: 0;">
         <span style="
-          background: #000000;
-          color: #ffffff;
+          color: #000000;
           font-weight: 900;
-          font-size: 10px;
-          padding: 1px 3px;
-          border-radius: 2px;
+          font-size: 12px;
           flex-shrink: 0;
-          line-height: 1.1;
+          line-height: 1.15;
         ">
           #${srNo}
         </span>
         <span style="
           font-weight: 800;
-          font-size: 11px;
+          font-size: 12px;
           color: #000000;
           white-space: nowrap;
           overflow: hidden;
@@ -174,7 +180,7 @@ export function buildGlassStickerHtml({
           line-height: 1.15;
           letter-spacing: -0.2px;
         ">
-          ${escapeHtml(itemName)}${jobDesc ? ` <span style="font-size: 9.5px; font-weight: 600; color: #334155;">(${escapeHtml(jobDesc)})</span>` : ''}
+          ${escapeHtml(itemName)}${jobDesc ? ` <span style="font-size: 10px; font-weight: 600; color: #334155;">(${escapeHtml(jobDesc)})</span>` : ''}
         </span>
       </div>
 
@@ -183,21 +189,21 @@ export function buildGlassStickerHtml({
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: #f1f5f9;
-        padding: 2px 4px;
+        background: #f8fafc;
+        padding: 2px 5px;
         border-radius: 3px;
-        border: 1px solid #94a3b8;
+        border: 1px solid #cbd5e1;
       ">
         <div style="display: flex; align-items: baseline; gap: 3px;">
-          <span style="font-size: 8px; font-weight: 800; color: #475569; text-transform: uppercase;">Size:</span>
-          <span style="font-size: 11.5px; font-weight: 900; color: #000000; letter-spacing: -0.3px;">${escapeHtml(actualSize)}</span>
+          <span style="font-size: 8.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Size:</span>
+          <span style="font-size: 12px; font-weight: 900; color: #000000; letter-spacing: -0.2px;">${escapeHtml(actualSize)}</span>
         </div>
         <div style="display: flex; align-items: baseline; gap: 3px;">
-          <span style="font-size: 11.5px; font-weight: 900; color: #000000;">${escapeHtml(pcsText)}</span>
+          <span style="font-size: 12px; font-weight: 900; color: #000000;">${escapeHtml(pcsText)}</span>
         </div>
       </div>
 
-      <!-- Line 4: WhatsApp QR code (Left) + Customer Name & Phone (Right) -->
+      <!-- Line 4: Customer Name & Phone (Left side, regular font) + WhatsApp QR code (Right side, NO text below) -->
       <div style="
         display: flex;
         align-items: center;
@@ -206,38 +212,32 @@ export function buildGlassStickerHtml({
         padding-top: 2px;
         gap: 5px;
       ">
-        <!-- Left: WhatsApp QR code -->
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">
-          ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="WhatsApp QR" style="width: 44px; height: 44px; display: block;" />` : ''}
-          <span style="font-size: 6.5px; font-weight: 800; color: #16a34a; line-height: 1; margin-top: 1px; text-transform: uppercase;">WhatsApp</span>
-        </div>
-
-        <!-- Right: Customer Info -->
-        <div style="display: flex; flex-direction: column; justify-content: center; overflow: hidden; flex: 1; text-align: right; min-width: 0;">
+        <!-- Left Side: Customer Info (Customer Name in regular font) -->
+        <div style="display: flex; flex-direction: column; justify-content: center; overflow: hidden; flex: 1; text-align: left; min-width: 0;">
           <div style="
-            font-size: 9.5px;
-            font-weight: 900;
+            font-size: 10px;
+            font-weight: 400;
             color: #000000;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            line-height: 1.2;
+            line-height: 1.25;
           ">
             ${escapeHtml(customerName)}
           </div>
           <div style="
-            font-size: 9.5px;
-            font-weight: 800;
+            font-size: 10px;
+            font-weight: 700;
             color: #000000;
             letter-spacing: 0.2px;
-            line-height: 1.2;
+            line-height: 1.25;
             margin-top: 1px;
           ">
             ${escapeHtml(customerPhone)}
           </div>
           <div style="
-            font-size: 7.5px;
-            font-weight: 700;
+            font-size: 8px;
+            font-weight: 600;
             color: #475569;
             line-height: 1.1;
             margin-top: 1px;
@@ -245,9 +245,115 @@ export function buildGlassStickerHtml({
             Inv #${escapeHtml(String(billNo))}
           </div>
         </div>
+
+        <!-- Right Side: WhatsApp QR code (Clean, NO text below it) -->
+        <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR" style="width: 44px; height: 44px; display: block;" />` : ''}
+        </div>
       </div>
     </div>
   `;
+}
+
+/**
+ * Direct print single line item label (no modal/popup)
+ */
+export async function printDirectSingleItemLabel({
+  bill,
+  item,
+  index = 0,
+  pieceMode = 'per-piece',
+}) {
+  if (!bill || !item) return false;
+
+  const waUrl = getWhatsAppTargetUrl(bill?.customer || bill, bill, item);
+  const qrCodeDataUrl = await generateWhatsAppQrCode(waUrl);
+
+  const pcs = Number(item.pcs ?? item.quantity ?? item.qty ?? 1) || 1;
+  let html = '';
+
+  if (pieceMode === 'per-piece' && pcs > 1) {
+    for (let p = 1; p <= pcs; p++) {
+      html += buildGlassStickerHtml({
+        bill,
+        item,
+        index,
+        pieceLabel: `Pcs: ${p}/${pcs}`,
+        qrCodeDataUrl,
+      });
+    }
+  } else {
+    html += buildGlassStickerHtml({
+      bill,
+      item,
+      index,
+      pieceLabel: `Pcs: ${pcs}`,
+      qrCodeDataUrl,
+    });
+  }
+
+  return printGlassStickers({
+    stickersHtml: html,
+    title: `Label-${bill.sale_id || ''}-${item.itemName || 'item'}`,
+  });
+}
+
+/**
+ * Direct print all labels for a bill (no modal/popup)
+ */
+export async function printDirectBillLabels({
+  bill,
+  items = null,
+  pieceMode = 'per-piece',
+}) {
+  if (!bill) return false;
+
+  const rawDetails = Array.isArray(items)
+    ? items
+    : Array.isArray(bill.sale_details)
+    ? bill.sale_details
+    : Array.isArray(bill.productTableData)
+    ? bill.productTableData
+    : [];
+
+  if (rawDetails.length === 0) {
+    alert('No items found in this bill to print labels.');
+    return false;
+  }
+
+  let combinedHtml = '';
+
+  for (let i = 0; i < rawDetails.length; i++) {
+    const item = rawDetails[i];
+    const waUrl = getWhatsAppTargetUrl(bill?.customer || bill, bill, item);
+    const qrCodeDataUrl = await generateWhatsAppQrCode(waUrl);
+    const pcs = Number(item.pcs ?? item.quantity ?? item.qty ?? 1) || 1;
+
+    if (pieceMode === 'per-piece' && pcs > 1) {
+      for (let p = 1; p <= pcs; p++) {
+        combinedHtml += buildGlassStickerHtml({
+          bill,
+          item,
+          index: i,
+          pieceLabel: `Pcs: ${p}/${pcs}`,
+          qrCodeDataUrl,
+        });
+      }
+    } else {
+      combinedHtml += buildGlassStickerHtml({
+        bill,
+        item,
+        index: i,
+        pieceLabel: `Pcs: ${pcs}`,
+        qrCodeDataUrl,
+      });
+    }
+  }
+
+  return printGlassStickers({
+    stickersHtml: combinedHtml,
+    title: `Labels-Bill-${bill.sale_id || bill.inv_no || 'all'}`,
+  });
 }
 
 /**

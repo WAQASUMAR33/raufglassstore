@@ -115,7 +115,7 @@ import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
 import CommercialInvoiceReceipt, { expandInvoiceLineItems } from '@/components/invoices/CommercialInvoiceReceipt';
-import GlassLabelPrintDialog from '@/components/invoices/GlassLabelPrintDialog';
+import { printDirectBillLabels } from '@/lib/print-glass-label';
 import { printReceiptReport, downloadReceiptPdf } from '@/lib/invoice-report-service';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import {
@@ -6125,9 +6125,6 @@ function SalesPageContent() {
   const [currentBillData, setCurrentBillData] = useState(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [activeReceiptCopy, setActiveReceiptCopy] = useState('OFFICE');
-  const [labelModalOpen, setLabelModalOpen] = useState(false);
-  const [labelModalBill, setLabelModalBill] = useState(null);
-  const [labelModalItemIndex, setLabelModalItemIndex] = useState('ALL');
 
   const handlePrintCopy = async (copyType, fromDialog = true, targetBill = null) => {
     setActiveReceiptCopy(copyType);
@@ -11215,10 +11212,10 @@ function SalesPageContent() {
               color: 'white',
               fontWeight: 700
             }}
-            onClick={() => {
-              setLabelModalBill(currentBillData);
-              setLabelModalItemIndex('ALL');
-              setLabelModalOpen(true);
+            onClick={async () => {
+              if (currentBillData) {
+                await printDirectBillLabels({ bill: currentBillData });
+              }
             }}
           >
             Print Labels
@@ -12160,23 +12157,17 @@ function SalesPageContent() {
               color: 'white',
               fontWeight: 700
             }}
-            onClick={() => {
-              setLabelModalBill(selectedBill || currentBillData);
-              setLabelModalItemIndex('ALL');
-              setLabelModalOpen(true);
+            onClick={async () => {
+              const b = selectedBill || currentBillData;
+              if (b) {
+                await printDirectBillLabels({ bill: b });
+              }
             }}
           >
             Print Labels
           </Button>
         </DialogActions>
       </Dialog>
-
-      <GlassLabelPrintDialog
-        open={labelModalOpen}
-        onClose={() => setLabelModalOpen(false)}
-        bill={labelModalBill}
-        initialItemIndex={labelModalItemIndex}
-      />
 
       {/* Print Styles */}
       <style jsx global>{`

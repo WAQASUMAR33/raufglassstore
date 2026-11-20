@@ -32,7 +32,7 @@ import { COMPANY } from '@/lib/brand-theme';
 import { SALE_INVOICE_PRINT, INVOICE_STORE_PHONE_LINE, getLinkedOriginalSaleId } from './sale-utils';
 import { useSalesContext } from './SalesContext';
 import { formatCustomerPhoneDisplay } from '@/lib/whatsapp-local';
-import GlassLabelPrintDialog from '@/components/invoices/GlassLabelPrintDialog';
+import { printDirectBillLabels } from '@/lib/print-glass-label';
 
 
 export default function SaleViewBillDialog() {
@@ -52,7 +52,6 @@ export default function SaleViewBillDialog() {
   } = useSalesContext();
 
   const linkedOriginalSaleId = getLinkedOriginalSaleId(selectedBill);
-  const [labelModalOpen, setLabelModalOpen] = useState(false);
 
   return (
     <>
@@ -516,19 +515,16 @@ export default function SaleViewBillDialog() {
               color: 'white',
               fontWeight: 700
             }}
-            onClick={() => setLabelModalOpen(true)}
+            onClick={async () => {
+              if (selectedBill) {
+                await printDirectBillLabels({ bill: selectedBill });
+              }
+            }}
           >
             Print Labels
           </Button>
         </DialogActions>
       </Dialog>
-
-      <GlassLabelPrintDialog
-        open={labelModalOpen}
-        onClose={() => setLabelModalOpen(false)}
-        bill={selectedBill}
-        initialItemIndex="ALL"
-      />
     </>
   );
 }
