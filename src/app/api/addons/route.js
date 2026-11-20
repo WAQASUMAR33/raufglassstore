@@ -30,6 +30,9 @@ export async function GET(request) {
           updater: {
             select: { user_id: true, full_name: true, email: true },
           },
+          account: {
+            select: { cus_id: true, cus_name: true, cus_phone_no: true, cus_category: true },
+          },
           product_addons: {
             include: {
               product: {
@@ -75,6 +78,9 @@ export async function GET(request) {
         updater: {
           select: { user_id: true, full_name: true, email: true },
         },
+        account: {
+          select: { cus_id: true, cus_name: true, cus_phone_no: true, cus_category: true },
+        },
         _count: {
           select: { product_addons: true },
         },
@@ -99,7 +105,7 @@ export async function POST(request) {
   try {
     const branchId = resolveBranchId(request);
     const body = await request.json();
-    const { name, short_code, cost_price, sale_price, status } = body;
+    const { name, short_code, cost_price, sale_price, status, account_id } = body;
 
     if (!name || !name.trim()) {
       return errorResponse('Add-on name is required');
@@ -122,6 +128,7 @@ export async function POST(request) {
     const costNum = parseFloat(cost_price || 0) || 0;
     const saleNum = parseFloat(sale_price || 0) || 0;
     const statusVal = status ? String(status).toUpperCase() : 'ACTIVE';
+    const parsedAccountId = account_id ? parseInt(account_id, 10) : null;
 
     const newAddon = await prisma.addon.create({
       data: {
@@ -133,6 +140,7 @@ export async function POST(request) {
         status: statusVal === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
         created_by: userId,
         updated_by: userId,
+        account_id: parsedAccountId && !isNaN(parsedAccountId) ? parsedAccountId : null,
       },
       include: {
         creator: {
@@ -140,6 +148,9 @@ export async function POST(request) {
         },
         updater: {
           select: { user_id: true, full_name: true, email: true },
+        },
+        account: {
+          select: { cus_id: true, cus_name: true, cus_phone_no: true, cus_category: true },
         },
       },
     });
@@ -161,7 +172,7 @@ export async function PUT(request) {
   try {
     const branchId = resolveBranchId(request);
     const body = await request.json();
-    const { id, name, short_code, cost_price, sale_price, status } = body;
+    const { id, name, short_code, cost_price, sale_price, status, account_id } = body;
 
     const addonId = parseInt(id, 10);
     if (!addonId) return errorResponse('Valid Add-on ID is required');
@@ -195,6 +206,10 @@ export async function PUT(request) {
     if (status !== undefined) {
       updateData.status = String(status).toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
     }
+    if (account_id !== undefined) {
+      const parsedAccId = account_id ? parseInt(account_id, 10) : null;
+      updateData.account_id = parsedAccId && !isNaN(parsedAccId) ? parsedAccId : null;
+    }
     if (userId) updateData.updated_by = userId;
 
     const updatedAddon = await prisma.addon.update({
@@ -206,6 +221,9 @@ export async function PUT(request) {
         },
         updater: {
           select: { user_id: true, full_name: true, email: true },
+        },
+        account: {
+          select: { cus_id: true, cus_name: true, cus_phone_no: true, cus_category: true },
         },
         _count: {
           select: { product_addons: true },

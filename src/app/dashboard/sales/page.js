@@ -3484,8 +3484,36 @@ function SalesPageContent() {
           unit_rate: product.effective_rate || product.rate,
           total_amount: product.amount,
           discount: 0,
-          cus_id: formSelectedCustomer.cus_id
+          cus_id: formSelectedCustomer.cus_id,
+          selected_addons: product.selected_addons || [],
+          addons_rate: product.addons_rate || 0,
+          addons_amount: product.addons_amount || 0
         })),
+        addon_details: (() => {
+          const map = new Map();
+          getCartItemsInAddOrder().forEach(item => {
+            const qty = parseFloat(item.quantity) || 0;
+            (item.selected_addons || []).forEach(addon => {
+              const aId = addon.id || addon.addon_id;
+              if (!aId) return;
+              const rate = parseFloat(addon.sale_price !== undefined ? addon.sale_price : (addon.addon?.sale_price || addon.rate || 0)) || 0;
+              const amount = Number((qty * rate).toFixed(2));
+              if (amount <= 0) return;
+              if (map.has(aId)) {
+                const prev = map.get(aId);
+                prev.amount = Number((prev.amount + amount).toFixed(2));
+              } else {
+                map.set(aId, {
+                  addon_id: aId,
+                  name: addon.name || addon.addon?.name || `Add-on #${aId}`,
+                  account_id: addon.account_id || addon.accountId || addon.account?.cus_id || null,
+                  amount: amount
+                });
+              }
+            });
+          });
+          return Array.from(map.values());
+        })(),
         transport_details: transportOptions.map(transport => {
           const itemAmt = parseFloat(transport.amount || 0);
           const totalDel = Math.max(parseFloat(paymentData.deliveryCharges) || 0, calculateTransportTotal());

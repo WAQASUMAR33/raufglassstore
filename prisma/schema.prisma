@@ -239,6 +239,7 @@ model Customer {
   payments_cash         Payment[]          @relation("PaymentCashAccount")
   payments_bank         Payment[]          @relation("PaymentBankAccount")
   payment_details       PaymentDetail[]
+  addons_associated     Addon[]            @relation("AddonAccount")
 
   @@index([branch_id], map: "customers_branch_id_fkey")
   @@index([city_id], map: "customers_city_id_fkey")
@@ -1489,6 +1490,8 @@ model Addon {
   updated_at  DateTime @updatedAt
   created_by  Int?
   updated_by  Int?
+  account_id  Int?
+  account     Customer?      @relation("AddonAccount", fields: [account_id], references: [cus_id])
   branch      Branch   @relation(fields: [branch_id], references: [branch_id])
   creator     Users?         @relation("AddonCreatedBy", fields: [created_by], references: [user_id])
   updater     Users?         @relation("AddonUpdatedBy", fields: [updated_by], references: [user_id])
@@ -1497,6 +1500,7 @@ model Addon {
   @@index([branch_id], map: "addons_branch_id_fkey")
   @@index([created_by], map: "addons_created_by_fkey")
   @@index([updated_by], map: "addons_updated_by_fkey")
+  @@index([account_id], map: "addons_account_id_fkey")
   @@map("addons")
 }
 

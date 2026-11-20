@@ -703,6 +703,26 @@ export async function GET(request) {
           }
         });
 
+        // Fetch addon details from ledger
+        const addonLedgerEntries = await prisma.ledger.findMany({
+          where: {
+            bill_no: id.toString(),
+            trnx_type: { in: ['SALE', 'CREDIT'] },
+            credit_amount: { gt: 0 },
+            cus_id: { not: sale.cus_id },
+            details: { contains: 'Ad-On' }
+          },
+          include: {
+            customer: {
+              select: {
+                cus_id: true,
+                cus_name: true,
+                cus_phone_no: true
+              }
+            }
+          }
+        });
+
         const splitCreditAccountIds = (sale.split_payments || [])
           .map(sp => sp.credit_account_id)
           .filter(Boolean);
@@ -721,6 +741,15 @@ export async function GET(request) {
             account_id: entry.cus_id,
             amount: parseFloat(entry.credit_amount),
             account: entry.customer
+          }));
+
+        const addonDetails = addonLedgerEntries
+          .filter(entry => !splitCreditAccountIds.includes(entry.cus_id))
+          .map(entry => ({
+            account_id: entry.cus_id,
+            amount: parseFloat(entry.credit_amount),
+            account: entry.customer,
+            description: entry.details
           }));
 
         const hardwareAmount = hardwareLedgerEntries.reduce((sum, e) => sum + parseFloat(e.credit_amount || 0), 0);
@@ -744,6 +773,7 @@ export async function GET(request) {
           bill_number: sale.bill_number ?? null,
           transport_details: transportDetails,
           fitter_details: fitterDetails,
+          addon_details: addonDetails,
           fitter_amount: fitterTotalAmount,
           fitting_charges: fitterTotalAmount,
           hardware_amount: hardwareAmount,
@@ -866,6 +896,19 @@ export async function GET(request) {
               AND l.details LIKE '%Hardware%'
           `;
 
+          // Fetch addon details from ledger for fallback path
+          const addonLedgerEntries = await prisma.$queryRaw`
+            SELECT l.*, c.cus_name
+            FROM ledger l
+            LEFT JOIN customers c ON l.cus_id = c.cus_id
+            WHERE l.bill_no = ${id.toString()}
+              AND l.branch_id = ${branchId}
+              AND l.trnx_type IN ('SALE', 'CREDIT')
+              AND l.credit_amount > 0
+              AND l.cus_id != ${sale[0].cus_id}
+              AND l.details LIKE '%Ad-On%'
+          `;
+
           const splitCreditAccountIdsFallback = (transformedSplitPayments || [])
             .map(sp => sp.credit_account_id)
             .filter(Boolean);
@@ -890,6 +933,18 @@ export async function GET(request) {
                 cus_id: entry.cus_id,
                 cus_name: entry.cus_name
               }
+            }));
+
+          const addonDetailsFallback = addonLedgerEntries
+            .filter(entry => !splitCreditAccountIdsFallback.includes(entry.cus_id))
+            .map(entry => ({
+              account_id: entry.cus_id,
+              amount: parseFloat(entry.credit_amount || 0),
+              account: {
+                cus_id: entry.cus_id,
+                cus_name: entry.cus_name
+              },
+              description: entry.details
             }));
 
           const hardwareAmountFallback = hardwareLedgerEntries.reduce((sum, e) => sum + parseFloat(e.credit_amount || 0), 0);
@@ -923,6 +978,7 @@ export async function GET(request) {
             split_payments: transformedSplitPayments || [],
             transport_details: transportDetailsFallback,
             fitter_details: fitterDetailsFallback,
+            addon_details: addonDetailsFallback,
             fitter_amount: fitterTotalAmountFallback,
             fitting_charges: fitterTotalAmountFallback,
             hardware_amount: hardwareAmountFallback,
@@ -1417,6 +1473,7 @@ export async function POST(request) {
       sale_details,
       transport_details,
       fitter_details,
+      addon_details,
       fitting_charges = 0,
       hardware_amount = 0,
       dc_no,
@@ -1524,6 +1581,9 @@ export async function POST(request) {
       }
       if (fitter_details?.length) {
         fitter_details.forEach((fd) => { if (fd.account_id) targetAccountIds.add(parseInt(fd.account_id)); });
+      }
+      if (addon_details?.length) {
+        addon_details.forEach((ad) => { if (ad.account_id) targetAccountIds.add(parseInt(ad.account_id)); });
       }
       let hardwareAccount = null;
       if (parseFloat(hardware_amount || 0) > 0) {
@@ -2127,6 +2187,94 @@ export async function POST(request) {
           saleLog(`🔨 Hardware Entry: Account=${hardwareAccount.cus_name}, Credit=${hwAmt}, Closing=${hardwareEntry.closing_balance}`);
         }
 
+        // 5d. Add-on account entries — credit each add-on's associated account
+        // If the add-on has an associated account, credit it; otherwise skip and leave amount in bill
+        let effectiveAddons = [];
+        if (addon_details && Array.isArray(addon_details) && addon_details.length > 0) {
+          effectiveAddons = addon_details;
+        } else if (sale_details && Array.isArray(sale_details)) {
+          const map = new Map();
+          sale_details.forEach(detail => {
+            const qty = parseFloat(detail.qnty || detail.quantity || 1) || 1;
+            (detail.selected_addons || []).forEach(addon => {
+              const aId = addon.id || addon.addon_id;
+              if (!aId) return;
+              const rate = parseFloat(addon.sale_price !== undefined ? addon.sale_price : (addon.addon?.sale_price || addon.rate || 0)) || 0;
+              const amt = Number((qty * rate).toFixed(2));
+              if (amt <= 0) return;
+              if (map.has(aId)) {
+                const prev = map.get(aId);
+                prev.amount = Number((prev.amount + amt).toFixed(2));
+              } else {
+                map.set(aId, {
+                  addon_id: aId,
+                  name: addon.name || addon.addon?.name || `Add-on #${aId}`,
+                  account_id: addon.account_id || addon.accountId || addon.account?.cus_id || null,
+                  amount: amt
+                });
+              }
+            });
+          });
+          effectiveAddons = Array.from(map.values());
+        }
+
+        if (effectiveAddons.length > 0) {
+          for (const addonItem of effectiveAddons) {
+            const aAmt = parseFloat(addonItem.amount || 0);
+            if (aAmt <= 0) continue;
+
+            const aId = parseInt(addonItem.addon_id, 10);
+            let accId = addonItem.account_id ? parseInt(addonItem.account_id, 10) : null;
+            let addonName = addonItem.name;
+
+            if (aId) {
+              const dbAddon = await tx.addon.findUnique({
+                where: { id: aId },
+                include: { account: true }
+              });
+              if (dbAddon) {
+                addonName = dbAddon.name || addonName;
+                if (dbAddon.account_id) {
+                  accId = dbAddon.account_id;
+                }
+              }
+            }
+
+            // If NO associated account found, skip creating ledger entry (amount remains in bill)
+            if (!accId) {
+              saleLog(`ℹ️ Add-on "${addonName}" has no associated account — skipping ledger entry (retained in bill amount)`);
+              continue;
+            }
+
+            const addonAccount = accountMap.get(accId) || await tx.customer.findUnique({ where: { cus_id: accId } });
+            if (!addonAccount) {
+              console.warn(`⚠️ Associated account ID ${accId} for add-on "${addonName}" not found — skipping ledger entry`);
+              continue;
+            }
+
+            const currentAddonAccBalance = await getRunningBalanceForAccount(addonAccount.cus_id);
+            const formattedAmt = Number(aAmt.toFixed(2));
+
+            const addonEntry = createLedgerEntry({
+              cus_id: addonAccount.cus_id,
+              opening_balance: currentAddonAccBalance,
+              debit_amount: 0,
+              credit_amount: formattedAmt,
+              closing_balance: Number((currentAddonAccBalance + formattedAmt).toFixed(2)),
+              bill_no: sale.sale_id.toString(),
+              trnx_type: 'CREDIT',
+              details: `Ad-On (${addonName}) - ${bill_type || 'BILL'} - ${customer?.cus_name || 'Customer'} (Credit)`,
+              payments: 0,
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
+            });
+
+            ledgerEntries.push(addonEntry);
+            targetAccountIds.add(addonAccount.cus_id);
+            saleLog(`✨ Ad-on Entry: Name=${addonName}, Account=${addonAccount.cus_name}, Credit=${formattedAmt}, Closing=${addonEntry.closing_balance}`);
+          }
+        }
+
         // 6. Split Payment Entries (if any) - Skip entries for bank/cash accounts (already created separately)
         // For ORDER: do not add split lines that post to the sale customer (advance is not a customer A/R line)
         if (split_payments && split_payments.length > 0) {
@@ -2486,6 +2634,7 @@ export async function PUT(request) {
       sale_details,
       transport_details,
       fitter_details,
+      addon_details,
       fitting_charges = 0,
       hardware_amount = 0,
       dc_no,
@@ -3181,6 +3330,93 @@ export async function PUT(request) {
             ledgerEntries.push(hardwareEntry);
             affectedCusIds.add(hardwareAccount.cus_id);
             saleLog(`   🔨 Hardware Credit: Account=${hardwareAccount.cus_name}, Amount=${hwAmt}`);
+          }
+        }
+
+        // ── 4f-4. Add-on account entries ──
+        let effectiveAddonsPut = [];
+        if (addon_details && Array.isArray(addon_details) && addon_details.length > 0) {
+          effectiveAddonsPut = addon_details;
+        } else if (sale_details && Array.isArray(sale_details)) {
+          const map = new Map();
+          sale_details.forEach(detail => {
+            const qty = parseFloat(detail.qnty || detail.quantity || 1) || 1;
+            (detail.selected_addons || []).forEach(addon => {
+              const aId = addon.id || addon.addon_id;
+              if (!aId) return;
+              const rate = parseFloat(addon.sale_price !== undefined ? addon.sale_price : (addon.addon?.sale_price || addon.rate || 0)) || 0;
+              const amt = Number((qty * rate).toFixed(2));
+              if (amt <= 0) return;
+              if (map.has(aId)) {
+                const prev = map.get(aId);
+                prev.amount = Number((prev.amount + amt).toFixed(2));
+              } else {
+                map.set(aId, {
+                  addon_id: aId,
+                  name: addon.name || addon.addon?.name || `Add-on #${aId}`,
+                  account_id: addon.account_id || addon.accountId || addon.account?.cus_id || null,
+                  amount: amt
+                });
+              }
+            });
+          });
+          effectiveAddonsPut = Array.from(map.values());
+        }
+
+        if (effectiveAddonsPut.length > 0) {
+          for (const addonItem of effectiveAddonsPut) {
+            const aAmt = parseFloat(addonItem.amount || 0);
+            if (aAmt <= 0) continue;
+
+            const aId = parseInt(addonItem.addon_id, 10);
+            let accId = addonItem.account_id ? parseInt(addonItem.account_id, 10) : null;
+            let addonName = addonItem.name;
+
+            if (aId) {
+              const dbAddon = await tx.addon.findUnique({
+                where: { id: aId },
+                include: { account: true }
+              });
+              if (dbAddon) {
+                addonName = dbAddon.name || addonName;
+                if (dbAddon.account_id) {
+                  accId = dbAddon.account_id;
+                }
+              }
+            }
+
+            // If NO associated account found, skip creating ledger entry (amount remains in bill)
+            if (!accId) {
+              saleLog(`ℹ️ Add-on "${addonName}" has no associated account — skipping ledger entry in PUT (retained in bill amount)`);
+              continue;
+            }
+
+            const addonAccount = await tx.customer.findUnique({ where: { cus_id: accId } });
+            if (!addonAccount) {
+              console.warn(`⚠️ Associated account ID ${accId} for add-on "${addonName}" not found — skipping ledger entry in PUT`);
+              continue;
+            }
+
+            const currentAddonAccBalance = await getRunningBalanceForAccount(addonAccount.cus_id);
+            const formattedAmt = Number(aAmt.toFixed(2));
+
+            const addonEntry = createLedgerEntry({
+              cus_id: addonAccount.cus_id,
+              opening_balance: currentAddonAccBalance,
+              debit_amount: 0,
+              credit_amount: formattedAmt,
+              closing_balance: Number((currentAddonAccBalance + formattedAmt).toFixed(2)),
+              bill_no: sale.sale_id.toString(),
+              trnx_type: 'CREDIT',
+              details: `Ad-On (${addonName}) - ${bill_type || 'BILL'} - ${freshCustomer?.cus_name || 'Customer'} (Credit)`,
+              payments: 0,
+              updated_by: validatedUpdatedBy,
+              account_nature: ACCOUNT_NATURE.PAYABLE
+            });
+
+            ledgerEntries.push(addonEntry);
+            affectedCusIds.add(addonAccount.cus_id);
+            saleLog(`✨ Ad-on Credit (PUT): Name=${addonName}, Account=${addonAccount.cus_name}, Amount=${formattedAmt}`);
           }
         }
 

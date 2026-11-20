@@ -36,6 +36,7 @@ import {
   Select,
   MenuItem,
   Divider,
+  Autocomplete,
 } from '@mui/material';
 
 // Material Icons
@@ -55,6 +56,7 @@ import {
   Inventory as InventoryIcon,
   FileDownload as FileDownloadIcon,
   PowerSettingsNew as PowerIcon,
+  AccountBalance as AccountBalanceIcon,
 } from '@mui/icons-material';
 
 const fmtAmt = (val) => {
@@ -65,6 +67,7 @@ const fmtAmt = (val) => {
 
 export default function AddonsManagementPage() {
   const [addons, setAddons] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -80,6 +83,7 @@ export default function AddonsManagementPage() {
     cost_price: '',
     sale_price: '',
     status: 'ACTIVE',
+    account_id: '',
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -120,8 +124,23 @@ export default function AddonsManagementPage() {
     }
   };
 
+  // Fetch accounts/parties for addon ledger credit association
+  const fetchAccounts = async () => {
+    try {
+      const res = await fetch('/api/customers?dropdown=true');
+      if (res.ok) {
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : (data.value || []);
+        setAccounts(arr);
+      }
+    } catch (err) {
+      console.error('Error fetching accounts:', err);
+    }
+  };
+
   useEffect(() => {
     fetchAddons();
+    fetchAccounts();
   }, []);
 
   // Open Create Modal
@@ -133,6 +152,7 @@ export default function AddonsManagementPage() {
       cost_price: '',
       sale_price: '',
       status: 'ACTIVE',
+      account_id: '',
     });
     setFormErrors({});
     setShowFormModal(true);
@@ -147,6 +167,7 @@ export default function AddonsManagementPage() {
       cost_price: addon.cost_price != null ? String(addon.cost_price) : '',
       sale_price: addon.sale_price != null ? String(addon.sale_price) : '',
       status: addon.status || 'ACTIVE',
+      account_id: addon.account_id ? String(addon.account_id) : (addon.account?.cus_id ? String(addon.account.cus_id) : ''),
     });
     setFormErrors({});
     setShowFormModal(true);
@@ -200,6 +221,7 @@ export default function AddonsManagementPage() {
         cost_price: parseFloat(formData.cost_price) || 0,
         sale_price: parseFloat(formData.sale_price) || 0,
         status: formData.status,
+        account_id: formData.account_id ? parseInt(formData.account_id, 10) : null,
       };
 
       let res;
@@ -271,7 +293,8 @@ export default function AddonsManagementPage() {
           (a.name || '').toLowerCase().includes(q) ||
           (a.short_code || '').toLowerCase().includes(q) ||
           (a.creator?.full_name || '').toLowerCase().includes(q) ||
-          (a.updater?.full_name || '').toLowerCase().includes(q)
+          (a.updater?.full_name || '').toLowerCase().includes(q) ||
+          (a.account?.cus_name || '').toLowerCase().includes(q)
       );
     }
 
@@ -317,7 +340,7 @@ export default function AddonsManagementPage() {
       showSnackbar('No add-ons to export', 'info');
       return;
     }
-    const headers = ['ID', 'Name', 'Short Code', 'Cost Price', 'Sale Price', 'Profit Margin', 'Status', 'Products Attached', 'Created At', 'Created By', 'Updated At', 'Updated By'];
+    const headers = ['ID', 'Name', 'Short Code', 'Cost Price', 'Sale Price', 'Profit Margin', 'Status', 'Associated Account', 'Products Attached', 'Created At', 'Created By', 'Updated At', 'Updated By'];
     const rows = filteredAddons.map((a) => [
       a.id,
       `"${(a.name || '').replace(/"/g, '""')}"`,
@@ -326,6 +349,7 @@ export default function AddonsManagementPage() {
       a.sale_price,
       parseFloat(a.sale_price || 0) - parseFloat(a.cost_price || 0),
       a.status,
+      `"${(a.account?.cus_name || 'None').replace(/"/g, '""')}"`,
       a._count?.product_addons || 0,
       formatDatePK(a.created_at),
       a.creator?.full_name || '',
@@ -625,6 +649,7 @@ export default function AddonsManagementPage() {
                   <TableCell align="right" sx={{ width: 130 }}>Sale Price</TableCell>
                   <TableCell align="right" sx={{ width: 120 }}>Margin</TableCell>
                   <TableCell align="center" sx={{ width: 110 }}>Status</TableCell>
+                  <TableCell sx={{ minWidth: 170 }}>Associated Account</TableCell>
                   <TableCell align="center" sx={{ width: 110 }}>Products</TableCell>
                   <TableCell sx={{ minWidth: 150 }}>Created Info</TableCell>
                   <TableCell sx={{ minWidth: 150 }}>Updated Info</TableCell>
@@ -634,14 +659,14 @@ export default function AddonsManagementPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={12} align="center" sx={{ py: 8 }}>
                       <CircularProgress size={36} />
                       <Typography sx={{ mt: 1.5, fontSize: '0.85rem', color: '#64748b' }}>Loading add-ons...</Typography>
                     </TableCell>
                   </TableRow>
                 ) : filteredAddons.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={12} align="center" sx={{ py: 8 }}>
                       <Box sx={{ width: 56, height: 56, bgcolor: '#f1f5f9', borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 1.5 }}>
                         <ExtensionIcon sx={{ fontSize: 28, color: '#94a3b8' }} />
                       </Box>
@@ -736,6 +761,33 @@ export default function AddonsManagementPage() {
                               border: `1px solid ${addon.status === 'ACTIVE' ? '#a7f3d0' : '#cbd5e1'}`,
                             }}
                           />
+                        </TableCell>
+
+                        {/* Associated Account */}
+                        <TableCell>
+                          {addon.account ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <Chip
+                                icon={<AccountBalanceIcon sx={{ fontSize: '13px !important', color: '#166534 !important' }} />}
+                                label={addon.account.cus_name}
+                                size="small"
+                                sx={{
+                                  height: 24,
+                                  borderRadius: 0,
+                                  fontWeight: 700,
+                                  fontSize: '0.72rem',
+                                  bgcolor: '#f0fdf4',
+                                  color: '#166534',
+                                  border: '1px solid #bbf7d0',
+                                  maxWidth: 200,
+                                }}
+                              />
+                            </Box>
+                          ) : (
+                            <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                              None (No Account)
+                            </Typography>
+                          )}
                         </TableCell>
 
                         {/* Attached Products Count */}
@@ -957,6 +1009,45 @@ export default function AddonsManagementPage() {
                     startAdornment: <InputAdornment position="start">PKR</InputAdornment>,
                     sx: { borderRadius: 0, fontSize: '0.85rem' },
                   }}
+                />
+              </Box>
+
+              {/* Associated Account Selector */}
+              <Box sx={{ p: 2, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <AccountBalanceIcon sx={{ color: '#16a34a', fontSize: 18 }} />
+                  <Typography sx={{ fontSize: '0.8125rem', fontWeight: 800, color: '#166534' }}>
+                    Associated Account (Credit on Sale Bill)
+                  </Typography>
+                </Box>
+                <Autocomplete
+                  size="small"
+                  options={accounts}
+                  getOptionLabel={(option) => {
+                    if (!option || !option.cus_name) return '';
+                    const cat = option.customer_category?.cus_cat_title ? ` (${option.customer_category.cus_cat_title})` : '';
+                    return `${option.cus_name}${cat}`;
+                  }}
+                  value={accounts.find((a) => String(a.cus_id) === String(formData.account_id)) || null}
+                  onChange={(_, newValue) => {
+                    setFormData({
+                      ...formData,
+                      account_id: newValue ? String(newValue.cus_id) : '',
+                    });
+                  }}
+                  isOptionEqualToValue={(option, value) => String(option.cus_id) === String(value.cus_id)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Select an account to attach (e.g. Fitter, Designer, Supplier)..."
+                      helperText="If attached, this account will automatically be credited when this add-on is saved in a sale bill. Leave empty for no ledger entry."
+                      sx={{ bgcolor: '#ffffff' }}
+                      InputProps={{
+                        ...params.InputProps,
+                        sx: { borderRadius: 0, fontSize: '0.85rem' },
+                      }}
+                    />
+                  )}
                 />
               </Box>
 
