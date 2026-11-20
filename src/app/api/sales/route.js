@@ -1770,13 +1770,13 @@ export async function POST(request) {
 
         // ORDER: no full SALE debit (only payment credits). Regular BILL: full amount debit.
         // Order → sale conversion: full total_amount debited, then advance re-credited + combined cash/bank credit.
-        if (!actualIsLoadedOrder && !isOrder) {
-          // Bill credit amount is the final amount (discount already applied)
+        if (!actualIsLoadedOrder) {
+          // Bill / Order debit amount is the final amount (discount already applied)
           const debitAmount = parseFloat(total_amount);
 
           if (debitAmount > 0) {
             // Build details showing discount information
-            let billDetails = `Sale Bill - ${bill_type || 'BILL'} - Customer Account (Debit)`;
+            let billDetails = `${isOrder ? 'Order' : 'Sale Bill'} - ${bill_type || (isOrder ? 'ORDER' : 'BILL')} - Customer Account (Debit)`;
             if (parseFloat(discount || 0) > 0) {
               billDetails += ` [Discount Applied: ${parseFloat(discount || 0)}]`;
             }
@@ -1792,15 +1792,14 @@ export async function POST(request) {
               details: billDetails,
               payments: 0,
               updated_by: validatedUpdatedBy,
+              ledger_type: isOrder ? 'Order' : 'Sale',
               account_nature: ACCOUNT_NATURE.PAYABLE
             });
-            saleLog(`📝 Bill Entry Created: Opening=${billEntry.opening_balance}, Debit=${billEntry.debit_amount}, Closing=${billEntry.closing_balance}`);
+            saleLog(`📝 ${isOrder ? 'Order' : 'Bill'} Entry Created: Opening=${billEntry.opening_balance}, Debit=${billEntry.debit_amount}, Closing=${billEntry.closing_balance}`);
             saleLog(`   Details: ${billDetails}`);
             ledgerEntries.push(billEntry);
             runningBalance = billEntry.closing_balance;  // Update running balance (deducted)
           }
-        } else if (isOrder) {
-          saleLog(`⏭️ SKIPPED: Debit entry for ORDER — only advance payment ledger will be created`);
         } else if (actualIsLoadedOrder) {
           const orderTotal = parseFloat(total_amount) || 0;
           if (orderTotal > 0) {
@@ -2339,15 +2338,17 @@ export async function POST(request) {
 
       } // End of if (!isQuotation) for all financial transactions
 
-      // Automatically update converted order bill_type to ORDER_TRASH
+      // Automatically update converted order bill_type to ORDER_TRASH and clean up its ledger entries
       const targetOrdId = order_id || loaded_order_id;
       if (targetOrdId) {
         const ordId = parseInt(targetOrdId);
         if (Number.isFinite(ordId)) {
+          await prepareLedgerDeletion(tx, ordId);
+          await tx.ledger.deleteMany({ where: { bill_no: String(ordId) } });
           await tx.$executeRaw`
             UPDATE sales SET bill_type = 'ORDER_TRASH', updated_at = NOW() WHERE sale_id = ${ordId}
           `;
-          saleLog(`✅ Backend POST: Order #${ordId} automatically moved to ORDER_TRASH upon conversion to sale`);
+          saleLog(`✅ Backend POST: Order #${ordId} moved to ORDER_TRASH and previous ledger entries cleaned up upon conversion`);
         }
       }
 
@@ -2815,8 +2816,8 @@ export async function PUT(request) {
 
         // ── 4a. Customer SALE credit (bill amount) — FIRST: add amount to customer ledger ──
         const debitAmount = parseFloat(total_amount);
-        if (!isOrder && debitAmount > 0) {
-          let billDetails = `Sale Bill - ${bill_type || 'BILL'} - Customer Account (Debit)`;
+        if (debitAmount > 0) {
+          let billDetails = `${isOrder ? 'Order' : 'Sale Bill'} - ${bill_type || (isOrder ? 'ORDER' : 'BILL')} - Customer Account (Debit)`;
           if (parseFloat(discount || 0) > 0) {
             billDetails += ` [Discount Applied: ${parseFloat(discount || 0)}]`;
           }
@@ -2832,6 +2833,7 @@ export async function PUT(request) {
             details: billDetails,
             payments: 0,
             updated_by: validatedUpdatedBy,
+            ledger_type: isOrder ? 'Order' : 'Sale',
             account_nature: ACCOUNT_NATURE.PAYABLE
           });
           saleLog(`   📝 Bill Debit: ${debitAmount}, Closing=${billEntry.closing_balance}`);
