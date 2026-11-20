@@ -241,17 +241,20 @@ const getQuotationPrintTotals = (billData) => {
   const discountAmount = parseFloat(billData?.discount || 0);
   const shippingAmount = parseFloat(billData?.shipping_amount || 0);
   const labourAmount = parseFloat(billData?.labour_charges || billData?.labour || 0);
+  const refStr = String(billData?.reference || billData?.notes || '');
+  const fitterAmount = parseFloat(billData?.fitting_charges || (refStr.match(/\[Fitter Amount:\s*(?:Rs\.?\s*)?([0-9.]+)\]/i) || [])[1] || 0) || 0;
+  const hardwareAmount = parseFloat(billData?.hardware_amount || (refStr.match(/\[Hardware:\s*(?:Rs\.?\s*)?([0-9.]+)\]/i) || [])[1] || 0) || 0;
   const itemsSubtotal = (billData?.sale_details || []).reduce(
     (sum, d) => sum + parseFloat(d.total_amount || 0),
     0
-  ) || totalAmount - labourAmount - shippingAmount + discountAmount;
-  return { totalAmount, discountAmount, shippingAmount, labourAmount, itemsSubtotal };
+  ) || totalAmount - labourAmount - shippingAmount - fitterAmount - hardwareAmount + discountAmount;
+  return { totalAmount, discountAmount, shippingAmount, labourAmount, fitterAmount, hardwareAmount, itemsSubtotal };
 };
 
 function QuotationPrintTemplates({ billData }) {
   if (!billData) return null;
 
-  const { totalAmount, discountAmount, shippingAmount, labourAmount, itemsSubtotal } = getQuotationPrintTotals(billData);
+  const { totalAmount, discountAmount, shippingAmount, labourAmount, fitterAmount, hardwareAmount, itemsSubtotal } = getQuotationPrintTotals(billData);
   const details = billData.sale_details || [];
   const quoteDate = formatDatePK(billData.created_at) || new Date(billData.created_at || Date.now()).toLocaleDateString('en-GB');
 
@@ -323,6 +326,18 @@ function QuotationPrintTemplates({ billData }) {
 
           <Box sx={{ fontSize: '10px', lineHeight: 1.45 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}><span>Subtotal</span><span>{fmtAmt(itemsSubtotal)}</span></Box>
+            {fitterAmount > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}><span>Fitter</span><span>{fmtAmt(fitterAmount)}</span></Box>
+            )}
+            {hardwareAmount > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}><span>Hardware</span><span>{fmtAmt(hardwareAmount)}</span></Box>
+            )}
+            {labourAmount > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}><span>Labour</span><span>{fmtAmt(labourAmount)}</span></Box>
+            )}
+            {shippingAmount > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}><span>Delivery</span><span>{fmtAmt(shippingAmount)}</span></Box>
+            )}
             {discountAmount > 0 && (
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}><span>Discount</span><span>-{fmtAmt(discountAmount)}</span></Box>
             )}
@@ -431,6 +446,8 @@ function QuotationsPageContent() {
     discount: 0,
     labour: 0,
     deliveryCharges: 0,
+    fitterAmount: 0,
+    hardwareAmount: 0,
     notes: ''
   });
 
@@ -633,6 +650,8 @@ function QuotationsPageContent() {
       discount: 0,
       labour: 0,
       deliveryCharges: 0,
+      fitterAmount: 0,
+      hardwareAmount: 0,
       notes: '',
     });
     setBillType('QUOTATION');
@@ -851,15 +870,25 @@ function QuotationsPageContent() {
       });
       setProductTableData(tableData);
 
+      const rawRef = String(saleData.reference || '');
+      const fitMatch = rawRef.match(/\[Fitter Amount:\s*(?:Rs\.?\s*)?([0-9.]+)\]/i);
+      const hwMatch = rawRef.match(/\[Hardware:\s*(?:Rs\.?\s*)?([0-9.]+)\]/i);
+      const cleanedNotes = rawRef
+        .replace(/\s*\[Fitter Amount:[^\]]*\]/gi, '')
+        .replace(/\s*\[Hardware:[^\]]*\]/gi, '')
+        .trim();
+
       setPaymentData({
         cash: parseFloat(saleData.cash_payment || 0),
         bank: parseFloat(saleData.bank_payment || 0),
         bankAccountId: saleData.debit_account_id || '',
         totalCashReceived: parseFloat(saleData.payment || 0),
         discount: parseFloat(saleData.discount || 0),
-        labour: 0,
+        labour: parseFloat(saleData.labour_charges || saleData.labour || 0),
         deliveryCharges: parseFloat(saleData.shipping_amount || 0),
-        notes: saleData.reference || ''
+        fitterAmount: fitMatch ? parseFloat(fitMatch[1]) || 0 : 0,
+        hardwareAmount: hwMatch ? parseFloat(hwMatch[1]) || 0 : 0,
+        notes: cleanedNotes
       });
 
       setTransportOptions([]);
@@ -1691,7 +1720,9 @@ function QuotationsPageContent() {
     const transportTotal = calculateTransportTotal();
     const totalDelivery = deliveryCharges + transportTotal;
     const discount = parseFloat(paymentData.discount) || 0;
-    return productTotal + labour + totalDelivery - discount;
+    const fitterAmount = parseFloat(paymentData.fitterAmount) || 0;
+    const hardwareAmount = parseFloat(paymentData.hardwareAmount) || 0;
+    return productTotal + labour + totalDelivery + fitterAmount + hardwareAmount - discount;
   };
 
   const calculateBalance = () => {
@@ -1791,6 +1822,9 @@ function QuotationsPageContent() {
         credit_account_id: null,
         loader_id: null,
         shipping_amount: totalShippingAmount,
+        labour_charges: parseFloat(paymentData.labour) || 0,
+        fitting_charges: parseFloat(paymentData.fitterAmount) || 0,
+        hardware_amount: parseFloat(paymentData.hardwareAmount) || 0,
         bill_type: 'QUOTATION',
         cutter_id: selectedCutterId || null,
         cutter_name: selectedCutter?.cutter_name || null,
@@ -1799,6 +1833,10 @@ function QuotationsPageContent() {
           if (selectedCutter?.cutter_name) {
             refStr += ` [Cutter: ${selectedCutter.cutter_name}]`;
           }
+          const fitAmt = parseFloat(paymentData.fitterAmount) || 0;
+          if (fitAmt > 0) refStr += ` [Fitter Amount: Rs. ${fitAmt}]`;
+          const hwAmt = parseFloat(paymentData.hardwareAmount) || 0;
+          if (hwAmt > 0) refStr += ` [Hardware: Rs. ${hwAmt}]`;
           return refStr;
         })(),
         sale_details: productTableData.map((product, idx) => ({
@@ -1881,6 +1919,9 @@ function QuotationsPageContent() {
             }
           })),
           labour: parseFloat(paymentData.labour) || 0,
+          labour_charges: parseFloat(paymentData.labour) || 0,
+          fitting_charges: parseFloat(paymentData.fitterAmount) || 0,
+          hardware_amount: parseFloat(paymentData.hardwareAmount) || 0,
           notes: paymentData.notes || ''
         };
         updateSaveStatus('Generating quotation preview...');
@@ -1900,6 +1941,8 @@ function QuotationsPageContent() {
           discount: 0,
           labour: 0,
           deliveryCharges: 0,
+          fitterAmount: 0,
+          hardwareAmount: 0,
           notes: ''
         });
 
@@ -3668,37 +3711,28 @@ function QuotationsPageContent() {
                       </Typography>
                     </Box>
 
-                    {(parseFloat(paymentData.labour) || 0) > 0 && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.25 }}>
-                        <Typography sx={{ fontSize: '0.875rem', color: '#475569', fontWeight: 600 }}>Labour</Typography>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#1e293b', fontFamily: 'ui-monospace, monospace' }}>
-                          {fmtAmt(paymentData.labour)}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {(parseFloat(paymentData.deliveryCharges) || 0) + calculateTransportTotal() > 0 && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.25 }}>
-                        <Typography sx={{ fontSize: '0.875rem', color: '#475569', fontWeight: 600 }}>Shipping / Transport</Typography>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#1e293b', fontFamily: 'ui-monospace, monospace' }}>
-                          {fmtAmt((parseFloat(paymentData.deliveryCharges) || 0) + calculateTransportTotal())}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.25 }}>
-                      <Typography sx={{ fontSize: '0.875rem', color: '#475569', fontWeight: 600 }}>Discount</Typography>
+                    {[
+                      { label: 'Fitter Amount', field: 'fitterAmount' },
+                      { label: 'Hardware Amount', field: 'hardwareAmount' },
+                      { label: 'Labour', field: 'labour' },
+                      { label: 'Delivery Charges', field: 'deliveryCharges' },
+                      { label: 'Discount', field: 'discount' },
+                    ].map(({ label, field }) => (
+                    <Box key={field} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.25 }}>
+                      <Typography sx={{ fontSize: '0.875rem', color: field === 'discount' ? '#be123c' : '#475569', fontWeight: 600 }}>{label}</Typography>
                       <TextField
                         size="small"
                         type="number"
-                        value={paymentData.discount || ''}
-                        onChange={(e) => handlePaymentDataChange('discount', e.target.value)}
+                        value={paymentData[field] || ''}
+                        onChange={(e) => handlePaymentDataChange(field, e.target.value)}
+                        onFocus={(e) => e.target.select()}
                         placeholder="0"
+                        inputProps={{ min: 0 }}
                         InputProps={{
                           startAdornment: <InputAdornment position="start"><Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>PKR</Typography></InputAdornment>,
                         }}
                         sx={{
-                          width: 140,
+                          width: 160,
                           '& .MuiOutlinedInput-root': {
                             height: 36,
                             bgcolor: '#fff',
@@ -3716,6 +3750,16 @@ function QuotationsPageContent() {
                         }}
                       />
                     </Box>
+                    ))}
+
+                    {calculateTransportTotal() > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.25 }}>
+                        <Typography sx={{ fontSize: '0.875rem', color: '#475569', fontWeight: 600 }}>Transport</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#1e293b', fontFamily: 'ui-monospace, monospace' }}>
+                          {fmtAmt(calculateTransportTotal())}
+                        </Typography>
+                      </Box>
+                    )}
 
                     <Divider sx={{ borderColor: '#c7d2fe', my: 0.5 }} />
 
