@@ -18,7 +18,10 @@ export async function GET(request) {
         pro_id: parseInt(proId, 10),
         sale: {
           cus_id: parseInt(cusId, 10),
-          bill_type: { in: ['BILL', 'ORDER'] }
+          OR: [
+            { bill_type: { in: ['BILL', 'ORDER', 'SALE'] } },
+            { bill_type: null }
+          ]
         }
       },
       orderBy: {

@@ -1852,6 +1852,37 @@ function SalesPageContent() {
 
   const [lastChargedRate, setLastChargedRate] = useState(null);
 
+  // Fetch and apply last charged rate for a customer & product (triggered by Ctrl + L)
+  const fetchAndApplyLastRate = async ({ cusId, proId, proTitle, onApply }) => {
+    if (!cusId) {
+      showSnackbar('Please select a customer first to check last charged rate', 'warning');
+      return;
+    }
+    if (!proId) {
+      showSnackbar('Please select a product first', 'warning');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/sales/last-rate?cus_id=${cusId}&pro_id=${proId}`);
+      if (!res.ok) {
+        showSnackbar('Failed to fetch last charged rate', 'error');
+        return;
+      }
+      const data = await res.json();
+      if (data && data.last_rate != null) {
+        const rateVal = parseFloat(data.last_rate);
+        onApply(rateVal);
+        const billInfo = data.bill_type ? ` (${data.bill_type} #${data.sale_id || ''})` : '';
+        showSnackbar(`Last rate applied for ${proTitle || 'product'}: PKR ${rateVal}${billInfo}`, 'success');
+      } else {
+        showSnackbar(`No previous sale found for ${proTitle || 'this product'} with this customer`, 'info');
+      }
+    } catch (err) {
+      console.error('Error fetching last rate:', err);
+      showSnackbar('Error fetching last charged rate', 'error');
+    }
+  };
+
   useEffect(() => {
     const cusId = formSelectedCustomer?.cus_id;
     const proId = formSelectedProduct?.pro_id;
@@ -7714,7 +7745,7 @@ function SalesPageContent() {
                       SALE RATE
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      {lastChargedRate != null && (
+                      {lastChargedRate != null ? (
                         <Chip
                           size="small"
                           label={`Last: ${lastChargedRate}`}
@@ -7729,8 +7760,23 @@ function SalesPageContent() {
                             border: '1px solid #a7f3d0',
                             '&:hover': { bgcolor: '#d1fae5' }
                           }}
-                          title="Click to apply last sale rate charged to this customer"
+                          title="Click or press Ctrl+L to apply last sale rate charged to this customer"
                         />
+                      ) : (
+                        <Typography
+                          sx={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            color: '#64748b',
+                            bgcolor: '#f1f5f9',
+                            px: 0.6,
+                            py: 0.1,
+                            borderRadius: '4px',
+                          }}
+                          title="Press Ctrl+L to fetch last rate charged to this customer"
+                        >
+                          Ctrl+L
+                        </Typography>
                       )}
                       <Typography
                         sx={{
@@ -7756,8 +7802,17 @@ function SalesPageContent() {
                     onFocus={(e) => e.target.select()}
                     inputProps={{ step: 'any' }}
                     id="sale-rate-input"
+                    title="Press Ctrl+L to fetch last rate charged to this customer"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L' || e.code === 'KeyL')) {
+                        e.preventDefault();
+                        fetchAndApplyLastRate({
+                          cusId: formSelectedCustomer?.cus_id,
+                          proId: formSelectedProduct?.pro_id,
+                          proTitle: formSelectedProduct?.pro_title,
+                          onApply: (rate) => handleRateChange(rate)
+                        });
+                      } else if (e.key === 'Enter') {
                         e.preventDefault();
                         handleAddProductToTable();
                       } else if (e.key === 'Tab') {
@@ -8522,6 +8577,18 @@ function SalesPageContent() {
                                         e.target.select();
                                         setActiveRowId(product.id);
                                       }}
+                                      onKeyDown={(e) => {
+                                        if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L' || e.code === 'KeyL')) {
+                                          e.preventDefault();
+                                          fetchAndApplyLastRate({
+                                            cusId: formSelectedCustomer?.cus_id,
+                                            proId: product.pro_id,
+                                            proTitle: product.pro_title,
+                                            onApply: (rate) => updateRowRate(product.id, rate)
+                                          });
+                                        }
+                                      }}
+                                      title="Press Ctrl+L to fetch last rate charged to this customer"
                                       sx={{
                                         width: 90,
                                         '& .MuiInputBase-input': {
