@@ -505,7 +505,7 @@ const PURCHASE_PAYMENT_ROW_SX = {
 
 const PURCHASE_PAYMENT_ROW2_SX = {
   display: 'grid',
-  gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 2fr)' },
+  gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.2fr) minmax(0, 1.8fr)' },
   gap: { xs: 1.5, md: 2 },
   alignItems: 'stretch',
   width: '100%',
@@ -5477,7 +5477,7 @@ function PurchasesPageContent() {
                   </Box>
 
                   {/* Right Section - Summary Fields */}
-                  <Box sx={{ width: { xs: '100%', lg: 320 }, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <Box sx={{ width: { xs: '100%', md: 380, lg: 420 }, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     {/* SUBTOTAL */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
@@ -5487,7 +5487,7 @@ function PurchasesPageContent() {
                         size="small"
                         value={calculateTotalAmount().toFixed(2)}
                         InputProps={{ readOnly: true }}
-                        sx={{ width: 150 }}
+                        sx={{ width: 220 }}
                       />
                     </Box>
 
@@ -5525,7 +5525,7 @@ function PurchasesPageContent() {
                         }}
                         onFocus={(e) => e.target.select()}
                         inputProps={{ min: 0, step: 'any' }}
-                        sx={{ width: 150 }}
+                        sx={{ width: 220 }}
                       />
                     </Box>
 
@@ -5551,11 +5551,9 @@ function PurchasesPageContent() {
                         }}
                         onFocus={(e) => e.target.select()}
                         inputProps={{ min: 0 }}
-                        sx={{ width: 150 }}
+                        sx={{ width: 220 }}
                       />
                     </Box>
-
-
 
                     {/* LABOUR */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -5582,7 +5580,7 @@ function PurchasesPageContent() {
                           });
                         }}
                         inputProps={{ min: 0 }}
-                        sx={{ width: 150 }}
+                        sx={{ width: 220 }}
                       />
                     </Box>
 
@@ -5623,7 +5621,7 @@ function PurchasesPageContent() {
                         value={calculateNetTotal().toFixed(2)}
                         InputProps={{ readOnly: true }}
                         sx={{
-                          width: 150,
+                          width: 220,
                           '& .MuiInputBase-input': {
                             fontWeight: 'bold',
                             color: 'primary.main',
@@ -5644,7 +5642,7 @@ function PurchasesPageContent() {
                         size="small"
                         value={(parseFloat(formData.cash_payment || 0) + parseFloat(formData.bank_payment || 0)).toFixed(2)}
                         InputProps={{ readOnly: true }}
-                        sx={{ width: 150, backgroundColor: 'action.hover' }}
+                        sx={{ width: 220, backgroundColor: 'action.hover' }}
                       />
                     </Box>
 
@@ -5657,7 +5655,7 @@ function PurchasesPageContent() {
                         size="small"
                         value={(calculateNetTotal() - (parseFloat(formData.cash_payment || 0) + parseFloat(formData.bank_payment || 0))).toFixed(2)}
                         InputProps={{ readOnly: true }}
-                        sx={{ width: 150 }}
+                        sx={{ width: 220 }}
                       />
                     </Box>
                   </Box>
