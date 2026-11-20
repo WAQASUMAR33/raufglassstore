@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -24,12 +25,14 @@ import {
   Phone as PhoneIcon,
   Print as PrintIcon,
   Visibility as VisibilityIcon,
+  QrCode2 as QrCode2Icon,
 } from '@mui/icons-material';
 import { formatDatePK, formatTimePK, getCreatedByName } from '@/lib/date-helper';
 import { COMPANY } from '@/lib/brand-theme';
 import { SALE_INVOICE_PRINT, INVOICE_STORE_PHONE_LINE, getLinkedOriginalSaleId } from './sale-utils';
 import { useSalesContext } from './SalesContext';
 import { formatCustomerPhoneDisplay } from '@/lib/whatsapp-local';
+import GlassLabelPrintDialog from '@/components/invoices/GlassLabelPrintDialog';
 
 
 export default function SaleViewBillDialog() {
@@ -49,6 +52,7 @@ export default function SaleViewBillDialog() {
   } = useSalesContext();
 
   const linkedOriginalSaleId = getLinkedOriginalSaleId(selectedBill);
+  const [labelModalOpen, setLabelModalOpen] = useState(false);
 
   return (
     <>
@@ -502,8 +506,29 @@ export default function SaleViewBillDialog() {
           >
             Print Thermal
           </Button>
+          <Button
+            variant="contained"
+            startIcon={<QrCode2Icon />}
+            sx={{
+              minWidth: 140,
+              bgcolor: '#7c3aed',
+              '&:hover': { bgcolor: '#6d28d9' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => setLabelModalOpen(true)}
+          >
+            Print Labels
+          </Button>
         </DialogActions>
       </Dialog>
+
+      <GlassLabelPrintDialog
+        open={labelModalOpen}
+        onClose={() => setLabelModalOpen(false)}
+        bill={selectedBill}
+        initialItemIndex="ALL"
+      />
     </>
   );
 }

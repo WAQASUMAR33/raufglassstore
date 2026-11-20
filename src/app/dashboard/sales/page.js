@@ -104,6 +104,7 @@ import {
   ContentCut as CutterIcon,
   ContentCopy as ContentCopyIcon,
   WhatsApp as WhatsAppIcon,
+  QrCode2 as QrCode2Icon,
 } from '@mui/icons-material';
 
 import { getOfflineSalesQueue, saveOfflineSale, syncOfflineSalesQueue } from '@/lib/offline-sales-helper';
@@ -114,6 +115,7 @@ import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
 import CommercialInvoiceReceipt, { expandInvoiceLineItems } from '@/components/invoices/CommercialInvoiceReceipt';
+import GlassLabelPrintDialog from '@/components/invoices/GlassLabelPrintDialog';
 import { printReceiptReport, downloadReceiptPdf } from '@/lib/invoice-report-service';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import {
@@ -6123,6 +6125,9 @@ function SalesPageContent() {
   const [currentBillData, setCurrentBillData] = useState(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [activeReceiptCopy, setActiveReceiptCopy] = useState('OFFICE');
+  const [labelModalOpen, setLabelModalOpen] = useState(false);
+  const [labelModalBill, setLabelModalBill] = useState(null);
+  const [labelModalItemIndex, setLabelModalItemIndex] = useState('ALL');
 
   const handlePrintCopy = async (copyType, fromDialog = true, targetBill = null) => {
     setActiveReceiptCopy(copyType);
@@ -11200,6 +11205,24 @@ function SalesPageContent() {
           >
             PDF Report
           </Button>
+          <Button
+            variant="contained"
+            startIcon={<QrCode2Icon />}
+            sx={{
+              minWidth: 140,
+              bgcolor: '#7c3aed',
+              '&:hover': { bgcolor: '#6d28d9' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => {
+              setLabelModalBill(currentBillData);
+              setLabelModalItemIndex('ALL');
+              setLabelModalOpen(true);
+            }}
+          >
+            Print Labels
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -12127,8 +12150,33 @@ function SalesPageContent() {
           >
             PDF Report
           </Button>
+          <Button
+            variant="contained"
+            startIcon={<QrCode2Icon />}
+            sx={{
+              minWidth: 140,
+              bgcolor: '#7c3aed',
+              '&:hover': { bgcolor: '#6d28d9' },
+              color: 'white',
+              fontWeight: 700
+            }}
+            onClick={() => {
+              setLabelModalBill(selectedBill || currentBillData);
+              setLabelModalItemIndex('ALL');
+              setLabelModalOpen(true);
+            }}
+          >
+            Print Labels
+          </Button>
         </DialogActions>
       </Dialog>
+
+      <GlassLabelPrintDialog
+        open={labelModalOpen}
+        onClose={() => setLabelModalOpen(false)}
+        bill={labelModalBill}
+        initialItemIndex={labelModalItemIndex}
+      />
 
       {/* Print Styles */}
       <style jsx global>{`

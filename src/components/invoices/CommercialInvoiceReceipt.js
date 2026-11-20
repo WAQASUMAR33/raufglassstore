@@ -5,6 +5,7 @@ import {
   Box,
   Typography,
 } from '@mui/material';
+import GlassLabelPrintDialog from './GlassLabelPrintDialog';
 
 // Format currency
 const fmtAmt = (val) => {
@@ -214,8 +215,12 @@ export default function CommercialInvoiceReceipt({
   isOrder = false,
   isQuotation = false,
   title = null,
+  onPrintLabel = null,
 }) {
   if (!bill) return null;
+
+  const [internalLabelModalOpen, setInternalLabelModalOpen] = React.useState(false);
+  const [internalLabelModalItemIndex, setInternalLabelModalItemIndex] = React.useState('ALL');
 
   const copy = String(copyType || 'OFFICE').toUpperCase();
 
@@ -464,6 +469,33 @@ export default function CommercialInvoiceReceipt({
                 >
                   {copyBadgeText}
                 </span>
+                <button
+                  type="button"
+                  className="no-print"
+                  onClick={() => {
+                    setInternalLabelModalItemIndex('ALL');
+                    setInternalLabelModalOpen(true);
+                  }}
+                  title="Print 2x2 Glass Stickers for this bill"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    marginLeft: '8px',
+                    padding: '3px 9px',
+                    borderRadius: '4px',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    backgroundColor: '#7c3aed',
+                    color: '#ffffff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    verticalAlign: 'middle',
+                    boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)',
+                  }}
+                >
+                  🏷️ Print Labels (2"×2")
+                </button>
               </div>
             </td>
           </tr>
@@ -725,7 +757,38 @@ export default function CommercialInvoiceReceipt({
                             color: '#000',
                           }}
                         >
-                          {runningRowIndex}
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                            <span>{runningRowIndex}</span>
+                            <button
+                              type="button"
+                              className="no-print"
+                              title="Print 2x2 sticker label for this item"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const targetIdx = runningRowIndex - 1;
+                                if (typeof onPrintLabel === 'function') {
+                                  onPrintLabel(item, targetIdx);
+                                } else {
+                                  setInternalLabelModalItemIndex(targetIdx);
+                                  setInternalLabelModalOpen(true);
+                                }
+                              }}
+                              style={{
+                                cursor: 'pointer',
+                                background: '#f3e8ff',
+                                border: '1px solid #c084fc',
+                                borderRadius: '3px',
+                                padding: '1px 3px',
+                                fontSize: '10px',
+                                lineHeight: 1,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                color: '#7c3aed',
+                              }}
+                            >
+                              🏷️
+                            </button>
+                          </div>
                         </td>
 
                         {/* Item Name */}
@@ -1181,6 +1244,12 @@ export default function CommercialInvoiceReceipt({
     </tbody>
   </table>
 )}
+      <GlassLabelPrintDialog
+        open={internalLabelModalOpen}
+        onClose={() => setInternalLabelModalOpen(false)}
+        bill={bill}
+        initialItemIndex={internalLabelModalItemIndex}
+      />
     </Box>
   );
 }

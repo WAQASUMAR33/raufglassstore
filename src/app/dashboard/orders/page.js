@@ -100,8 +100,10 @@ import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
 import CommercialInvoiceReceipt from '@/components/invoices/CommercialInvoiceReceipt';
+import GlassLabelPrintDialog from '@/components/invoices/GlassLabelPrintDialog';
 import { printReceiptReport, downloadReceiptPdf } from '@/lib/invoice-report-service';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 
 const fmtAmt = (val) => {
   const n = parseFloat(val || 0);
@@ -588,6 +590,9 @@ function OrdersPageContent() {
   // Bill view state
   const [viewBillDialog, setViewBillDialog] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
+  const [labelModalOpen, setLabelModalOpen] = useState(false);
+  const [labelModalBill, setLabelModalBill] = useState(null);
+  const [labelModalItemIndex, setLabelModalItemIndex] = useState('all');
   const [currentView, setCurrentView] = useState(initialView);
   const lastCreateUrlRef = useRef('');
 
@@ -6179,6 +6184,29 @@ function OrdersPageContent() {
             >
               PDF Report
             </Button>
+            <Button
+              variant="contained"
+              startIcon={<QrCode2Icon />}
+              sx={{
+                minWidth: 140,
+                background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)',
+                color: '#fff',
+                fontWeight: 700,
+                boxShadow: '0 4px 12px rgba(14,165,233,0.35)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%)',
+                }
+              }}
+              onClick={() => {
+                if (currentBillData) {
+                  setLabelModalBill(currentBillData);
+                  setLabelModalItemIndex('all');
+                  setLabelModalOpen(true);
+                }
+              }}
+            >
+              Print Labels
+            </Button>
           </DialogActions>
         </Dialog>
 
@@ -7636,6 +7664,29 @@ function OrdersPageContent() {
           >
             PDF Report
           </Button>
+          <Button
+            variant="contained"
+            startIcon={<QrCode2Icon />}
+            sx={{
+              minWidth: 140,
+              background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)',
+              color: '#fff',
+              fontWeight: 700,
+              boxShadow: '0 4px 12px rgba(14,165,233,0.35)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%)',
+              }
+            }}
+            onClick={() => {
+              if (selectedBill) {
+                setLabelModalBill(selectedBill);
+                setLabelModalItemIndex('all');
+                setLabelModalOpen(true);
+              }
+            }}
+          >
+            Print Labels
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -8398,6 +8449,14 @@ function OrdersPageContent() {
           </Box>
         );
       })()}
+
+      {/* 2" x 2" Glass Label Print Modal */}
+      <GlassLabelPrintDialog
+        open={labelModalOpen}
+        onClose={() => setLabelModalOpen(false)}
+        bill={labelModalBill}
+        initialItemIndex={labelModalItemIndex}
+      />
     </>
   );
 }

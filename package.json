@@ -64,6 +64,7 @@
     "node-fetch": "^3.3.2",
     "nodeafis": "https://github.com/martines205/nodeafis/archive/7a0b873e177058581b903de15060a3b2012123e9.tar.gz",
     "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "xlsx": "^0.18.5",
