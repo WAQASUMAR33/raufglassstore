@@ -125,6 +125,7 @@ const EMPTY_PRODUCT_FORM_DATA = {
   height: '',
   pcs: '1',
   qnty: '1',
+  base_rate: '',
   unit_rate: '',
   crate: '',
   temper_amount: '',
@@ -137,6 +138,7 @@ const normalizeProductFormData = (data) => ({
   height: data?.height ?? '',
   pcs: data?.pcs ?? '1',
   qnty: data?.qnty ?? EMPTY_PRODUCT_FORM_DATA.qnty,
+  base_rate: data?.base_rate ?? '',
   unit_rate: data?.unit_rate ?? '',
   crate: data?.crate ?? '',
   temper_amount: data?.temper_amount ?? '',
@@ -481,7 +483,7 @@ const PURCHASE_ENTRY_ROW2_SX = {
   gridTemplateColumns: {
     xs: '1fr 1fr',
     sm: 'repeat(3, minmax(0, 1fr))',
-    md: 'minmax(0, 1.8fr) minmax(0, 0.9fr) minmax(0, 0.45fr) minmax(0, 0.45fr) minmax(0, 0.4fr) minmax(0, 0.55fr) minmax(0, 0.65fr) minmax(0, 0.65fr) minmax(0, 0.65fr) minmax(0, 0.6fr) minmax(0, 0.5fr) 44px',
+    md: 'minmax(0, 1.8fr) minmax(0, 0.9fr) minmax(0, 0.45fr) minmax(0, 0.45fr) minmax(0, 0.4fr) minmax(0, 0.55fr) minmax(0, 0.6fr) minmax(0, 0.6fr) minmax(0, 0.55fr) minmax(0, 0.6fr) minmax(0, 0.6fr) minmax(0, 0.5fr) 44px',
   },
   gap: { xs: 1.25, md: 1.25 },
   alignItems: 'end',
@@ -1662,84 +1664,91 @@ function PurchasesPageContent() {
     return () => window.removeEventListener('keydown', handleShortcuts);
   }, [handleForwardNavigation, goToPreviousScreen, cancelCurrentScreen]);
 
-  // Auto-select first store when stores are loaded; also clear stale store_id (e.g. from localStorage draft)
+  // Auto-select Main Store when stores are loaded; also clear stale store_id
   useEffect(() => {
     if (stores.length === 0) return;
-    const validIds = stores.map(s => s.storeid.toString());
-    if (!formData.store_id || !validIds.includes(formData.store_id)) {
-      setFormData(prev => ({ ...prev, store_id: stores[0].storeid.toString() }));
+    const mainStore = stores.find(s => s.store_name?.toLowerCase().includes('main')) || stores[0];
+    if (mainStore) {
+      setFormData(prev => ({ ...prev, store_id: mainStore.storeid.toString() }));
     }
   }, [stores]);
 
-  // Recompute product cost_rate from original_cost_rate + (labourPerUnit) + (incityPerUnit) + (cargoPerUnit)
-  // All values must be passed explicitly — no formData closure reads to avoid stale state bugs
-  const recomputeDistributedCosts = (purchaseDetails, {
-    includeLabour = false,
-    labourAmount = 0,
-    includeIncity = false,
-    incityAmount = 0,
-    includeCargo = false,
-    outLabour = 0,
-    outDelivery = 0
-  } = {}) => {
+  // Master calculation function:
+  // 1) Finds discount percentage = (discount_amount / total_base_rate) * 100
+  // 2) purchase rate = base rate + ((base rate / 100) * percentage)
+  // 3) cost rate = purchase rate + TEMPER AMOUNT + other expenses (delivery + labour if include_labour is checked, incity if include_incity is checked)
+  const recomputeAllPurchaseDetails = (purchaseDetails, fd = formData, overrides = {}) => {
     if (!purchaseDetails || purchaseDetails.length === 0) return purchaseDetails;
 
-    const totalQuantity = purchaseDetails.reduce((sum, d) => sum + parseFloat(d.qnty || 0), 0);
+    const currentFd = { ...fd, ...overrides };
 
-    const outLabourNum = parseFloat(outLabour || 0);
-    const outDeliveryNum = parseFloat(outDelivery || 0);
-    const cargoTotal = includeCargo ? (outLabourNum + outDeliveryNum) : 0;
+    // Total base amount of all items in the purchase
+    const totalBase = purchaseDetails.reduce((sum, d) => {
+      const base = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
+      const qty = parseFloat(d.qnty || 0);
+      return sum + (base * qty);
+    }, 0);
 
-    // Labour + Delivery distribution: labourAmount already includes transport_amount (delivery charges)
-    const labourTotal = includeLabour ? parseFloat(labourAmount || 0) : 0;
-    const incityTotal = includeIncity ? parseFloat(incityAmount || 0) : 0;
-
-    const labourPerUnit = totalQuantity > 0 ? labourTotal / totalQuantity : 0;
-    const incityPerUnit = totalQuantity > 0 ? incityTotal / totalQuantity : 0;
-    const cargoPerUnit = totalQuantity > 0 ? cargoTotal / totalQuantity : 0;
-
-    // If no distribution is active, restore original_cost_rate if present
-    if (!includeLabour && !includeIncity && !includeCargo) {
-      return purchaseDetails.map(detail => ({
-        ...detail,
-        cost_rate: detail.original_cost_rate ?? detail.cost_rate ?? detail.crate ?? detail.unit_rate ?? 0,
-        total_amount: Number((parseFloat(detail.crate || detail.unit_rate || 0) * parseFloat(detail.qnty || 0)).toFixed(2))
-      }));
+    // Determine discount percentage
+    let discountPercent = 0;
+    if (currentFd.discount_percent !== undefined && currentFd.discount_percent !== '' && currentFd.discount_percent !== null) {
+      discountPercent = parseFloat(currentFd.discount_percent || 0);
+    } else if (parseFloat(currentFd.discount || 0) > 0 && totalBase > 0) {
+      discountPercent = -((parseFloat(currentFd.discount || 0) / totalBase) * 100);
     }
 
-    return purchaseDetails.map(detail => {
-      const base = parseFloat(detail.original_cost_rate ?? detail.cost_rate ?? detail.crate ?? detail.unit_rate ?? 0);
-      const newCost = Number((base + labourPerUnit + incityPerUnit + cargoPerUnit).toFixed(2));
+    const totalQuantity = purchaseDetails.reduce((sum, d) => sum + parseFloat(d.qnty || 0), 0);
+    const labourTotal = currentFd.include_labour
+      ? (parseFloat(currentFd.labour_amount || 0) + parseFloat(currentFd.transport_amount || 0))
+      : 0;
+    const incityTotal = currentFd.include_incity
+      ? (parseFloat(currentFd.incity_own_labour || 0) + parseFloat(currentFd.incity_own_delivery || 0))
+      : 0;
+    const otherExpensesPerUnit = totalQuantity > 0 ? (labourTotal + incityTotal) / totalQuantity : 0;
+
+    return purchaseDetails.map(d => {
+      const baseRate = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
+      // Formula: purchase rate = base rate + ((base rate / 100) * percentage)
+      const purchaseRate = Number((baseRate + ((baseRate / 100) * discountPercent)).toFixed(2));
+      const temperAmt = parseFloat(d.temper_amount || 0);
+      // Formula: cost rate = purchase rate + TEMPER AMOUNT + other expenses
+      const costRate = Number((purchaseRate + temperAmt + otherExpensesPerUnit).toFixed(2));
+      const qnty = parseFloat(d.qnty || 0);
+      const totalAmount = Number((qnty * purchaseRate).toFixed(2));
+
       return {
-        ...detail,
-        cost_rate: newCost,
-        original_cost_rate: detail.original_cost_rate ?? detail.cost_rate ?? detail.crate ?? detail.unit_rate ?? 0,
-        total_amount: Number((parseFloat(detail.crate || detail.unit_rate || 0) * parseFloat(detail.qnty || 0)).toFixed(2))
+        ...d,
+        base_rate: baseRate.toString(),
+        crate: purchaseRate.toString(),
+        original_crate: baseRate.toString(),
+        temper_amount: d.temper_amount || '',
+        cost_rate: costRate.toString(),
+        original_cost_rate: (purchaseRate + temperAmt).toString(),
+        total_amount: totalAmount.toString(),
       };
     });
   };
 
+  const recomputeDistributedCosts = (purchaseDetails, params = {}) => {
+    return recomputeAllPurchaseDetails(purchaseDetails, formData, params);
+  };
+
   // Helper: build distribution params from a formData snapshot (prev or current)
-  // labourAmount = labour_amount + transport_amount (delivery charges) combined
   const getDistributionParams = (fd, overrides = {}) => ({
     includeLabour: fd.include_labour,
-    labourAmount: parseFloat(fd.labour_amount || 0) + parseFloat(fd.transport_amount || 0),
+    labourAmount: parseFloat(fd.labour_amount || 0),
+    transportAmount: parseFloat(fd.transport_amount || 0),
     includeIncity: fd.include_incity,
     incityAmount: parseFloat(fd.incity_own_labour || 0) + parseFloat(fd.incity_own_delivery || 0),
-    includeCargo: fd.include_cargo_in_costprice,
-    outLabour: fd.out_labour_amount,
-    outDelivery: fd.out_delivery_amount,
     ...overrides
   });
 
-  // Distribute labour + delivery charges to cost price. labourAmount comes from getDistributionParams (labour + transport combined).
   const handleLabourDistribution = (includeLabour, purchaseDetails, fd = formData) => {
-    return recomputeDistributedCosts(purchaseDetails, getDistributionParams(fd, { includeLabour }));
+    return recomputeAllPurchaseDetails(purchaseDetails, fd, { includeLabour });
   };
 
-  // Function to handle Incity charges distribution (independent)
   const handleIncityDistribution = (includeIncity, incityAmount, purchaseDetails, fd = formData) => {
-    return recomputeDistributedCosts(purchaseDetails, getDistributionParams(fd, { includeIncity, incityAmount }));
+    return recomputeAllPurchaseDetails(purchaseDetails, fd, { includeIncity, incity_charges_total: incityAmount });
   };
 
   // Function to handle Cargo charges distribution (independent)
@@ -1892,15 +1901,35 @@ function PurchasesPageContent() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle product selection (show in preview section)
-  // NOTE: show sale rate in the SALE RATE field and cost rate in the PURCHASE RATE (crate) field
+  // Handle product selection:
+  // Loads product base rate into the entry form and computes purchase rate based on current bill discount percentage
   const handleProductSelect = (product) => {
     setSelectedProduct(product);
+    const baseRate = parseFloat(product.pro_baser_price || product.pro_crate || product.pro_cost_price || 0);
+
+    const totalBase = (formData.purchase_details || []).reduce((sum, d) => sum + (parseFloat(d.qnty || 0) * parseFloat(d.base_rate || d.crate || 0)), 0) + baseRate;
+    let discountPercent = 0;
+    if (formData.discount_percent !== undefined && formData.discount_percent !== '' && formData.discount_percent !== null) {
+      discountPercent = parseFloat(formData.discount_percent || 0);
+    } else if (parseFloat(formData.discount || 0) > 0 && totalBase > 0) {
+      discountPercent = -((parseFloat(formData.discount || 0) / totalBase) * 100);
+    }
+
+    const purchaseRate = Number((baseRate + ((baseRate / 100) * discountPercent)).toFixed(2));
+    const temperAmt = parseFloat(productFormData.temper_amount || 0);
+    const costRate = Number((purchaseRate + temperAmt).toFixed(2));
+
     setProductFormData({
       ...EMPTY_PRODUCT_FORM_DATA,
-      unit_rate: (product.pro_sale_price || 0).toString(), // maintain sale rate here
-      crate: (product.pro_crate || product.pro_cost_price || product.pro_sale_price || 0).toString(), // prioritized cost rate for purchase
-      cost_rate: (product.pro_crate || product.pro_cost_price || product.pro_sale_price || 0).toString(),
+      base_rate: baseRate > 0 ? baseRate.toString() : '',
+      crate: purchaseRate > 0 ? purchaseRate.toString() : '',
+      temper_amount: productFormData.temper_amount || '',
+      cost_rate: costRate > 0 ? costRate.toString() : '',
+      qnty: productFormData.qnty || '1',
+      pcs: productFormData.pcs || '1',
+      width: productFormData.width || '',
+      height: productFormData.height || '',
+      comments: productFormData.comments || '',
     });
   };
 
@@ -1922,74 +1951,77 @@ function PurchasesPageContent() {
   const addProductToPurchase = () => {
     if (!selectedProduct) return;
 
-    // Check if store is selected
-    if (!formData.store_id) {
-      alert('Please select a store before adding products');
-      return;
+    // Ensure store_id is set to Main Store if not set
+    let storeIdToUse = formData.store_id;
+    if (!storeIdToUse && stores.length > 0) {
+      const mainStore = stores.find(s => s.store_name?.toLowerCase().includes('main')) || stores[0];
+      storeIdToUse = mainStore?.storeid?.toString() || '';
+      if (storeIdToUse) {
+        setFormData(prev => ({ ...prev, store_id: storeIdToUse }));
+      }
     }
 
-    // Always add as a new line item (don't check for duplicates)
-    const totalAmount = parseFloat(productFormData.qnty) * parseFloat(productFormData.crate || productFormData.unit_rate);
+    const baseRateVal = parseFloat(productFormData.base_rate || selectedProduct.pro_baser_price || selectedProduct.pro_crate || selectedProduct.pro_cost_price || 0);
+    const crateVal = parseFloat(productFormData.crate || baseRateVal);
+    const qntyVal = parseFloat(productFormData.qnty || 1);
+    const totalAmount = qntyVal * crateVal;
 
     const newDetail = {
       id: Date.now(), // Unique ID for each addition
       pro_id: selectedProduct.pro_id,
       product_id: selectedProduct.pro_id, // Add product_id for console logging
-      store_id: formData.store_id, // Add store_id to each product detail
+      store_id: storeIdToUse || '1', // Add store_id to each product detail
       width: productFormData.width || '',
       height: productFormData.height || '',
       pcs: productFormData.pcs || '1',
-      qnty: productFormData.qnty, // Changed from 'quantity' to 'qnty' to match table
-      unit: selectedProduct.pro_unit,
-      rate: productFormData.unit_rate,
-      unit_rate: productFormData.unit_rate, // Keep for backward compatibility
-      crate: productFormData.crate || productFormData.unit_rate, // Use crate value or fallback to unit_rate
+      qnty: productFormData.qnty || '1',
+      unit: selectedProduct.pro_unit || 'pcs',
+      base_rate: baseRateVal.toString(),
+      rate: crateVal.toString(),
+      unit_rate: crateVal.toString(), // Keep for backward compatibility
+      crate: crateVal.toString(),
+      original_crate: baseRateVal.toString(),
       temper_amount: productFormData.temper_amount || '',
       comments: productFormData.comments || '',
-      original_crate: (productFormData.crate || productFormData.unit_rate), // preserve baseline purchase rate
-      // COST RATE fields — initialize from product's stored cost price
-      original_cost_rate: productFormData.cost_rate || (selectedProduct?.pro_cost_price ? String(selectedProduct.pro_cost_price) : (productFormData.crate || productFormData.unit_rate || '0')),
-      cost_rate: productFormData.cost_rate || (selectedProduct?.pro_cost_price ? String(selectedProduct.pro_cost_price) : (productFormData.crate || productFormData.unit_rate || '0')),
-      total_amount: totalAmount.toString(),
+      cost_rate: productFormData.cost_rate || crateVal.toString(),
+      original_cost_rate: productFormData.cost_rate || crateVal.toString(),
+      total_amount: totalAmount.toFixed(2),
       discount: '0'
     };
 
     setFormData(prev => {
       const updatedPurchaseDetails = [...prev.purchase_details, newDetail];
-
-      // Apply labour + delivery distribution if checkbox is checked
-      const finalPurchaseDetails = handleLabourDistribution(
-        prev.include_labour,
-        updatedPurchaseDetails,
-        prev
-      );
-
+      const finalPurchaseDetails = recomputeAllPurchaseDetails(updatedPurchaseDetails, prev);
       return {
         ...prev,
         purchase_details: finalPurchaseDetails
       };
     });
 
-    // If user edited unit_rate or crate for this product, update local product and persist to backend
+    // Reset entry inputs for next product
+    setProductFormData(EMPTY_PRODUCT_FORM_DATA);
+    setSelectedProduct(null);
+
+    // If user edited base_rate or crate for this product, update local product and persist to backend
     (async () => {
       try {
-        const newUnit = parseFloat(productFormData.unit_rate || 0) || 0;
+        const newBaseVal = productFormData.base_rate ? parseFloat(productFormData.base_rate) : null;
         const newCrateVal = productFormData.crate ? parseFloat(productFormData.crate) : null;
+        const originalBase = selectedProduct?.pro_baser_price != null ? parseFloat(selectedProduct.pro_baser_price) : null;
+        const baseChanged = newBaseVal !== null && newBaseVal !== originalBase;
 
-        // Do NOT treat the editable `unit_rate` (sale rate) as a change to product's cost price.
-        // Only update/persist the product's crate (purchase rate) when it was explicitly changed here.
-        const originalCrate = selectedProduct?.pro_crate != null ? parseFloat(selectedProduct.pro_crate) : null;
-        const crateChanged = newCrateVal !== null && newCrateVal !== originalCrate;
-
-        if (selectedProduct && crateChanged) {
-          // Update local products state so next selects show updated defaults
+        if (selectedProduct && (baseChanged || newCrateVal !== null)) {
           setProducts(prev => prev.map(p => p.pro_id === selectedProduct.pro_id ? {
             ...p,
-            pro_crate: newCrateVal
+            pro_baser_price: newBaseVal !== null ? newBaseVal : p.pro_baser_price,
+            pro_crate: newCrateVal !== null ? newCrateVal : p.pro_crate
           } : p));
 
-          // Persist change to API (best-effort, non-blocking)
-          const payload = { id: selectedProduct.pro_id, pro_crate: newCrateVal };
+          const payload = {
+            id: selectedProduct.pro_id,
+            ...(newBaseVal !== null ? { pro_baser_price: newBaseVal } : {}),
+            ...(newCrateVal !== null ? { pro_crate: newCrateVal } : {})
+          };
 
           const resp = await fetch('/api/products', {
             method: 'PUT',
@@ -1999,14 +2031,11 @@ function PurchasesPageContent() {
 
           if (resp.ok) {
             const updatedProduct = await resp.json();
-            // ensure local products reflect authoritative server response
             setProducts(prev => prev.map(p => p.pro_id === updatedProduct.pro_id ? updatedProduct : p));
-          } else {
-            console.warn('Failed to persist product update', await resp.text());
           }
         }
       } catch (err) {
-        console.error('Error persisting product price/crate change:', err);
+        console.error('Error persisting product base/crate change:', err);
       }
     })();
 
@@ -2062,7 +2091,10 @@ function PurchasesPageContent() {
   };
 
   const calculateTotalAmount = () => {
-    return Number(formData.purchase_details.reduce((sum, detail) => sum + parseFloat(detail.total_amount || 0), 0).toFixed(2));
+    return Number(formData.purchase_details.reduce((sum, detail) => {
+      const bRate = parseFloat(detail.base_rate !== undefined && detail.base_rate !== null && detail.base_rate !== '' ? detail.base_rate : (detail.original_crate || detail.crate || 0));
+      return sum + (bRate * parseFloat(detail.qnty || 0));
+    }, 0).toFixed(2));
   };
 
   // New: total quantity across purchase details
@@ -4585,11 +4617,20 @@ function PurchasesPageContent() {
                         value={productFormData.comments ?? ''}
                         onChange={(e) => setProductFormData(prev => ({ ...prev, comments: e.target.value }))}
                         onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Tab' || e.key === 'Enter') {
+                            const widthInput = document.getElementById('purchase-width-input');
+                            if (widthInput) {
+                              e.preventDefault();
+                              widthInput.focus();
+                            }
+                          }
+                        }}
                         sx={PURCHASE_ENTRY_CONTROL_SX}
                       />
                   </Box>
 
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                  <Box sx={{ ...PURCHASE_ENTRY_CELL_SX, display: 'none' }}>
                       <Typography sx={PURCHASE_ENTRY_LABEL_SX}>STORE</Typography>
                       <Autocomplete
                         size="small"
@@ -4607,22 +4648,11 @@ function PurchasesPageContent() {
                             store_id: newValue ? newValue.storeid.toString() : ''
                           }));
                         }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && formData.store_id) {
-                            e.preventDefault();
-                            // Move focus to Product field
-                            const productInputs = document.querySelectorAll('input[placeholder*="Select product"]');
-                            if (productInputs.length > 0) {
-                              productInputs[0]?.focus();
-                            }
-                          }
-                        }}
                         filterOptions={createUniversalFilter((option) => [option?.store_name, option?.store_address])}
                         renderInput={(params) => (
                           <TextField
                             {...params}
                             placeholder={formData.store_id ? 'Store Selected' : 'Select store'}
-                            onFocus={(e) => e.target.select()}
                             sx={{ ...PURCHASE_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: formData.store_id ? 'bold' : 'normal' } }}
                           />
                         )}
@@ -4632,6 +4662,7 @@ function PurchasesPageContent() {
                   <Box sx={PURCHASE_ENTRY_CELL_SX}>
                       <Typography sx={PURCHASE_ENTRY_LABEL_SX}>WIDTH</Typography>
                       <TextField
+                        id="purchase-width-input"
                         fullWidth
                         size="small"
                         type="number"
@@ -4686,26 +4717,64 @@ function PurchasesPageContent() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            // If rate is already filled, add product directly
-                            if (productFormData.unit_rate > 0) {
+                            if (parseFloat(productFormData.crate || productFormData.base_rate || 0) > 0) {
                               addProductToPurchase();
                             } else {
-                              // Focus on rate field if rate is not filled
-                              setTimeout(() => {
-                                const rateInputs = document.querySelectorAll('input[type="number"]');
-                                // Find the rate input (it's the next number input after quantity)
-                                if (rateInputs.length > 1) {
-                                  rateInputs[1].focus();
-                                }
-                              }, 0);
+                              const baseInput = document.getElementById('purchase-base-rate-input');
+                              if (baseInput) baseInput.focus();
                             }
                           } else if (e.key === 'Tab') {
                             e.preventDefault();
-                            // Tab should move to RATE field
-                            const rateInputs = document.querySelectorAll('input[type="number"]');
-                            if (rateInputs.length > 1) {
-                              rateInputs[1].focus();
+                            const baseInput = document.getElementById('purchase-base-rate-input');
+                            if (baseInput) {
+                              baseInput.focus();
                             }
+                          }
+                        }}
+                        inputProps={{ min: 0, step: 'any' }}
+                        sx={PURCHASE_ENTRY_CONTROL_SX}
+                      />
+                  </Box>
+
+                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>BASE RATE</Typography>
+                      <TextField
+                        id="purchase-base-rate-input"
+                        fullWidth
+                        size="small"
+                        type="number"
+                        placeholder="0.00"
+                        value={productFormData.base_rate ?? ''}
+                        onChange={(e) => {
+                          const newBase = e.target.value;
+                          const baseVal = parseFloat(newBase || 0);
+                          let discountPercent = 0;
+                          if (formData.discount_percent !== undefined && formData.discount_percent !== '' && formData.discount_percent !== null) {
+                            discountPercent = parseFloat(formData.discount_percent || 0);
+                          } else if (parseFloat(formData.discount || 0) > 0) {
+                            const totalBase = (formData.purchase_details || []).reduce((sum, d) => sum + (parseFloat(d.qnty || 0) * parseFloat(d.base_rate || d.crate || 0)), 0) + (baseVal * parseFloat(productFormData.qnty || 1));
+                            discountPercent = totalBase > 0 ? -((parseFloat(formData.discount || 0) / totalBase) * 100) : 0;
+                          }
+                          const purchaseRate = Number((baseVal + ((baseVal / 100) * discountPercent)).toFixed(2));
+                          const tempAmt = parseFloat(productFormData.temper_amount || 0);
+                          const calculatedCost = (purchaseRate + tempAmt).toFixed(2);
+                          setProductFormData(prev => ({
+                            ...prev,
+                            base_rate: newBase,
+                            crate: purchaseRate > 0 ? purchaseRate.toString() : '',
+                            unit_rate: purchaseRate > 0 ? purchaseRate.toString() : '',
+                            cost_rate: calculatedCost
+                          }));
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addProductToPurchase();
+                          } else if (e.key === 'Tab') {
+                            e.preventDefault();
+                            const crateInput = document.getElementById('purchase-rate-input');
+                            if (crateInput) crateInput.focus();
                           }
                         }}
                         inputProps={{ min: 0, step: 'any' }}
@@ -4716,6 +4785,7 @@ function PurchasesPageContent() {
                   <Box sx={PURCHASE_ENTRY_CELL_SX}>
                       <Typography sx={PURCHASE_ENTRY_LABEL_SX}>PURCHASE RATE</Typography>
                       <TextField
+                        id="purchase-rate-input"
                         fullWidth
                         size="small"
                         type="number"
@@ -4725,17 +4795,15 @@ function PurchasesPageContent() {
                           const tempAmt = parseFloat(productFormData.temper_amount || 0);
                           const crateVal = parseFloat(newCrate || 0);
                           const calculatedCost = (crateVal + tempAmt).toFixed(2);
-                          setProductFormData(prev => ({ ...prev, crate: newCrate, cost_rate: calculatedCost }));
+                          setProductFormData(prev => ({ ...prev, crate: newCrate, unit_rate: newCrate, cost_rate: calculatedCost }));
                         }}
                         onFocus={(e) => e.target.select()}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            // Press Enter to add product
                             addProductToPurchase();
                           } else if (e.key === 'Tab') {
                             e.preventDefault();
-                            // Move focus to Temper Amount
                             const temperInput = document.getElementById('temper-amount-input');
                             if (temperInput) temperInput.focus();
                           }
@@ -4770,6 +4838,10 @@ function PurchasesPageContent() {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             addProductToPurchase();
+                          } else if (e.key === 'Tab') {
+                            e.preventDefault();
+                            const costInput = document.getElementById('purchase-cost-rate-input');
+                            if (costInput) costInput.focus();
                           }
                         }}
                         inputProps={{ min: 0, step: 'any' }}
@@ -4780,6 +4852,7 @@ function PurchasesPageContent() {
                   <Box sx={PURCHASE_ENTRY_CELL_SX}>
                       <Typography sx={PURCHASE_ENTRY_LABEL_SX}>COST RATE</Typography>
                       <TextField
+                        id="purchase-cost-rate-input"
                         fullWidth
                         size="small"
                         type="number"
@@ -4788,11 +4861,8 @@ function PurchasesPageContent() {
                         onFocus={(e) => e.target.select()}
                         onBlur={async (e) => {
                           const newCost = parseFloat(e.target.value || 0);
-                          // update local products state
                           if (selectedProduct) {
                             setProducts(prev => prev.map(p => p.pro_id === selectedProduct.pro_id ? { ...p, pro_cost_price: newCost } : p));
-
-                            // persist to backend
                             try {
                               await fetch('/api/products', {
                                 method: 'PUT',
@@ -4810,43 +4880,8 @@ function PurchasesPageContent() {
                             addProductToPurchase();
                           } else if (e.key === 'Tab') {
                             e.preventDefault();
-                            // move focus to Sale Rate field (next)
-                            const allInputs = document.querySelectorAll('input[type="number"]');
-                            const currentInput = e.target;
-                            let foundCurrent = false;
-                            for (let i = 0; i < allInputs.length; i++) {
-                              const input = allInputs[i];
-                              if (input === currentInput) { foundCurrent = true; continue; }
-                              if (foundCurrent) { input.focus(); return; }
-                            }
-                          }
-                        }}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
-
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>SALE RATE</Typography>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        type="number"
-                        value={productFormData.unit_rate ?? ''}
-                        onChange={(e) => setProductFormData(prev => ({ ...prev, unit_rate: e.target.value }))}
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            // Add product to table when Enter is pressed in rate field
-                            addProductToPurchase();
-                          } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            // Tab from Sale Rate should focus the + button
                             const addBtn = document.getElementById('add-product-btn');
-                            if (addBtn) {
-                              addBtn.focus();
-                            }
+                            if (addBtn) addBtn.focus();
                           }
                         }}
                         inputProps={{ min: 0, step: 'any' }}
@@ -4881,7 +4916,7 @@ function PurchasesPageContent() {
                       variant="contained"
                       id="add-product-btn"
                       onClick={addProductToPurchase}
-                      disabled={!productFormData.qnty || !productFormData.unit_rate}
+                      disabled={!productFormData.qnty || !(productFormData.crate || productFormData.base_rate || productFormData.unit_rate)}
                       sx={{
                         bgcolor: BRAND.primary.blue,
                         color: 'white',
@@ -4916,10 +4951,10 @@ function PurchasesPageContent() {
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Height</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Pcs</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Qty (Ft)</TableCell>
+                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>BASE RATE</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>PURCHASE RATE</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>TEMPER AMT</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>COST RATE</TableCell>
-                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Sale Rate</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Amount</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Actions</TableCell>
                       </TableRow>
@@ -4986,12 +5021,10 @@ function PurchasesPageContent() {
                                           return {
                                             ...d,
                                             width: newW,
-                                            qnty: newQuantity,
-                                            total_amount: (parseFloat(newQuantity) * parseFloat(d.crate || d.unit_rate || 0)).toFixed(2)
+                                            qnty: newQuantity
                                           };
                                         });
-                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
-                                        return { ...prev, purchase_details: updatedDetails };
+                                        return { ...prev, purchase_details: recomputeAllPurchaseDetails(baseUpdated, prev) };
                                       });
                                     }}
                                     inputProps={{ min: 0, step: "any" }}
@@ -5016,12 +5049,10 @@ function PurchasesPageContent() {
                                           return {
                                             ...d,
                                             height: newH,
-                                            qnty: newQuantity,
-                                            total_amount: (parseFloat(newQuantity) * parseFloat(d.crate || d.unit_rate || 0)).toFixed(2)
+                                            qnty: newQuantity
                                           };
                                         });
-                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
-                                        return { ...prev, purchase_details: updatedDetails };
+                                        return { ...prev, purchase_details: recomputeAllPurchaseDetails(baseUpdated, prev) };
                                       });
                                     }}
                                     inputProps={{ min: 0, step: "any" }}
@@ -5046,12 +5077,10 @@ function PurchasesPageContent() {
                                           return {
                                             ...d,
                                             pcs: newPcs,
-                                            qnty: newQuantity,
-                                            total_amount: (parseFloat(newQuantity) * parseFloat(d.crate || d.unit_rate || 0)).toFixed(2)
+                                            qnty: newQuantity
                                           };
                                         });
-                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
-                                        return { ...prev, purchase_details: updatedDetails };
+                                        return { ...prev, purchase_details: recomputeAllPurchaseDetails(baseUpdated, prev) };
                                       });
                                     }}
                                     inputProps={{ min: 1, step: "1" }}
@@ -5070,13 +5099,11 @@ function PurchasesPageContent() {
                                           i === index
                                             ? {
                                               ...d,
-                                              qnty: newQuantity,
-                                              total_amount: (parseFloat(newQuantity) * parseFloat(d.crate || d.unit_rate || 0)).toFixed(2)
+                                              qnty: newQuantity
                                             }
                                             : d
                                         );
-                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
-                                        return { ...prev, purchase_details: updatedDetails };
+                                        return { ...prev, purchase_details: recomputeAllPurchaseDetails(baseUpdated, prev) };
                                       });
                                     }}
                                     inputProps={{ min: 0, step: "any" }}
@@ -5087,11 +5114,33 @@ function PurchasesPageContent() {
                                 <TableCell>
                                   <TextField
                                     type="number"
+                                    value={detail.base_rate !== undefined && detail.base_rate !== null ? detail.base_rate : (detail.original_crate || detail.crate || '')}
+                                    placeholder="0.00"
+                                    onChange={(e) => {
+                                      const newBase = e.target.value;
+                                      setFormData(prev => {
+                                        const updatedDetails = prev.purchase_details.map((d, i) =>
+                                          i === index ? { ...d, base_rate: newBase, original_crate: newBase } : d
+                                        );
+                                        return {
+                                          ...prev,
+                                          purchase_details: recomputeAllPurchaseDetails(updatedDetails, prev)
+                                        };
+                                      });
+                                    }}
+                                    inputProps={{ min: 0, step: "any" }}
+                                    size="small"
+                                    sx={{ width: 85 }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    type="number"
                                     value={detail.crate || detail.unit_rate || '0'}
                                     onChange={(e) => {
                                       const newCrate = e.target.value;
                                       setFormData(prev => {
-                                        const baseUpdated = prev.purchase_details.map((d, i) => {
+                                        const updatedDetails = prev.purchase_details.map((d, i) => {
                                           if (i !== index) return d;
                                           const crateVal = parseFloat(newCrate || 0);
                                           const tempVal = parseFloat(d.temper_amount || 0);
@@ -5099,20 +5148,17 @@ function PurchasesPageContent() {
                                           return {
                                             ...d,
                                             crate: newCrate,
-                                            original_crate: newCrate,
+                                            unit_rate: newCrate,
                                             cost_rate: computedCost,
-                                            original_cost_rate: computedCost,
-                                            total_amount: (parseFloat(d.qnty) * crateVal).toFixed(2)
+                                            total_amount: (parseFloat(d.qnty || 0) * crateVal).toFixed(2)
                                           };
                                         });
-                                        // Re-distribute charges on top of new base cost rate
-                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
                                         return { ...prev, purchase_details: updatedDetails };
                                       });
                                     }}
                                     inputProps={{ min: 0, step: "any" }}
                                     size="small"
-                                    sx={{ width: 100 }}
+                                    sx={{ width: 95 }}
                                   />
                                 </TableCell>
                                 <TableCell>
@@ -5123,20 +5169,10 @@ function PurchasesPageContent() {
                                     onChange={(e) => {
                                       const newTemp = e.target.value;
                                       setFormData(prev => {
-                                        const baseUpdated = prev.purchase_details.map((d, i) => {
-                                          if (i !== index) return d;
-                                          const crateVal = parseFloat(d.crate || d.unit_rate || 0);
-                                          const tempVal = parseFloat(newTemp || 0);
-                                          const computedCost = (crateVal + tempVal).toFixed(2);
-                                          return {
-                                            ...d,
-                                            temper_amount: newTemp,
-                                            cost_rate: computedCost,
-                                            original_cost_rate: computedCost
-                                          };
-                                        });
-                                        const updatedDetails = recomputeDistributedCosts(baseUpdated, getDistributionParams(prev));
-                                        return { ...prev, purchase_details: updatedDetails };
+                                        const updatedDetails = prev.purchase_details.map((d, i) =>
+                                          i === index ? { ...d, temper_amount: newTemp } : d
+                                        );
+                                        return { ...prev, purchase_details: recomputeAllPurchaseDetails(updatedDetails, prev) };
                                       });
                                     }}
                                     inputProps={{ min: 0, step: "any" }}
@@ -5158,11 +5194,7 @@ function PurchasesPageContent() {
                                     }}
                                     onBlur={(e) => {
                                       const newCostVal = parseFloat(e.target.value || 0);
-                                      // Update local products state so UI shows updated cost price immediately
                                       setProducts(prev => prev.map(p => p.pro_id === detail.pro_id ? { ...p, pro_cost_price: newCostVal } : p));
-
-                                      // DO NOT persist to backend here — persistence will occur when the purchase is saved
-                                      // keep original_cost_rate in sync for undo/restore
                                       const updatedDetails = formData.purchase_details.map((d, i) =>
                                         i === index ? { ...d, original_cost_rate: d.original_cost_rate ?? d.cost_rate } : d
                                       );
@@ -5174,23 +5206,7 @@ function PurchasesPageContent() {
                                       }
                                     }}
                                     inputProps={{ min: 0, step: "any" }}
-                                    sx={{ width: 100 }}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <TextField
-                                    type="number"
-                                    value={detail.unit_rate}
-                                    onChange={(e) => {
-                                      const newUnitRate = e.target.value;
-                                      const updatedDetails = formData.purchase_details.map((d, i) =>
-                                        i === index ? { ...d, unit_rate: newUnitRate, total_amount: (parseFloat(d.qnty) * parseFloat(d.crate || newUnitRate)).toFixed(2) } : d
-                                      );
-                                      setFormData(prev => ({ ...prev, purchase_details: updatedDetails }));
-                                    }}
-                                    inputProps={{ min: 0, step: "any" }}
-                                    size="small"
-                                    sx={{ width: 100 }}
+                                    sx={{ width: 95 }}
                                   />
                                 </TableCell>
                                 <TableCell>
@@ -5506,167 +5522,10 @@ function PurchasesPageContent() {
                           fullWidth
                           size="small"
                           multiline
-                          minRows={2}
+                          minRows={3}
                           placeholder="Additional notes"
                           sx={PURCHASE_NOTES_CONTROL_SX}
                         />
-
-                        <Box sx={{ ...PURCHASE_CHARGE_BOX_SX, mt: 0.5, flex: 1 }}>
-                          <Typography sx={PURCHASE_CHARGE_BOX_TITLE_SX}>Cargo</Typography>
-                          <Box sx={PURCHASE_CHARGE_BODY_SX}>
-                            <Box>
-                              <Typography component="label" sx={PURCHASE_FIELD_LABEL_SX}>Cargo Account</Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Autocomplete
-                                  size="small"
-                                  multiple
-                                  sx={{ flex: 1, minWidth: 0 }}
-                                  openOnFocus
-                                  options={cargoAccounts.filter(a => !(selectedCargoAccounts || []).some(s => s.cus_id === a.cus_id))}
-                                  getOptionLabel={(option) => option.cus_name}
-                                  value={selectedCargoAccounts}
-                                  onChange={(e, newValue) => {
-                                    setSelectedCargoAccounts(newValue || []);
-                                    setFormData(prev => ({ ...prev, cargo_account_ids: (newValue || []).map(a => a.cus_id) }));
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Tab') {
-                                      setTimeout(() => { outLabourInputRef.current?.focus(); }, 0);
-                                    }
-                                  }}
-                                  renderTags={() => null}
-                                  renderInput={(params) => (
-                                    <TextField
-                                      {...params}
-                                      inputRef={cargoInputRef}
-                                      placeholder="Select Cargo Account"
-                                      size="small"
-                                      sx={PURCHASE_ENTRY_CONTROL_SX}
-                                    />
-                                  )}
-                                  renderOption={(props, option) => {
-                                    const { key, ...optionProps } = props;
-                                    return (
-                                      <Box component="li" key={key} {...optionProps}>
-                                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', width: '100%' }}>
-                                          <Box sx={{ flex: 1 }}>
-                                            <Typography variant="body2" sx={{ fontWeight: (selectedCargoAccounts || []).some(s => s.cus_id === option.cus_id) ? 'bold' : 'medium' }}>
-                                              {option.cus_name}
-                                            </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                              {option.cus_phone_no}
-                                            </Typography>
-                                          </Box>
-                                        </Box>
-                                      </Box>
-                                    );
-                                  }}
-                                />
-                                <IconButton
-                                  size="small"
-                                  onClick={() => openCustomerForm('cargo')}
-                                  sx={{
-                                    bgcolor: BRAND.primary.blue,
-                                    color: 'white',
-                                    '&:hover': { bgcolor: '#1347c4' },
-                                    borderRadius: 1,
-                                    width: 40,
-                                    height: 40,
-                                    flexShrink: 0,
-                                  }}
-                                  title="Add New Cargo Account"
-                                >
-                                  <AddIcon />
-                                </IconButton>
-                              </Box>
-                            </Box>
-
-                            {(selectedCargoAccounts || []).length > 0 && (
-                              <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-                                {(selectedCargoAccounts || []).map(acc => (
-                                  <Chip
-                                    key={acc.cus_id}
-                                    label={acc.cus_name}
-                                    size="small"
-                                    onDelete={() => {
-                                      setSelectedCargoAccounts(prev => {
-                                        const next = prev.filter(p => p.cus_id !== acc.cus_id);
-                                        setFormData(f => ({ ...f, cargo_account_ids: next.map(a => a.cus_id) }));
-                                        return next;
-                                      });
-                                    }}
-                                    sx={{ bgcolor: 'error.main', color: 'white', borderRadius: '16px' }}
-                                  />
-                                ))}
-                              </Box>
-                            )}
-
-                            <Box sx={PURCHASE_CARGO_AMOUNTS_GRID_SX}>
-                              <Box>
-                                <Typography component="label" sx={PURCHASE_FIELD_LABEL_SX}>Out Labour</Typography>
-                                <TextField
-                                  fullWidth
-                                  size="small"
-                                  type="number"
-                                  inputRef={outLabourInputRef}
-                                  value={formData.out_labour_amount || ''}
-                                  onChange={(e) => {
-                                    const newVal = e.target.value;
-                                    setFormData(prev => {
-                                      const updatedDetails = handleCargoDistribution(prev.include_cargo_in_costprice, newVal, prev.out_delivery_amount, prev.purchase_details, prev);
-                                      return { ...prev, out_labour_amount: newVal, purchase_details: updatedDetails };
-                                    });
-                                  }}
-                                  onFocus={(e) => e.target.select()}
-                                  inputProps={{ min: 0 }}
-                                  sx={PURCHASE_ENTRY_CONTROL_SX}
-                                />
-                              </Box>
-                              <Box>
-                                <Typography component="label" sx={PURCHASE_FIELD_LABEL_SX}>Out Delivery</Typography>
-                                <TextField
-                                  fullWidth
-                                  size="small"
-                                  type="number"
-                                  value={formData.out_delivery_amount || ''}
-                                  onChange={(e) => {
-                                    const newVal = e.target.value;
-                                    setFormData(prev => {
-                                      const updatedDetails = handleCargoDistribution(prev.include_cargo_in_costprice, prev.out_labour_amount, newVal, prev.purchase_details, prev);
-                                      return { ...prev, out_delivery_amount: newVal, purchase_details: updatedDetails };
-                                    });
-                                  }}
-                                  onFocus={(e) => e.target.select()}
-                                  inputProps={{ min: 0 }}
-                                  sx={PURCHASE_ENTRY_CONTROL_SX}
-                                />
-                              </Box>
-                            </Box>
-                            <PurchaseAmountTotal
-                              label="Total Charges"
-                              value={parseFloat(formData.out_labour_amount || 0) + parseFloat(formData.out_delivery_amount || 0)}
-                            />
-                          </Box>
-                          <Box sx={{ ...PURCHASE_INCLUDE_BAR_SX, borderBottom: 'none', borderTop: '1px solid #dce3ed', mt: 'auto' }}>
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  checked={formData.include_cargo_in_costprice || false}
-                                  onChange={(e) => {
-                                    const newInclude = e.target.checked;
-                                    setFormData(prev => {
-                                      const updatedDetails = handleCargoDistribution(newInclude, prev.out_labour_amount, prev.out_delivery_amount, prev.purchase_details, prev);
-                                      return { ...prev, include_cargo_in_costprice: newInclude, purchase_details: updatedDetails };
-                                    });
-                                  }}
-                                  size="small"
-                                  sx={{ color: BRAND.primary.blue }}
-                                />
-                              }
-                              label="Include in cost price"
-                            />
-                          </Box>
-                        </Box>
                       </Box>
                     </Box>
                   </Box>
@@ -5700,11 +5559,10 @@ function PurchasesPageContent() {
                         onChange={(e) => {
                           const newTransport = e.target.value;
                           setFormData(prev => {
-                            const updatedDetails = recomputeDistributedCosts(
+                            const updatedDetails = recomputeAllPurchaseDetails(
                               prev.purchase_details,
-                              getDistributionParams(prev, {
-                                labourAmount: parseFloat(prev.labour_amount || 0) + parseFloat(newTransport || 0)
-                              })
+                              prev,
+                              { transport_amount: newTransport }
                             );
                             return { ...prev, transport_amount: newTransport, purchase_details: updatedDetails };
                           });
@@ -5729,11 +5587,10 @@ function PurchasesPageContent() {
                         onChange={(e) => {
                           const newLabourAmount = e.target.value;
                           setFormData(prev => {
-                            const updatedDetails = recomputeDistributedCosts(
+                            const updatedDetails = recomputeAllPurchaseDetails(
                               prev.purchase_details,
-                              getDistributionParams(prev, {
-                                labourAmount: parseFloat(newLabourAmount || 0) + parseFloat(prev.transport_amount || 0)
-                              })
+                              prev,
+                              { labour_amount: newLabourAmount }
                             );
                             return {
                               ...prev,
@@ -5753,16 +5610,11 @@ function PurchasesPageContent() {
                         checked={formData.include_labour || false}
                         onChange={(e) => {
                           const newIncludeLabour = e.target.checked;
-                          console.log('🔧 Checkbox changed:', {
-                            newIncludeLabour,
-                            labourAmount: formData.labour_amount,
-                            purchaseDetailsLength: formData.purchase_details.length
-                          });
                           setFormData(prev => {
-                            const updatedDetails = handleLabourDistribution(
-                              newIncludeLabour,
+                            const updatedDetails = recomputeAllPurchaseDetails(
                               prev.purchase_details,
-                              prev
+                              prev,
+                              { include_labour: newIncludeLabour }
                             );
                             return {
                               ...prev,
@@ -5784,15 +5636,70 @@ function PurchasesPageContent() {
                       <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
                         DISCOUNT
                       </Typography>
-                      <TextField
-                        size="small"
-                        type="number"
-                        value={formData.discount || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, discount: e.target.value }))}
-                        onFocus={(e) => e.target.select()}
-                        inputProps={{ min: 0 }}
-                        sx={{ width: 150 }}
-                      />
+                      <Box sx={{ display: 'flex', gap: 0.5, width: 150 }}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          placeholder="Amount"
+                          value={formData.discount || ''}
+                          onChange={(e) => {
+                            const newDiscount = e.target.value;
+                            setFormData(prev => {
+                              const totalBase = prev.purchase_details.reduce((sum, d) => {
+                                const base = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
+                                const qty = parseFloat(d.qnty || 0);
+                                return sum + (base * qty);
+                              }, 0);
+                              const discAmt = parseFloat(newDiscount || 0);
+                              const percent = totalBase > 0 ? (discAmt > 0 ? -((discAmt / totalBase) * 100) : 0) : 0;
+                              const updatedDetails = recomputeAllPurchaseDetails(prev.purchase_details, prev, {
+                                discount: newDiscount,
+                                discount_percent: percent ? percent.toFixed(2) : ''
+                              });
+                              return {
+                                ...prev,
+                                discount: newDiscount,
+                                discount_percent: percent ? percent.toFixed(2) : '',
+                                purchase_details: updatedDetails
+                              };
+                            });
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          inputProps={{ min: 0 }}
+                          sx={{ flex: 1.2 }}
+                        />
+                        <TextField
+                          size="small"
+                          type="number"
+                          placeholder="%"
+                          value={formData.discount_percent || ''}
+                          onChange={(e) => {
+                            const newPercentStr = e.target.value;
+                            setFormData(prev => {
+                              const totalBase = prev.purchase_details.reduce((sum, d) => {
+                                const base = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
+                                const qty = parseFloat(d.qnty || 0);
+                                return sum + (base * qty);
+                              }, 0);
+                              const pVal = parseFloat(newPercentStr || 0);
+                              const effectivePercent = pVal > 0 ? -pVal : pVal;
+                              const discAmt = totalBase > 0 ? Math.abs((effectivePercent / 100) * totalBase) : 0;
+                              const updatedDetails = recomputeAllPurchaseDetails(prev.purchase_details, prev, {
+                                discount: discAmt ? discAmt.toFixed(2) : '',
+                                discount_percent: newPercentStr
+                              });
+                              return {
+                                ...prev,
+                                discount: discAmt ? discAmt.toFixed(2) : '',
+                                discount_percent: newPercentStr,
+                                purchase_details: updatedDetails
+                              };
+                            });
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          sx={{ width: 60 }}
+                        />
+                      </Box>
                     </Box>
 
                     {/* GRAND TOTAL */}

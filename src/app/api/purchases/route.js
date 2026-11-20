@@ -1286,13 +1286,18 @@ export async function POST(request) {
         console.log(`   Opening Balance: ${runningSupplierBalance}`);
         console.log(`   Bill Amount: ${supplierAmount}${safeParseFloat(discount) > 0 ? ` (After Discount: ${safeParseFloat(discount)})` : ''}`);
 
+        const billDebit = isReturn ? supplierAmount : 0;
+        const billCredit = isReturn ? 0 : supplierAmount;
+        const billClosing = isReturn ? (runningSupplierBalance - supplierAmount) : (runningSupplierBalance + supplierAmount);
+
         const supplierEntry = createLedgerEntry({
           cus_id: cus_id,
           opening_balance: runningSupplierBalance,
-          debit_amount: isReturn ? 0 : supplierAmount,
-          credit_amount: isReturn ? supplierAmount : 0,
+          debit_amount: billDebit,
+          credit_amount: billCredit,
+          closing_balance: billClosing,
           bill_no: newPurchase.pur_id.toString(),
-          trnx_type: isReturn ? 'CREDIT' : 'DEBIT',
+          trnx_type: isReturn ? 'DEBIT' : 'CREDIT',
           ledger_type: isReturn ? 'Purchase Return' : 'Purchase',
           details: `${isReturn ? 'Purchase Return' : 'Purchase Invoice'}${invoice_number ? ` #${invoice_number}` : ''} ${isReturn ? 'to' : 'from'} ${supplierData?.cus_name || 'Supplier'}${vehicle_no ? ` - Vehicle: ${vehicle_no}` : ''}${dc_no ? ` - DC: ${dc_no}` : ''}${safeParseFloat(discount) > 0 ? ` [After Discount: ${safeParseFloat(discount)}]` : ''}`,
           payments: 0,
@@ -1324,13 +1329,18 @@ export async function POST(request) {
         if (bankPaymentAmount > 0) paymentParts.push(`${bankPaymentAmount.toLocaleString('en-PK')} Bank Account (${bankNameForDesc || 'Bank'})`);
         const paymentBreakdown = paymentParts.join(' + ');
 
+        const payDebit = isReturn ? 0 : totalPaymentAmount2;
+        const payCredit = isReturn ? totalPaymentAmount2 : 0;
+        const payClosing = isReturn ? (runningSupplierBalance + totalPaymentAmount2) : (runningSupplierBalance - totalPaymentAmount2);
+
         const paymentEntry = createLedgerEntry({
           cus_id: cus_id,
           opening_balance: runningSupplierBalance,
-          debit_amount: isReturn ? totalPaymentAmount2 : 0,
-          credit_amount: isReturn ? 0 : totalPaymentAmount2,
+          debit_amount: payDebit,
+          credit_amount: payCredit,
+          closing_balance: payClosing,
           bill_no: newPurchase.pur_id.toString(),
-          trnx_type: isReturn ? 'DEBIT' : 'CREDIT',
+          trnx_type: isReturn ? 'CREDIT' : 'DEBIT',
           ledger_type: isReturn ? 'Receiving' : 'Payment',
           details: `${isReturn ? 'Payment received from' : 'Payment to'} ${supplierData?.cus_name || 'Supplier'} — ${paymentBreakdown}`,
           payments: totalPaymentAmount2,
@@ -1389,20 +1399,25 @@ export async function POST(request) {
 
           const supplierForPayment = await tx.customer.findUnique({ where: { cus_id }, select: { cus_name: true } });
 
+          const bankDebit = isReturn ? 0 : parseFloat(bank_payment);
+          const bankCredit = isReturn ? parseFloat(bank_payment) : 0;
+          const bankClosing = isReturn ? (bankOpeningBalance + parseFloat(bank_payment)) : (bankOpeningBalance - parseFloat(bank_payment));
+
           const bankEntry = createLedgerEntry({
             cus_id: bankAccountToUse.cus_id,
             opening_balance: bankOpeningBalance,
-            debit_amount: isReturn ? parseFloat(bank_payment) : 0,
-            credit_amount: isReturn ? 0 : parseFloat(bank_payment),
+            debit_amount: bankDebit,
+            credit_amount: bankCredit,
+            closing_balance: bankClosing,
             bill_no: newPurchase.pur_id.toString(),
-            trnx_type: isReturn ? 'DEBIT' : 'CREDIT',
+            trnx_type: isReturn ? 'CREDIT' : 'DEBIT',
             details: `${isReturn ? 'Refund from' : 'Payment to'} ${supplierForPayment?.cus_name || 'Supplier'} — Bank Account (${bankAccountToUse.cus_name})`,
             payments: parseFloat(bank_payment),
             cash_payment: 0,
             bank_payment: parseFloat(bank_payment),
             updated_by: updated_by ? parseInt(updated_by) : null
           });
-          console.log(`🏦 Bank Ledger Entry: Opening=${bankEntry.opening_balance}, Credit=${bankEntry.credit_amount}, Closing=${bankEntry.closing_balance}`);
+          console.log(`🏦 Bank Ledger Entry: Opening=${bankEntry.opening_balance}, Debit=${bankEntry.debit_amount}, Closing=${bankEntry.closing_balance}`);
           ledgerEntries.push(bankEntry);
         } else {
           console.log(`⚠️ ERROR: Bank payment of ${bank_payment} requested but no valid bank account found`);
@@ -1431,13 +1446,18 @@ export async function POST(request) {
 
         const supplierForPaymentCash = await tx.customer.findUnique({ where: { cus_id }, select: { cus_name: true } });
 
+        const cashDebit = isReturn ? 0 : cashPaymentAmount;
+        const cashCredit = isReturn ? cashPaymentAmount : 0;
+        const cashClosing = isReturn ? (cashOpeningBalance + cashPaymentAmount) : (cashOpeningBalance - cashPaymentAmount);
+
         const cashEntry = createLedgerEntry({
           cus_id: effectiveCashAccountId,
           opening_balance: cashOpeningBalance,
-          debit_amount: isReturn ? cashPaymentAmount : 0,
-          credit_amount: isReturn ? 0 : cashPaymentAmount,
+          debit_amount: cashDebit,
+          credit_amount: cashCredit,
+          closing_balance: cashClosing,
           bill_no: newPurchase.pur_id.toString(),
-          trnx_type: isReturn ? 'DEBIT' : 'CREDIT',
+          trnx_type: isReturn ? 'CREDIT' : 'DEBIT',
           details: `${isReturn ? 'Cash Refund from' : 'Payment to'} ${supplierForPaymentCash?.cus_name || 'Supplier'} — Cash Account${vehicle_no ? ` (Vehicle: ${vehicle_no})` : ''}`,
           payments: cashPaymentAmount,
           cash_payment: cashPaymentAmount,
@@ -2025,13 +2045,18 @@ export async function PUT(request) {
 
       // 1. Supplier Account Entry
       if (cus_id) {
+        const billDebit = isReturnPUT ? supplierAmount : 0;
+        const billCredit = isReturnPUT ? 0 : supplierAmount;
+        const billClosing = isReturnPUT ? (runningSupplierBalance - supplierAmount) : (runningSupplierBalance + supplierAmount);
+
         const supplierEntry = createLedgerEntry({
           cus_id: cus_id,
           opening_balance: runningSupplierBalance,
-          debit_amount: isReturnPUT ? 0 : supplierAmount,
-          credit_amount: isReturnPUT ? supplierAmount : 0,
+          debit_amount: billDebit,
+          credit_amount: billCredit,
+          closing_balance: billClosing,
           bill_no: id.toString(),
-          trnx_type: isReturnPUT ? 'CREDIT' : 'DEBIT',
+          trnx_type: isReturnPUT ? 'DEBIT' : 'CREDIT',
           ledger_type: isReturnPUT ? 'Purchase Return' : 'Purchase',
           details: `${isReturnPUT ? 'Purchase Return Update' : 'Purchase Update'} from ${supplierName}${invoice_number ? ` #${invoice_number}` : ''}${vehicle_no ? ` - Vehicle: ${vehicle_no}` : ''}${dc_no ? ` - DC: ${dc_no}` : ''}`,
           payments: 0,
@@ -2045,13 +2070,18 @@ export async function PUT(request) {
       // 2. Payment Entry on supplier account - only if payment > 0
       const paymentAmount = safeParseFloat(payment);
       if (paymentAmount > 0 && cus_id) {
+        const payDebit = isReturnPUT ? 0 : paymentAmount;
+        const payCredit = isReturnPUT ? paymentAmount : 0;
+        const payClosing = isReturnPUT ? (runningSupplierBalance + paymentAmount) : (runningSupplierBalance - paymentAmount);
+
         const paymentEntry = createLedgerEntry({
           cus_id: cus_id,
           opening_balance: runningSupplierBalance,
-          debit_amount: isReturnPUT ? paymentAmount : 0,
-          credit_amount: isReturnPUT ? 0 : paymentAmount,
+          debit_amount: payDebit,
+          credit_amount: payCredit,
+          closing_balance: payClosing,
           bill_no: id.toString(),
-          trnx_type: isReturnPUT ? 'DEBIT' : 'CREDIT',
+          trnx_type: isReturnPUT ? 'CREDIT' : 'DEBIT',
           ledger_type: isReturnPUT ? 'Receiving' : 'Payment',
           details: `${isReturnPUT ? 'Refund from' : 'Payment to'} ${supplierName} - Purchase Update${vehicle_no ? ` - Vehicle: ${vehicle_no}` : ''}`,
           payments: paymentAmount,
@@ -2067,14 +2097,18 @@ export async function PUT(request) {
       // 3. Cash Account Entry (if cash was paid)
       if (cashPaymentAmt > 0 && credit_account_id) {
         const cashOpeningBalance = openingForAccount(parseInt(credit_account_id, 10));
+        const cashDebit = isReturnPUT ? 0 : cashPaymentAmt;
+        const cashCredit = isReturnPUT ? cashPaymentAmt : 0;
+        const cashClosing = isReturnPUT ? (cashOpeningBalance + cashPaymentAmt) : (cashOpeningBalance - cashPaymentAmt);
 
         const cashEntry = createLedgerEntry({
           cus_id: credit_account_id,
           opening_balance: cashOpeningBalance,
-          debit_amount: isReturnPUT ? cashPaymentAmt : 0,
-          credit_amount: isReturnPUT ? 0 : cashPaymentAmt,
+          debit_amount: cashDebit,
+          credit_amount: cashCredit,
+          closing_balance: cashClosing,
           bill_no: id.toString(),
-          trnx_type: isReturnPUT ? 'DEBIT' : 'CREDIT',
+          trnx_type: isReturnPUT ? 'CREDIT' : 'DEBIT',
           ledger_type: isReturnPUT ? 'Purchase Return' : 'Purchase',
           details: `${isReturnPUT ? 'Cash Refund from' : 'Cash Payment for Purchase Update to'} ${supplierName}${vehicle_no ? ` - Vehicle: ${vehicle_no}` : ''}`,
           payments: cashPaymentAmt,
@@ -2088,13 +2122,19 @@ export async function PUT(request) {
 
       // 4. Bank Account Entry (if bank was paid)
       if (bankPaymentAmt > 0 && bankAccIdForEntry) {
+        const bankOpeningBalance = openingForAccount(parseInt(bankAccIdForEntry, 10));
+        const bankDebit = isReturnPUT ? 0 : bankPaymentAmt;
+        const bankCredit = isReturnPUT ? bankPaymentAmt : 0;
+        const bankClosing = isReturnPUT ? (bankOpeningBalance + bankPaymentAmt) : (bankOpeningBalance - bankPaymentAmt);
+
         const bankEntry = createLedgerEntry({
           cus_id: bankAccIdForEntry,
-          opening_balance: openingForAccount(parseInt(bankAccIdForEntry, 10)),
-          debit_amount: isReturnPUT ? bankPaymentAmt : 0,
-          credit_amount: isReturnPUT ? 0 : bankPaymentAmt,
+          opening_balance: bankOpeningBalance,
+          debit_amount: bankDebit,
+          credit_amount: bankCredit,
+          closing_balance: bankClosing,
           bill_no: id.toString(),
-          trnx_type: isReturnPUT ? 'DEBIT' : 'CREDIT',
+          trnx_type: isReturnPUT ? 'CREDIT' : 'DEBIT',
           ledger_type: isReturnPUT ? 'Purchase Return' : 'Purchase',
           details: `${isReturnPUT ? 'Bank Refund from' : 'Bank Payment for Purchase Update to'} ${supplierName}${vehicle_no ? ` - Vehicle: ${vehicle_no}` : ''}`,
           payments: bankPaymentAmt,
