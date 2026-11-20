@@ -4029,47 +4029,6 @@ function PurchasesPageContent() {
             </Box>
           </Box>
 
-          {/* Screen Stack Indicator */}
-          {(currentScreenIndex >= 0 || screenStack.length > 0) && (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mt: -1, mb: 1, gap: 1 }}>
-              <Box
-                sx={{
-                  background: 'rgba(51, 65, 85, 0.1)',
-                  color: '#475569',
-                  padding: '2px 10px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  border: '1px solid rgba(51, 65, 85, 0.2)'
-                }}
-              >
-                SCREEN {currentScreenIndex + 1}
-                {screenStack.length > 1 && (
-                  <span style={{ opacity: 0.7, fontSize: '10px', marginLeft: '4px' }}>
-                    ({currentScreenIndex + 1}/{screenStack.length})
-                  </span>
-                )}
-              </Box>
-              {screenStack.length > 1 && (
-                <IconButton
-                  size="small"
-                  onClick={cancelCurrentScreen}
-                  title="Cancel this screen (Ctrl+X)"
-                  sx={{
-                    color: '#dc3545',
-                    padding: 0,
-                    '&:hover': { bgcolor: 'rgba(220, 53, 69, 0.1)' }
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              )}
-            </Box>
-          )}
-
           {/* Main Form */}
           <Card key={currentScreenIndex} sx={{ display: 'flex', flexDirection: 'column' }}>
             <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -4942,7 +4901,6 @@ function PurchasesPageContent() {
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>S. No</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Product</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Comments</TableCell>
-                        <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Store</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Width</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Height</TableCell>
                         <TableCell sx={PURCHASE_ENTRY_TABLE_HEAD_SX}>Pcs</TableCell>
@@ -4991,14 +4949,6 @@ function PurchasesPageContent() {
                                     }}
                                     sx={{ minWidth: 120 }}
                                   />
-                                </TableCell>
-                                <TableCell>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <StoreIcon sx={{ color: 'primary.main', fontSize: 16 }} />
-                                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                      {stores.find(store => store.storeid === parseInt(detail.store_id))?.store_name || 'Unknown Store'}
-                                    </Typography>
-                                  </Box>
                                 </TableCell>
                                 <TableCell>
                                   <TextField
@@ -5226,7 +5176,7 @@ function PurchasesPageContent() {
 
                           {/* Totals row */}
                           <TableRow sx={{ bgcolor: 'grey.50' }}>
-                            <TableCell colSpan={7} sx={{ fontWeight: 'bold' }}>Totals</TableCell>
+                            <TableCell colSpan={6} sx={{ fontWeight: 'bold' }}>Totals</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>{calculateTotalQuantity()}</TableCell>
                             <TableCell />
                             <TableCell />
@@ -5238,7 +5188,7 @@ function PurchasesPageContent() {
                         </>
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
+                          <TableCell colSpan={13} align="center" sx={{ py: 4 }}>
                             <Typography variant="body2" color="text.secondary">
                               No products added yet
                             </Typography>
