@@ -9,6 +9,12 @@ import DateFilterInput from '../components/date-filter-input';
 import { usePinAuth } from '../../hooks/usePinAuth';
 import BiometricAuthDialog from '../components/BiometricAuthDialog';
 import { notifyLedgerDataChanged } from '@/lib/ledger-tabs';
+import {
+  matchSearchPattern,
+  filterCustomerDropdown,
+  filterProductDropdown,
+  createUniversalFilter,
+} from '@/lib/dropdown-search';
 
 function isTransportCustomerAccount(account) {
   const cat = (account?.customer_category?.cus_cat_title || '').trim().toLowerCase();
@@ -1218,6 +1224,7 @@ export default function SaleReturnsPage() {
                       <Autocomplete
                         options={customerTypes}
                         getOptionLabel={(option) => option.cus_type_title || ''}
+                        filterOptions={createUniversalFilter((o) => [o?.cus_type_title])}
                         value={selectedFilterType}
                         onChange={(event, newValue) => {
                           setSelectedFilterType(newValue);
@@ -1237,6 +1244,7 @@ export default function SaleReturnsPage() {
                       <Autocomplete
                         options={filterCustomers}
                         getOptionLabel={(option) => option.cus_name || ''}
+                        filterOptions={filterCustomerDropdown}
                         value={selectedCustomer}
                         onChange={(event, newValue) => setSelectedCustomer(newValue)}
                         disabled={!selectedFilterType || filterCustomersLoading}
@@ -1644,6 +1652,7 @@ export default function SaleReturnsPage() {
                                 <Autocomplete
                                   options={customerTypes}
                                   getOptionLabel={(option) => option.cus_type_title || ''}
+                                  filterOptions={createUniversalFilter((o) => [o?.cus_type_title])}
                                   value={selectedFormType}
                                   onChange={(event, newValue) => {
                                     setSelectedFormType(newValue);
@@ -1661,6 +1670,7 @@ export default function SaleReturnsPage() {
                                 <Autocomplete
                                   options={formCustomers}
                                   getOptionLabel={(option) => option.cus_name || ''}
+                                  filterOptions={filterCustomerDropdown}
                                   value={formCustomers.find(c => c.cus_id === formData.cus_id) || null}
                                   onChange={(event, newValue) => {
                                     setFormData(prev => ({ ...prev, cus_id: newValue ? newValue.cus_id : '' }));
@@ -1713,6 +1723,7 @@ export default function SaleReturnsPage() {
                           <Autocomplete
                             options={loaders}
                             getOptionLabel={(o) => o.loader_name}
+                            filterOptions={createUniversalFilter((o) => [o?.loader_name])}
                             value={loaders.find(l => l.loader_id === formData.loader_id) || null}
                             onChange={(e, v) => setFormData(p => ({ ...p, loader_id: v ? v.loader_id : '' }))}
                             autoSelect={true}
@@ -1740,6 +1751,7 @@ export default function SaleReturnsPage() {
                           <Autocomplete
                             options={transportAccounts}
                             getOptionLabel={(o) => o.cus_name || ''}
+                            filterOptions={filterCustomerDropdown}
                             value={transportAccounts.find((t) => String(t.cus_id) === String(formData.transport_account_id)) || null}
                             onChange={(e, v) => setFormData((p) => ({ ...p, transport_account_id: v ? String(v.cus_id) : '' }))}
                             autoHighlight
@@ -1833,6 +1845,7 @@ export default function SaleReturnsPage() {
                           <Autocomplete
                             options={products}
                             getOptionLabel={(option) => option.pro_title || ''}
+                            filterOptions={filterProductDropdown}
                             value={manualProduct}
                             onChange={(event, newValue) => handleManualProductSelect(newValue)}
                             autoSelect={true}
@@ -1847,6 +1860,7 @@ export default function SaleReturnsPage() {
                           <Autocomplete
                             options={stores}
                             getOptionLabel={(option) => option.store_name || ''}
+                            filterOptions={createUniversalFilter((o) => [o?.store_name])}
                             value={manualStore}
                             onChange={(event, newValue) => setManualStore(newValue)}
                             autoSelect={true}
@@ -2350,6 +2364,7 @@ export default function SaleReturnsPage() {
                   fullWidth
                   options={customerTypes}
                   getOptionLabel={(option) => option.cus_type_title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.cus_type_title])}
                   value={customerTypes.find(t => t.cus_type_id === accountFormData.cus_type) || null}
                   onChange={(e, val) => handleAccountFormChange({ target: { name: 'cus_type', value: val?.cus_type_id || '' } })}
                   autoSelect={true}
@@ -2376,6 +2391,7 @@ export default function SaleReturnsPage() {
                   fullWidth
                   options={customerCategories}
                   getOptionLabel={(option) => option.cus_cat_title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.cus_cat_title])}
                   value={customerCategories.find(c => c.cus_cat_id === accountFormData.cus_category) || null}
                   onChange={(e, val) => handleAccountFormChange({ target: { name: 'cus_category', value: val?.cus_cat_id || '' } })}
                   autoSelect={true}
@@ -2402,6 +2418,7 @@ export default function SaleReturnsPage() {
                   fullWidth
                   options={cities}
                   getOptionLabel={(option) => option.city_name || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.city_name])}
                   value={cities.find(c => c.city_id === accountFormData.city_id) || null}
                   onChange={(e, val) => handleAccountFormChange({ target: { name: 'city_id', value: val?.city_id || '' } })}
                   autoSelect={true}

@@ -53,6 +53,7 @@ import {
   SALES_EXCEL_HEAD_SX,
   SALES_NUM_CELL_SX,
   filterSaleCustomers,
+  createUniversalFilter,
   isCustomerAccount,
   getBillTypeChipSx
 } from './sale-utils';
@@ -338,6 +339,7 @@ export default function SaleListView() {
                     size="small"
                     options={stores}
                     getOptionLabel={(option) => option.store_name || ''}
+                    filterOptions={createUniversalFilter((o) => [o?.store_name])}
                     value={stores.find(s => s.storeid.toString() === filterStore) || null}
                     onChange={(event, newValue) => setFilterStore(newValue ? newValue.storeid.toString() : '')}
                     autoSelect

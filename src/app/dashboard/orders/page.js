@@ -12,6 +12,12 @@ import DateFilterInput from '../components/date-filter-input';
 import { usePinAuth } from '../../hooks/usePinAuth';
 import BiometricAuthDialog from '../components/BiometricAuthDialog';
 import { notifyLedgerDataChanged } from '@/lib/ledger-tabs';
+import {
+  matchSearchPattern,
+  filterCustomerDropdown,
+  filterProductDropdown,
+  createUniversalFilter,
+} from '@/lib/dropdown-search';
 
 // Material-UI imports
 import {
@@ -210,40 +216,25 @@ const toReadOnlyNumberInput = (val) => {
 const ORDER_PRODUCT_LIST_LIMIT = 50;
 
 function filterOrderProducts(options, { inputValue }) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  const out = [];
-  for (let i = 0; i < options.length && out.length < ORDER_PRODUCT_LIST_LIMIT; i += 1) {
-    if (!q) {
-      out.push(options[i]);
-      continue;
-    }
-    const title = String(options[i].pro_title || '').toLowerCase();
-    const code = String(options[i].pro_code || '').toLowerCase();
-    if (title.includes(q) || code.includes(q)) out.push(options[i]);
-  }
-  return out;
+  return filterProductDropdown(options, { inputValue }, ORDER_PRODUCT_LIST_LIMIT);
 }
 
-function filterOrderCustomers(options, inputValue) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  if (!q) return options;
-  return options.filter((o) =>
-    (o.cus_name || '').toLowerCase().includes(q) ||
-    (o.cus_phone_no || '').toLowerCase().includes(q) ||
-    (o.cus_phone_no2 || '').toLowerCase().includes(q)
-  );
+function filterOrderCustomers(options, inputValueOrObj) {
+  const inputValue = typeof inputValueOrObj === 'object' && inputValueOrObj !== null
+    ? inputValueOrObj.inputValue
+    : inputValueOrObj;
+  return filterCustomerDropdown(options, { inputValue }, 100);
 }
 
 function filterOrderStores(options, { inputValue }) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  if (!q) return options;
-  return options.filter((o) => String(o.store_name || '').toLowerCase().includes(q));
+  return createUniversalFilter((o) => [o?.store_name])(options, { inputValue });
 }
 
-function filterOrderCustomerTypes(options, inputValue) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  if (!q) return options;
-  return options.filter((o) => String(o.cus_type_title || '').toLowerCase().includes(q));
+function filterOrderCustomerTypes(options, inputValueOrObj) {
+  const inputValue = typeof inputValueOrObj === 'object' && inputValueOrObj !== null
+    ? inputValueOrObj.inputValue
+    : inputValueOrObj;
+  return createUniversalFilter((o) => [o?.cus_type_title])(options, { inputValue });
 }
 
 /** Same Customer Type list as the Sale page */
@@ -5555,6 +5546,7 @@ function OrdersPageContent() {
                           size="small"
                           options={bankAccounts}
                           getOptionLabel={(option) => option.cus_name || ''}
+                          filterOptions={filterCustomerDropdown}
                           value={bankAccounts.find(acc => acc.cus_id === paymentData.bankAccountId) || null}
                           onChange={(event, newValue) => {
                             handlePaymentDataChange('bankAccountId', newValue ? newValue.cus_id : '');
@@ -6448,6 +6440,7 @@ function OrdersPageContent() {
                       size="small"
                       options={customers.filter(customer => isCustomerAccount(customer, customerCategories))}
                       getOptionLabel={(option) => option.cus_name || ''}
+                      filterOptions={filterCustomerDropdown}
                       value={customers.find(c => c.cus_id.toString() === filterCustomer) || null}
                       onChange={(event, newValue) => {
                         setFilterCustomer(newValue ? newValue.cus_id.toString() : '');
@@ -6492,6 +6485,7 @@ function OrdersPageContent() {
                       size="small"
                       options={stores}
                       getOptionLabel={(option) => option.store_name || ''}
+                      filterOptions={createUniversalFilter((o) => [o?.store_name])}
                       value={stores.find(s => s.storeid.toString() === filterStore) || null}
                       onChange={(event, newValue) => setFilterStore(newValue ? newValue.storeid.toString() : '')}
                       autoSelect={true}
@@ -7121,6 +7115,7 @@ function OrdersPageContent() {
                 <Autocomplete
                   options={cities}
                   getOptionLabel={(option) => option.city_name || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.city_name])}
                   value={cities.find(c => c.city_id === newCustomer.city_id) || null}
                   onChange={(event, newValue) => {
                     setNewCustomer(prev => ({
@@ -7168,6 +7163,7 @@ function OrdersPageContent() {
                     title: category.cus_cat_title
                   }))}
                   getOptionLabel={(option) => option.title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={(() => {
                     return customerCategories.find(option => option.cus_cat_id === newCustomer.cus_category)
                       ? { id: newCustomer.cus_category, title: customerCategories.find(option => option.cus_cat_id === newCustomer.cus_category).cus_cat_title }
@@ -7219,6 +7215,7 @@ function OrdersPageContent() {
                     title: type.cus_type_title
                   }))}
                   getOptionLabel={(option) => option.title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={(() => {
                     return customerTypes.find(option => option.cus_type_id === newCustomer.cus_type)
                       ? { id: newCustomer.cus_type, title: customerTypes.find(option => option.cus_type_id === newCustomer.cus_type).cus_type_title }

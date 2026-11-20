@@ -11,6 +11,12 @@ import { openAccountLedgerTab, FINANCE_LEDGER_PATH } from '@/lib/ledger-tabs';
 import DashboardLayout from '../components/dashboard-layout';
 import DateFilterInput from '../components/date-filter-input';
 import SaveProgressBackdrop from '../components/save-progress-backdrop';
+import {
+  matchSearchPattern,
+  filterCustomerDropdown,
+  filterProductDropdown,
+  createUniversalFilter,
+} from '@/lib/dropdown-search';
 
 // Material-UI imports
 import {
@@ -2292,6 +2298,7 @@ function QuotationsPageContent() {
                     sx={{ minWidth: 300 }}
                     options={customerTypes || []}
                     getOptionLabel={(option) => option.cus_type_title || ''}
+                    filterOptions={createUniversalFilter((o) => [o?.cus_type_title])}
                     value={selectedCustomerTypeFilter}
                     onChange={(event, newValue) => {
                       setSelectedCustomerTypeFilter(newValue);
@@ -2404,18 +2411,7 @@ function QuotationsPageContent() {
                       })}
                       getOptionLabel={(option) => option.cus_name || ''}
                       ListboxProps={{ sx: { maxHeight: 180 } }}
-                      filterOptions={(options, { inputValue }) => {
-                        const q = inputValue.toLowerCase().trim();
-                        if (!q) return options;
-                        return options.filter(o =>
-                          (o.cus_name || '').toLowerCase().includes(q) ||
-                          (o.cus_phone_no || '').toLowerCase().includes(q) ||
-                          (o.cus_phone_no2 || '').toLowerCase().includes(q) ||
-                          (o.cus_address || '').toLowerCase().includes(q) ||
-                          (o.cus_reference || '').toLowerCase().includes(q) ||
-                          (o.city?.city_name || '').toLowerCase().includes(q)
-                        );
-                      }}
+                      filterOptions={filterCustomerDropdown}
                       value={formSelectedCustomer}
                       onChange={(event, newValue) => setFormSelectedCustomer(newValue)}
                       isOptionEqualToValue={(option, value) => option.cus_id === value?.cus_id}
@@ -2645,14 +2641,7 @@ function QuotationsPageContent() {
                     options={products || []}
                     getOptionLabel={(option) => option.pro_title || ''}
                     ListboxProps={{ sx: { maxHeight: 180 } }}
-                    filterOptions={(options, { inputValue }) => {
-                      const q = inputValue.toLowerCase().trim();
-                      if (!q) return options;
-                      return options.filter(o =>
-                        (o.pro_title || '').toLowerCase().startsWith(q) ||
-                        (o.pro_code || '').toLowerCase().startsWith(q)
-                      );
-                    }}
+                    filterOptions={filterProductDropdown}
                     renderOption={(props, option) => {
                       const { key, ...optionProps } = props;
                       return (
@@ -3921,6 +3910,7 @@ function QuotationsPageContent() {
                     size="small"
                     options={customers}
                     getOptionLabel={(option) => option.cus_name || ''}
+                    filterOptions={filterCustomerDropdown}
                     value={customers.find((c) => c.cus_id?.toString() === filterCustomer) || null}
                     onChange={(event, newValue) => setFilterCustomer(newValue ? newValue.cus_id.toString() : '')}
                     renderInput={(params) => <TextField {...params} label="Customer" placeholder="All Customers" sx={QUOTE_FILTER_FIELD_SX} />}

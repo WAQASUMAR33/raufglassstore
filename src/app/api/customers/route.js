@@ -106,7 +106,21 @@ export async function GET(request) {
           }
         }
 
-        where.OR = orConditions;
+        const tokens = s.split(/\s+/).filter(Boolean);
+        if (tokens.length > 1) {
+          where.AND = tokens.map((t) => ({
+            OR: [
+              { cus_name: { contains: t } },
+              { cus_phone_no: { contains: t } },
+              { cus_phone_no2: { contains: t } },
+              { cus_address: { contains: t } },
+              { cus_reference: { contains: t } },
+              { city: { city_name: { contains: t } } },
+            ],
+          }));
+        } else {
+          where.OR = orConditions;
+        }
       }
 
       // 2. Type filter

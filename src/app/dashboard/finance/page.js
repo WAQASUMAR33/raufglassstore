@@ -185,11 +185,8 @@ const accountGridCellStyle = {
   boxSizing: 'border-box',
 };
 
-export function matchAccountSearch(customer, rawQuery) {
-  if (!rawQuery) return true;
-  const q = String(rawQuery).trim().toLowerCase();
+function matchAccountSearchSingle(customer, q) {
   if (!q) return true;
-
   // 1. Account name & Urdu name
   if ((customer.cus_name || '').toLowerCase().includes(q)) return true;
   if ((customer.name_urdu || '').toLowerCase().includes(q)) return true;
@@ -229,6 +226,21 @@ export function matchAccountSearch(customer, rawQuery) {
         return true;
       }
     }
+  }
+
+  return false;
+}
+
+export function matchAccountSearch(customer, rawQuery) {
+  if (!rawQuery) return true;
+  const q = String(rawQuery).trim().toLowerCase();
+  if (!q) return true;
+
+  if (matchAccountSearchSingle(customer, q)) return true;
+
+  const tokens = q.split(/\s+/).filter(Boolean);
+  if (tokens.length > 1) {
+    return tokens.every((token) => matchAccountSearchSingle(customer, token));
   }
 
   return false;
@@ -5516,6 +5528,7 @@ function FinancePageContent() {
                           selectOnFocus={true}
                           options={customers}
                           getOptionLabel={(option) => option.cus_name}
+                          filterOptions={filterLedgerAccountOptions}
                           getOptionKey={customerOptionKey}
                           isOptionEqualToValue={isSameCustomerOption}
                           value={

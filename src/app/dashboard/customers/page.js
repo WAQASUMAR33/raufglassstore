@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { formatDatePK } from '@/lib/date-helper';
+import { createUniversalFilter } from '@/lib/dropdown-search';
 import {
   Box,
   Container,
@@ -969,6 +970,7 @@ export default function CustomersPage() {
                       ...customerTypes.map((type) => ({ value: type.cus_type_id, label: type.cus_type_title })),
                     ]}
                     getOptionLabel={(option) => option.label}
+                    filterOptions={createUniversalFilter((o) => [o?.label])}
                     value={(() => {
                       if (typeFilter === 'all') return { value: 'all', label: 'All Types' };
                       const selected = customerTypes.find((type) => type.cus_type_id === typeFilter);
@@ -987,6 +989,7 @@ export default function CustomersPage() {
                       ...customerCategories.map((category) => ({ value: category.cus_cat_title, label: category.cus_cat_title })),
                     ]}
                     getOptionLabel={(option) => option.label}
+                    filterOptions={createUniversalFilter((o) => [o?.label])}
                     value={{ value: categoryFilter, label: categoryFilter === 'all' ? 'All Categories' : categoryFilter }}
                     onChange={(event, newValue) => setCategoryFilter(newValue ? newValue.value : 'all')}
                     renderInput={(params) => (
@@ -1589,6 +1592,7 @@ export default function CustomersPage() {
                     title: category.cus_cat_title
                   }))}
                   getOptionLabel={(option) => option.title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={(() => {
                     return customerCategories.find(option => option.cus_cat_id === formData.cus_category)
                       ? { id: formData.cus_category, title: customerCategories.find(option => option.cus_cat_id === formData.cus_category).cus_cat_title }
@@ -1691,6 +1695,7 @@ export default function CustomersPage() {
                     title: type.cus_type_title
                   }))}
                   getOptionLabel={(option) => option.title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={(() => {
                     return customerTypes.find(option => option.cus_type_id === formData.cus_type)
                       ? { id: formData.cus_type, title: customerTypes.find(option => option.cus_type_id === formData.cus_type).cus_type_title }
@@ -1788,6 +1793,7 @@ export default function CustomersPage() {
                     title: city.city_name
                   }))}
                   getOptionLabel={(option) => option.title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={(() => {
                     return cities.find(option => option.city_id === formData.city_id)
                       ? { id: formData.city_id, title: cities.find(option => option.city_id === formData.city_id).city_name }

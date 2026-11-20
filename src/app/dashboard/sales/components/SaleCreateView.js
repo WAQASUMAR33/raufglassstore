@@ -64,6 +64,8 @@ import {
   isCustomerAccount,
   matchesCustomerType,
   filterSaleCustomers,
+  filterCustomerDropdown,
+  createUniversalFilter,
   getFocusedAutocompleteOption,
   EMPTY_PAYMENT_DATA,
   getCartLineCostRate,
@@ -357,6 +359,7 @@ export default function SaleCreateView() {
                     sx={{ minWidth: 450 }}
                     options={salePageCustomerTypeOptions}
                     getOptionLabel={(option) => option.cus_type_title || ''}
+                    filterOptions={createUniversalFilter((o) => [o?.cus_type_title])}
                     value={selectedCustomerTypeFilter ?? null}
                     open={customerTypeFilterOpen}
                     onOpen={() => setCustomerTypeFilterOpen(true)}
@@ -1397,6 +1400,7 @@ export default function SaleCreateView() {
                       size="small"
                       options={transportAccounts || []}
                       getOptionLabel={(option) => formatTransportAccountLabel(option)}
+                      filterOptions={filterCustomerDropdown}
                       value={transportAccounts.find(account => account.cus_id === newTransport.accountId) || null}
                       onChange={(event, newValue) => {
                         setNewTransport((prev) => ({
@@ -1591,6 +1595,7 @@ export default function SaleCreateView() {
                           size="small"
                           options={bankAccounts || []}
                           getOptionLabel={(option) => option.cus_name || ''}
+                          filterOptions={filterCustomerDropdown}
                           value={bankAccounts.find(account => account.cus_id === paymentData.bankAccountId) || null}
                           onChange={(event, newValue) => {
                             handlePaymentDataChange('bankAccountId', newValue ? newValue.cus_id : '');

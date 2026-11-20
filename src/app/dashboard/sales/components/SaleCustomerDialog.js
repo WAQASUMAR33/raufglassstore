@@ -28,6 +28,7 @@ import {
   Description as NotesIcon,
 } from '@mui/icons-material';
 import { useSalesContext } from './SalesContext';
+import { createUniversalFilter } from '@/lib/dropdown-search';
 
 export default function SaleCustomerDialog() {
   const {
@@ -318,6 +319,7 @@ export default function SaleCustomerDialog() {
                   title: category.cus_cat_title ?? category.cat_title
                 }))}
                 getOptionLabel={(option) => option.title || ''}
+                filterOptions={createUniversalFilter((o) => [o?.title])}
                 value={(() => {
                   const currentId = newCustomer.cus_category ?? newCustomer.cat_id;
                   const found = customerCategories.find(option => (option.cus_cat_id ?? option.cat_id) === currentId);
@@ -427,6 +429,7 @@ export default function SaleCustomerDialog() {
                   title: type.cus_type_title
                 }))}
                 getOptionLabel={(option) => option.title || ''}
+                filterOptions={createUniversalFilter((o) => [o?.title])}
                 value={(() => {
                   return customerTypes.find(option => option.cus_type_id === newCustomer.cus_type)
                     ? { id: newCustomer.cus_type, title: customerTypes.find(option => option.cus_type_id === newCustomer.cus_type).cus_type_title }
@@ -528,6 +531,7 @@ export default function SaleCustomerDialog() {
                   title: city.city_name
                 }))}
                 getOptionLabel={(option) => option.title || ''}
+                filterOptions={createUniversalFilter((o) => [o?.title])}
                 value={(() => {
                   return cities.find(option => option.city_id === newCustomer.city_id)
                     ? { id: newCustomer.city_id, title: cities.find(option => option.city_id === newCustomer.city_id).city_name }

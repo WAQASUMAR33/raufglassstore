@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/dashboard-layout';
 import { Autocomplete, TextField, InputAdornment } from '@mui/material';
+import { filterCustomerDropdown } from '@/lib/dropdown-search';
 
 const fmtAmt = (val) => {
   const n = parseFloat(val || 0);
@@ -162,6 +163,7 @@ export default function CustomerLedgerReport() {
                 <Autocomplete
                   options={customers}
                   getOptionLabel={(option) => `${option.cus_name} (${option.cus_phone_no || option.cus_phone_no2 || 'No Phone'})`}
+                  filterOptions={filterCustomerDropdown}
                   value={selectedCustomer}
                   onChange={(event, newValue) => {
                     setSelectedCustomer(newValue);

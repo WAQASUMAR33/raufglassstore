@@ -4,6 +4,19 @@
  */
 
 import { BRAND, COMPANY } from '@/lib/brand-theme';
+import {
+  matchSearchPattern,
+  filterCustomerDropdown,
+  filterProductDropdown,
+  createUniversalFilter,
+} from '@/lib/dropdown-search';
+
+export {
+  matchSearchPattern,
+  filterCustomerDropdown,
+  filterProductDropdown,
+  createUniversalFilter,
+};
 
 /** Store phone line for sale invoice headers (print + WhatsApp capture). */
 export const INVOICE_STORE_PHONE_LINE = `Ph:- ${(COMPANY.phones || ['0302-2133218', '0347-7743218']).filter(Boolean).join(', ')}`;
@@ -123,41 +136,11 @@ export const SALE_CUSTOMER_LIST_LIMIT = 50;
 // ─── Filter Functions ────────────────────────────────────────────────────────
 
 export function filterSaleProducts(options, { inputValue }) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  const out = [];
-  for (let i = 0; i < options.length && out.length < SALE_PRODUCT_LIST_LIMIT; i += 1) {
-    if (!q) {
-      out.push(options[i]);
-      continue;
-    }
-    const title = String(options[i].pro_title || '').toLowerCase();
-    const code = String(options[i].pro_code || '').toLowerCase();
-    if (title.includes(q) || code.includes(q)) out.push(options[i]);
-  }
-  return out;
+  return filterProductDropdown(options, { inputValue }, SALE_PRODUCT_LIST_LIMIT);
 }
 
 export function filterSaleCustomers(options, { inputValue }) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  const out = [];
-  for (let i = 0; i < options.length && out.length < SALE_CUSTOMER_LIST_LIMIT; i += 1) {
-    const o = options[i];
-    if (!q) {
-      out.push(o);
-      continue;
-    }
-    if (
-      (o.cus_name || '').toLowerCase().includes(q) ||
-      (o.cus_phone_no || '').toLowerCase().includes(q) ||
-      (o.cus_phone_no2 || '').toLowerCase().includes(q) ||
-      (o.cus_address || '').toLowerCase().includes(q) ||
-      (o.cus_reference || '').toLowerCase().includes(q) ||
-      (o.city?.city_name || '').toLowerCase().includes(q)
-    ) {
-      out.push(o);
-    }
-  }
-  return out;
+  return filterCustomerDropdown(options, { inputValue }, SALE_CUSTOMER_LIST_LIMIT);
 }
 
 export function getFocusedAutocompleteOption() {

@@ -19,7 +19,12 @@ import {
   PURCHASE_SHEET_PRINT_HIDE_CSS,
 } from './purchase-invoice-a4-print';
 
-const PURCHASE_SHEET_PRINT_MODE = 'A5';
+import {
+  matchSearchPattern,
+  filterCustomerDropdown,
+  filterProductDropdown,
+  createUniversalFilter,
+} from '@/lib/dropdown-search';
 const PURCHASE_INVOICE_PREVIEW_MAX_WIDTH = '148mm';
 
 // Material-UI imports
@@ -210,37 +215,11 @@ const PURCHASE_FILTER_FIELD_SX = {
 const SUPPLIER_LIST_LIMIT = 120;
 
 function filterPurchaseSuppliers(options, { inputValue }) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  const out = [];
-  for (let i = 0; i < options.length && out.length < SUPPLIER_LIST_LIMIT; i += 1) {
-    const o = options[i];
-    if (!q) {
-      out.push(o);
-      continue;
-    }
-    if (
-      (o.cus_name || '').toLowerCase().includes(q) ||
-      (o.cus_phone_no || '').toLowerCase().includes(q) ||
-      (o.cus_phone_no2 || '').toLowerCase().includes(q) ||
-      (o.cus_address || '').toLowerCase().includes(q) ||
-      (o.cus_reference || '').toLowerCase().includes(q) ||
-      (o.city?.city_name || '').toLowerCase().includes(q)
-    ) {
-      out.push(o);
-    }
-  }
-  return out;
+  return filterCustomerDropdown(options, { inputValue }, SUPPLIER_LIST_LIMIT);
 }
 
 function filterPurchaseBankAccounts(options, { inputValue }) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  if (!q) return options;
-  return options.filter(
-    (o) =>
-      (o.cus_name || '').toLowerCase().includes(q) ||
-      (o.cus_phone_no || '').toLowerCase().includes(q) ||
-      (o.cus_phone_no2 || '').toLowerCase().includes(q)
-  );
+  return filterCustomerDropdown(options, { inputValue }, 120);
 }
 
 function slimPurchaseDetailsForApi(details) {
@@ -3522,6 +3501,7 @@ function PurchasesPageContent() {
                       customer.customer_category?.cus_cat_title?.toLowerCase().includes('supplier')
                     )}
                     getOptionLabel={(option) => option.cus_name || ''}
+                    filterOptions={filterPurchaseSuppliers}
                     value={customers.find((c) => c.cus_id === selectedCustomer) || null}
                     onChange={(event, newValue) => setSelectedCustomer(newValue ? newValue.cus_id : '')}
                     autoSelect
@@ -4517,13 +4497,7 @@ function PurchasesPageContent() {
                             }
                           }
                         }}
-                        filterOptions={(options, { inputValue }) => {
-                          return options.filter(option =>
-                            option.pro_title.toLowerCase().includes(inputValue.toLowerCase()) ||
-                            option.category?.cat_name?.toLowerCase().includes(inputValue.toLowerCase()) ||
-                            option.sub_category?.sub_cat_name?.toLowerCase().includes(inputValue.toLowerCase())
-                          );
-                        }}
+                        filterOptions={filterProductDropdown}
                         renderInput={(params) => (
                           <TextField
                             {...params}
@@ -4643,12 +4617,7 @@ function PurchasesPageContent() {
                             }
                           }
                         }}
-                        filterOptions={(options, { inputValue }) => {
-                          return options.filter(option =>
-                            option.store_name.toLowerCase().includes(inputValue.toLowerCase()) ||
-                            (option.store_address && option.store_address.toLowerCase().includes(inputValue.toLowerCase()))
-                          );
-                        }}
+                        filterOptions={createUniversalFilter((option) => [option?.store_name, option?.store_address])}
                         renderInput={(params) => (
                           <TextField
                             {...params}
@@ -6211,6 +6180,7 @@ function PurchasesPageContent() {
                     />
                   )}
                   options={customerCategories.map(cat => ({ id: cat.cus_cat_id, title: cat.cus_cat_title }))}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={customerCategories.map(c => ({ id: c.cus_cat_id, title: c.cus_cat_title })).find(o => o.id === customerFormData.cus_category) || null}
                   onChange={(event, newValue) => {
                     setCustomerFormData(prev => ({ ...prev, cus_category: newValue ? newValue.id : '' }));
@@ -6309,6 +6279,7 @@ function PurchasesPageContent() {
                     />
                   )}
                   options={customerTypes.map(type => ({ id: type.cus_type_id, title: type.cus_type_title }))}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={customerTypes.map(t => ({ id: t.cus_type_id, title: t.cus_type_title })).find(o => o.id === customerFormData.cus_type) || null}
                   onChange={(event, newValue) => {
                     setCustomerFormData(prev => ({ ...prev, cus_type: newValue ? newValue.id : '' }));
@@ -6413,6 +6384,7 @@ function PurchasesPageContent() {
                     />
                   )}
                   options={cities.map(city => ({ id: city.city_id, title: city.city_name }))}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={cities.map(c => ({ id: c.city_id, title: c.city_name })).find(o => o.id === customerFormData.city_id) || null}
                   onChange={(event, newValue) => {
                     setCustomerFormData(prev => ({ ...prev, city_id: newValue ? newValue.id : '' }));

@@ -13,6 +13,12 @@ import {
   formatWhatsAppPhone,
   resolveCustomerWhatsAppPhone,
 } from '@/lib/whatsapp-local';
+import {
+  matchSearchPattern,
+  filterCustomerDropdown,
+  filterProductDropdown,
+  createUniversalFilter,
+} from '@/lib/dropdown-search';
 
 // Material-UI imports
 import {
@@ -241,41 +247,11 @@ const SALE_PRODUCT_LIST_LIMIT = 50;
 const SALE_CUSTOMER_LIST_LIMIT = 50;
 
 function filterSaleProducts(options, { inputValue }) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  const out = [];
-  for (let i = 0; i < options.length && out.length < SALE_PRODUCT_LIST_LIMIT; i += 1) {
-    if (!q) {
-      out.push(options[i]);
-      continue;
-    }
-    const title = String(options[i].pro_title || '').toLowerCase();
-    const code = String(options[i].pro_code || '').toLowerCase();
-    if (title.includes(q) || code.includes(q)) out.push(options[i]);
-  }
-  return out;
+  return filterProductDropdown(options, { inputValue }, SALE_PRODUCT_LIST_LIMIT);
 }
 
 function filterSaleCustomers(options, { inputValue }) {
-  const q = String(inputValue || '').toLowerCase().trim();
-  const out = [];
-  for (let i = 0; i < options.length && out.length < SALE_CUSTOMER_LIST_LIMIT; i += 1) {
-    const o = options[i];
-    if (!q) {
-      out.push(o);
-      continue;
-    }
-    if (
-      (o.cus_name || '').toLowerCase().includes(q) ||
-      (o.cus_phone_no || '').toLowerCase().includes(q) ||
-      (o.cus_phone_no2 || '').toLowerCase().includes(q) ||
-      (o.cus_address || '').toLowerCase().includes(q) ||
-      (o.cus_reference || '').toLowerCase().includes(q) ||
-      (o.city?.city_name || '').toLowerCase().includes(q)
-    ) {
-      out.push(o);
-    }
-  }
-  return out;
+  return filterCustomerDropdown(options, { inputValue }, SALE_CUSTOMER_LIST_LIMIT);
 }
 
 function getFocusedAutocompleteOption() {
@@ -6800,6 +6776,7 @@ function SalesPageContent() {
                     sx={{ minWidth: 450 }}
                     options={salePageCustomerTypeOptions}
                     getOptionLabel={(option) => option.cus_type_title || ''}
+                    filterOptions={createUniversalFilter((o) => [o?.cus_type_title])}
                     value={selectedCustomerTypeFilter ?? null}
                     open={customerTypeFilterOpen}
                     onOpen={() => setCustomerTypeFilterOpen(true)}
@@ -8742,6 +8719,7 @@ function SalesPageContent() {
                           sx={{ minWidth: 300, flex: 1 }}
                           options={transportAccounts || []}
                           getOptionLabel={(option) => formatTransportAccountLabel(option)}
+                          filterOptions={filterCustomerDropdown}
                           value={transportAccounts.find(account => account.cus_id === newTransport.accountId) || null}
                           onChange={(event, newValue) => {
                             setNewTransport((prev) => ({
@@ -8810,6 +8788,7 @@ function SalesPageContent() {
                           sx={{ minWidth: 300, flex: 1 }}
                           options={fitterAccounts}
                           getOptionLabel={(option) => `${option.cus_name} (${option.customer_type?.cus_type_title || option.cus_type_name || 'Account'})`}
+                          filterOptions={filterCustomerDropdown}
                           value={fitterAccounts.find(account => account.cus_id === parseInt(newFitter.accountId)) || null}
                           noOptionsText="No fitter accounts found"
                           onChange={(event, newValue) => {
@@ -8979,6 +8958,7 @@ function SalesPageContent() {
                           size="small"
                           options={bankAccounts || []}
                           getOptionLabel={(option) => option.cus_name || ''}
+                          filterOptions={filterCustomerDropdown}
                           value={bankAccounts.find(account => account.cus_id === paymentData.bankAccountId) || null}
                           onChange={(event, newValue) => {
                             handlePaymentDataChange('bankAccountId', newValue ? newValue.cus_id : '');
@@ -11610,6 +11590,7 @@ function SalesPageContent() {
                 <Autocomplete
                   options={cities}
                   getOptionLabel={(option) => option.city_name || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.city_name])}
                   value={cities.find(c => c.city_id === newCustomer.city_id) || null}
                   onChange={(event, newValue) => {
                     setNewCustomer(prev => ({
@@ -11657,6 +11638,7 @@ function SalesPageContent() {
                     title: category.cus_cat_title
                   }))}
                   getOptionLabel={(option) => option.title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={(() => {
                     return customerCategories.find(option => option.cus_cat_id === newCustomer.cus_category)
                       ? { id: newCustomer.cus_category, title: customerCategories.find(option => option.cus_cat_id === newCustomer.cus_category).cus_cat_title }
@@ -11708,6 +11690,7 @@ function SalesPageContent() {
                     title: type.cus_type_title
                   }))}
                   getOptionLabel={(option) => option.title || ''}
+                  filterOptions={createUniversalFilter((o) => [o?.title])}
                   value={(() => {
                     return customerTypes.find(option => option.cus_type_id === newCustomer.cus_type)
                       ? { id: newCustomer.cus_type, title: customerTypes.find(option => option.cus_type_id === newCustomer.cus_type).cus_type_title }
