@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createLedgerEntry } from '@/lib/ledger-helper';
+import { createLedgerEntry, ACCOUNT_NATURE } from '@/lib/ledger-helper';
 import { getNextId } from '@/lib/id-helper';
 import { initBranchScope, resolveUpdatedByUserId } from '@/lib/branch-server';
 import { rejectIfDayClosed } from '@/lib/day-end-guard';
@@ -18,27 +18,31 @@ function buildExpenseLedgerRow({
   cashPayment = 0,
   bankPayment = 0,
 }) {
+  const openBal = parseFloat(account.cus_balance || 0);
+  const closingBal = Number((openBal - amount).toFixed(2));
   const ledgerEntryData = createLedgerEntry({
     cus_id: account.cus_id,
-    opening_balance: parseFloat(account.cus_balance || 0),
-    debit_amount: 0,
-    credit_amount: amount,
+    opening_balance: openBal,
+    debit_amount: amount,
+    credit_amount: 0,
+    closing_balance: closingBal,
     bill_no: billNo,
-    trnx_type: trnxType,
+    trnx_type: trnxType || 'DEBIT',
     ledger_type: 'Expense',
     details,
     payments: amount,
     cash_payment: cashPayment,
     bank_payment: bankPayment,
     updated_by: updatedBy,
+    account_nature: ACCOUNT_NATURE.PAYABLE,
   });
 
-  account.cus_balance = ledgerEntryData.closing_balance;
+  account.cus_balance = closingBal;
 
   return {
     l_id: lId,
     ...ledgerEntryData,
-    closingBalance: ledgerEntryData.closing_balance,
+    closingBalance: closingBal,
   };
 }
 
@@ -93,6 +97,7 @@ export async function GET(request) {
         where: { exp_id: id },
         include: {
           expense_title: true,
+          sub_title: true,
           paid_from_account: {
             select: {
               cus_id: true,
@@ -124,6 +129,7 @@ export async function GET(request) {
       const expenses = await prisma.expense.findMany({
         include: {
           expense_title: true,
+          sub_title: true,
           paid_from_account: {
             select: {
               cus_id: true,
@@ -168,6 +174,7 @@ export async function POST(request) {
     const {
       exp_title,
       exp_type,
+      sub_title_id,
       exp_detail,
       exp_amount,
       paymentMethod, // 'CASH', 'BANK', or 'PARTIAL'
@@ -270,6 +277,7 @@ export async function POST(request) {
           exp_id,
           exp_title: exp_title.trim(),
           exp_type: parseInt(exp_type),
+          sub_title_id: sub_title_id ? parseInt(sub_title_id, 10) : null,
           exp_detail: exp_detail?.trim() || null,
           exp_amount: expenseAmount,
           is_paid: true,
@@ -280,6 +288,9 @@ export async function POST(request) {
           payment_date: new Date(),
           payment_reference: payment_reference || null,
           updated_by: validatedUpdatedBy,
+        },
+        include: {
+          sub_title: true,
         },
       });
 
@@ -356,6 +367,7 @@ export async function PUT(request) {
       id,
       exp_title,
       exp_type,
+      sub_title_id,
       exp_detail,
       exp_amount,
       paymentMethod,
@@ -469,6 +481,7 @@ export async function PUT(request) {
         data: {
           exp_title: exp_title.trim(),
           exp_type: parseInt(exp_type),
+          sub_title_id: sub_title_id !== undefined ? (sub_title_id ? parseInt(sub_title_id, 10) : null) : undefined,
           exp_detail: exp_detail?.trim() || null,
           exp_amount: expenseAmount,
           is_paid: true,
@@ -482,6 +495,7 @@ export async function PUT(request) {
         },
         include: {
           expense_title: true,
+          sub_title: true,
           updated_by_user: {
             select: {
               full_name: true,

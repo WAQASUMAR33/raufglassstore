@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createLedgerEntry } from '@/lib/ledger-helper';
+import { createLedgerEntry, ACCOUNT_NATURE } from '@/lib/ledger-helper';
 import { getNextId } from '@/lib/id-helper';
 import { initBranchScope, resolveUpdatedByUserId } from '@/lib/branch-server';
 
@@ -71,18 +71,22 @@ export async function POST(request) {
 
             console.log(`💰 Processing expense payment: ${expenseAmount} from ${paymentAccount.cus_name} (Current: ${currentBalance})`);
 
-            // Create ledger entry using helper
+            const newBalance = Number((currentBalance - expenseAmount).toFixed(2));
+
+            // Create ledger entry using helper: DEBIT to deduct balance from cash/bank
             const ledgerEntryData = createLedgerEntry({
                 cus_id: parseInt(paid_from_account_id),
                 opening_balance: currentBalance,
-                debit_amount: 0,
-                credit_amount: expenseAmount,
+                debit_amount: expenseAmount,
+                credit_amount: 0,
+                closing_balance: newBalance,
                 bill_no: `EXP-${expense_id}`,
-                trnx_type: trnxType,
+                trnx_type: trnxType || 'DEBIT',
                 ledger_type: 'Expense',
                 details: `Payment for ${expense.expense_title?.title || 'Expense'}: ${expense.exp_title}${payment_reference ? ` - Ref: ${payment_reference}` : ''}`,
                 payments: expenseAmount,
-                updated_by: validatedUpdatedBy
+                updated_by: validatedUpdatedBy,
+                account_nature: ACCOUNT_NATURE.PAYABLE
             });
 
             const l_id = await getNextId('ledger', 'l_id', tx);
@@ -92,8 +96,6 @@ export async function POST(request) {
                     ...ledgerEntryData
                 }
             });
-
-            const newBalance = ledgerEntryData.closing_balance;
 
             // Update payment account balance
             await tx.customer.update({

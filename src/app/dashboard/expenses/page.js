@@ -78,6 +78,7 @@ export default function ExpensesPage() {
   const [formData, setFormData] = useState({
     exp_title: '',
     exp_type: '',
+    sub_title_id: '',
     exp_detail: '',
     exp_amount: '',
     is_paid: 'true',
@@ -92,6 +93,11 @@ export default function ExpensesPage() {
   const [showTypeDialog, setShowTypeDialog] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
   const [isSubmittingType, setIsSubmittingType] = useState(false);
+
+  const [showSubTitleDialog, setShowSubTitleDialog] = useState(false);
+  const [newSubTitleName, setNewSubTitleName] = useState('');
+  const [isSubmittingSubTitle, setIsSubmittingSubTitle] = useState(false);
+
   const saveInFlightRef = useRef(false);
 
   const getDefaultFormData = useCallback(() => {
@@ -103,6 +109,7 @@ export default function ExpensesPage() {
     return {
       exp_title: '',
       exp_type: '',
+      sub_title_id: '',
       exp_detail: '',
       exp_amount: '',
       is_paid: 'true',
@@ -176,6 +183,14 @@ export default function ExpensesPage() {
       return t.includes('bank') && c.includes('bank');
     }), [paymentAccounts]);
 
+  const selectedExpenseTitleObj = useMemo(() => {
+    return expenseTitles.find((t) => String(t.id) === String(formData.exp_type)) || null;
+  }, [expenseTitles, formData.exp_type]);
+
+  const availableSubTitles = useMemo(() => {
+    return selectedExpenseTitleObj?.sub_titles || [];
+  }, [selectedExpenseTitleObj]);
+
   const filteredExpenses = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     return expenses.filter((expense) => {
@@ -183,6 +198,7 @@ export default function ExpensesPage() {
         const fields = [
           expense.exp_title, expense.exp_detail,
           expense.expense_title?.title,
+          expense.sub_title?.title,
           expense.paid_from_account?.cus_name,
           expense.bank_account?.cus_name,
           expense.payment_reference,
@@ -273,16 +289,27 @@ export default function ExpensesPage() {
 
   const buildOptimisticExpense = (tempId) => {
     const expenseTitle = expenseTitles.find((t) => String(t.id) === String(formData.exp_type));
+    const selectedSub = (expenseTitle?.sub_titles || []).find((st) => String(st.id) === String(formData.sub_title_id));
     const { cashAmt, bankAmt, cashAccountId, bankAccountId } = getPaymentAmounts();
     const cashAccount = paymentAccounts.find((a) => a.cus_id === cashAccountId);
     const bankAccount = paymentAccounts.find((a) => a.cus_id === bankAccountId);
     return {
-      exp_id: tempId, exp_title: formData.exp_title.trim(), exp_type: parseInt(formData.exp_type, 10),
-      exp_detail: formData.exp_detail?.trim() || null, exp_amount: parseFloat(formData.exp_amount || 0),
-      is_paid: true, paid_from_account_id: cashAmt > 0 ? cashAccountId : null, cash_amount: cashAmt,
-      bank_account_id: bankAmt > 0 ? bankAccountId : null, bank_amount: bankAmt,
-      payment_reference: formData.payment_reference || null, payment_date: new Date().toISOString(), created_at: new Date().toISOString(),
+      exp_id: tempId,
+      exp_title: formData.exp_title.trim(),
+      exp_type: parseInt(formData.exp_type, 10),
+      sub_title_id: formData.sub_title_id ? parseInt(formData.sub_title_id, 10) : null,
+      exp_detail: formData.exp_detail?.trim() || null,
+      exp_amount: parseFloat(formData.exp_amount || 0),
+      is_paid: true,
+      paid_from_account_id: cashAmt > 0 ? cashAccountId : null,
+      cash_amount: cashAmt,
+      bank_account_id: bankAmt > 0 ? bankAccountId : null,
+      bank_amount: bankAmt,
+      payment_reference: formData.payment_reference || null,
+      payment_date: new Date().toISOString(),
+      created_at: new Date().toISOString(),
       expense_title: expenseTitle || { id: parseInt(formData.exp_type, 10), title: 'Expense' },
+      sub_title: selectedSub || (formData.sub_title_id ? { id: parseInt(formData.sub_title_id, 10), title: formData.exp_title } : null),
       paid_from_account: cashAccount ? { cus_id: cashAccount.cus_id, cus_name: cashAccount.cus_name } : null,
       bank_account: bankAccount ? { cus_id: bankAccount.cus_id, cus_name: bankAccount.cus_name } : null,
       _optimistic: true
@@ -370,12 +397,18 @@ export default function ExpensesPage() {
     if (cashAmt > 0 && bankAmt > 0) method = 'PARTIAL';
     else if (bankAmt > 0 || expense.paid_from_account?.cus_name?.toLowerCase().includes('bank')) method = 'BANK';
     setFormData({
-      exp_title: expense.exp_title, exp_type: expense.exp_type,
-      exp_detail: expense.exp_detail || '', exp_amount: expense.exp_amount.toString(), is_paid: 'true',
+      exp_title: expense.exp_title,
+      exp_type: expense.exp_type ? expense.exp_type.toString() : '',
+      sub_title_id: expense.sub_title_id ? expense.sub_title_id.toString() : '',
+      exp_detail: expense.exp_detail || '',
+      exp_amount: expense.exp_amount.toString(),
+      is_paid: 'true',
       paid_from_account_id: expense.paid_from_account_id ? expense.paid_from_account_id.toString() : '',
       bank_account_id: expense.bank_account_id ? expense.bank_account_id.toString() : (method === 'BANK' ? expense.paid_from_account_id?.toString() || '' : ''),
-      cash_amount: cashAmt > 0 ? cashAmt.toString() : '', bank_amount: bankAmt > 0 ? bankAmt.toString() : '',
-      payment_reference: expense.payment_reference || '', paymentMethod: method
+      cash_amount: cashAmt > 0 ? cashAmt.toString() : '',
+      bank_amount: bankAmt > 0 ? bankAmt.toString() : '',
+      payment_reference: expense.payment_reference || '',
+      paymentMethod: method
     });
     setCurrentView('create');
   };
@@ -398,11 +431,53 @@ export default function ExpensesPage() {
       if (response.ok) {
         const result = await response.json();
         setExpenseTitles((prev) => [...prev, result]);
-        setFormData((prev) => ({ ...prev, exp_type: result.id }));
+        setFormData((prev) => ({ ...prev, exp_type: result.id, sub_title_id: '' }));
         setShowTypeDialog(false); setNewTypeName('');
       } else { const error = await response.json(); alert(error.error || 'Failed to create expense type'); }
     } catch (error) { console.error('Error creating expense type:', error); alert('Failed to create expense type'); }
     finally { setIsSubmittingType(false); }
+  };
+
+  const handleCreateSubTitle = async () => {
+    if (!newSubTitleName.trim() || !formData.exp_type) return;
+    try {
+      setIsSubmittingSubTitle(true);
+      const response = await fetch('/api/expense-sub-titles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          expense_title_id: parseInt(formData.exp_type, 10),
+          title: newSubTitleName.trim()
+        })
+      });
+      if (response.ok) {
+        const newSub = await response.json();
+        setExpenseTitles((prev) => prev.map((t) => {
+          if (String(t.id) === String(formData.exp_type)) {
+            return {
+              ...t,
+              sub_titles: [...(t.sub_titles || []), newSub]
+            };
+          }
+          return t;
+        }));
+        setFormData((prev) => ({
+          ...prev,
+          sub_title_id: newSub.id.toString(),
+          exp_title: newSub.title
+        }));
+        setShowSubTitleDialog(false);
+        setNewSubTitleName('');
+      } else {
+        const err = await response.json();
+        alert(err.error || 'Failed to create sub-title');
+      }
+    } catch (error) {
+      console.error('Error creating sub-title:', error);
+      alert('Failed to create sub-title');
+    } finally {
+      setIsSubmittingSubTitle(false);
+    }
   };
 
   const clearFilters = () => {
@@ -414,14 +489,16 @@ export default function ExpensesPage() {
 
   const exportToCSV = () => {
     if (finalExpenses.length === 0) { alert('No expense records to export'); return; }
-    const headers = ['Row #','Voucher ID','Date','Expense Title','Details / Remarks','Category','Payment Method','Cash Account','Cash Amount','Bank Account','Bank Amount','Total Amount (PKR)','Payment Reference'];
+    const headers = ['Row #','Voucher ID','Date','Expense Title','Sub-Title','Details / Remarks','Category','Payment Method','Cash Account','Cash Amount','Bank Account','Bank Amount','Total Amount (PKR)','Payment Reference'];
     const rows = finalExpenses.map((exp, idx) => {
       const cashAmt = parseFloat(exp.cash_amount || 0); const bankAmt = parseFloat(exp.bank_amount || 0);
       let method = 'Cash';
       if (cashAmt > 0 && bankAmt > 0) method = 'Split Payment';
       else if (bankAmt > 0 || exp.paid_from_account?.cus_name?.toLowerCase().includes('bank')) method = 'Bank';
       return [idx+1, exp.exp_id, formatDatePK(exp.payment_date || exp.created_at),
-        `"${(exp.exp_title || '').replace(/"/g,'""')}"`, `"${(exp.exp_detail || '').replace(/"/g,'""')}"`,
+        `"${(exp.exp_title || '').replace(/"/g,'""')}"`,
+        `"${(exp.sub_title?.title || '').replace(/"/g,'""')}"`,
+        `"${(exp.exp_detail || '').replace(/"/g,'""')}"`,
         `"${(exp.expense_title?.title || 'Uncategorized').replace(/"/g,'""')}"`, method,
         `"${(exp.paid_from_account?.cus_name || '').replace(/"/g,'""')}"`,
         cashAmt > 0 ? cashAmt : (method === 'Cash' ? parseFloat(exp.exp_amount || 0) : 0),
@@ -684,12 +761,24 @@ export default function ExpensesPage() {
                         </td>
                         <td style={{ ...cellStyle, maxWidth: 230 }}>
                           <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{expense.exp_title}</div>
+                          {expense.sub_title && expense.sub_title.title !== expense.exp_title && (
+                            <div style={{ fontSize: 10, color: '#7c3aed', fontWeight: 600, marginTop: 1 }}>
+                              Sub: {expense.sub_title.title}
+                            </div>
+                          )}
                           {expense.exp_detail && <div style={{ fontSize: 10, color: '#64748b', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={expense.exp_detail}>{expense.exp_detail}</div>}
                         </td>
                         <td style={cellStyle}>
-                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}>
-                            {expense.expense_title?.title || 'Uncategorized'}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', alignSelf: 'flex-start' }}>
+                              {expense.expense_title?.title || 'Uncategorized'}
+                            </span>
+                            {expense.sub_title && (
+                              <span style={{ display: 'inline-block', padding: '1px 7px', borderRadius: 12, fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap', background: '#f3e8ff', color: '#6b21a8', border: '1px solid #e9d5ff', alignSelf: 'flex-start' }}>
+                                ↳ {expense.sub_title.title}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td style={{ ...cellStyle, textAlign: 'center' }}>
                           {isSplit ? <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#faf5ff', color: '#7e22ce', border: '1px solid #e9d5ff' }}>Split</span>
@@ -813,36 +902,75 @@ export default function ExpensesPage() {
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <FileText style={{ width: 11, height: 11 }} /> Expense Details
                 </div>
+
+                {/* Row 1: Category (Main Title) and Sub-Title */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  {/* Title */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 5 }}>Expense Title <span style={{ color: '#f43f5e' }}>*</span></label>
-                    <input type="text" name="exp_title" value={formData.exp_title} onChange={handleInputChange} required placeholder="e.g. Office Rent"
-                      style={{ width: '100%', padding: '8px 10px', fontSize: 12, fontWeight: 600, border: '1.5px solid #e2e8f0', borderRadius: 8, outline: 'none', color: '#0f172a', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                      onFocus={e => e.target.style.borderColor = '#f43f5e'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-                  </div>
-                  {/* Category */}
+                  {/* Category / Main Title */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>Category <span style={{ color: '#f43f5e' }}>*</span></label>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>Main Title / Category <span style={{ color: '#f43f5e' }}>*</span></label>
                       <button type="button" onClick={() => setShowTypeDialog(true)} style={{ fontSize: 10, fontWeight: 700, color: '#e11d48', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 6, padding: '2px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                        <Plus style={{ width: 10, height: 10 }} /> New
+                        <Plus style={{ width: 10, height: 10 }} /> New Title
                       </button>
                     </div>
                     <Autocomplete
                       options={expenseTitles}
                       getOptionLabel={(option) => typeof option === 'string' ? option : option.title || ''}
                       value={expenseTitles.find((t) => String(t.id) === String(formData.exp_type)) || null}
-                      onChange={(event, newValue) => setFormData((prev) => ({ ...prev, exp_type: newValue ? newValue.id : '' }))}
+                      onChange={(event, newValue) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          exp_type: newValue ? newValue.id : '',
+                          sub_title_id: '',
+                        }));
+                      }}
                       isOptionEqualToValue={(option, value) => option.id === value.id}
                       renderInput={(params) => (
-                        <TextField {...params} size="small" required={!formData.exp_type} fullWidth variant="outlined"
+                        <TextField {...params} size="small" placeholder="Select Main Title" required={!formData.exp_type} fullWidth variant="outlined"
                           sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: '#fff', fontSize: '0.75rem', fontWeight: 600, color: '#0f172a', '& fieldset': { borderColor: '#e2e8f0', borderWidth: '1.5px' }, '&:hover fieldset': { borderColor: '#cbd5e1' }, '&.Mui-focused fieldset': { borderColor: '#f43f5e', borderWidth: '1.5px' } } }} />
+                      )} />
+                  </div>
+
+                  {/* Sub-Title */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>Sub-Title</label>
+                      {formData.exp_type && (
+                        <button type="button" onClick={() => setShowSubTitleDialog(true)} style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '2px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <Plus style={{ width: 10, height: 10 }} /> New Sub-Title
+                        </button>
+                      )}
+                    </div>
+                    <Autocomplete
+                      options={availableSubTitles}
+                      getOptionLabel={(option) => typeof option === 'string' ? option : option.title || ''}
+                      value={availableSubTitles.find((st) => String(st.id) === String(formData.sub_title_id)) || null}
+                      disabled={!formData.exp_type}
+                      onChange={(event, newValue) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          sub_title_id: newValue ? newValue.id.toString() : '',
+                          exp_title: newValue ? newValue.title : prev.exp_title,
+                        }));
+                      }}
+                      isOptionEqualToValue={(option, value) => option.id === value.id}
+                      renderInput={(params) => (
+                        <TextField {...params} size="small" placeholder={formData.exp_type ? (availableSubTitles.length ? "Select Sub-Title" : "No sub-titles (Click + New)") : "Select Main Title first"} fullWidth variant="outlined"
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: '#fff', fontSize: '0.75rem', fontWeight: 600, color: '#0f172a', '& fieldset': { borderColor: '#e2e8f0', borderWidth: '1.5px' }, '&:hover fieldset': { borderColor: '#cbd5e1' }, '&.Mui-focused fieldset': { borderColor: '#7c3aed', borderWidth: '1.5px' } } }} />
                       )} />
                   </div>
                 </div>
 
+                {/* Row 2: Expense Title & Amount */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                  {/* Expense Title */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 5 }}>Expense Title / Description <span style={{ color: '#f43f5e' }}>*</span></label>
+                    <input type="text" name="exp_title" value={formData.exp_title} onChange={handleInputChange} required placeholder="e.g. Office Rent, Electricity Bill"
+                      style={{ width: '100%', padding: '8px 10px', fontSize: 12, fontWeight: 600, border: '1.5px solid #e2e8f0', borderRadius: 8, outline: 'none', color: '#0f172a', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                      onFocus={e => e.target.style.borderColor = '#f43f5e'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                  </div>
+
                   {/* Amount */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
@@ -858,21 +986,22 @@ export default function ExpensesPage() {
                         onFocus={e => e.target.style.borderColor = '#f43f5e'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                     </div>
                   </div>
-                  {/* Reference */}
+                </div>
+
+                {/* Row 3: Reference & Remarks */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 5 }}>Reference <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>(Optional)</span></label>
                     <input type="text" name="payment_reference" value={formData.payment_reference || ''} onChange={handleInputChange} placeholder="Cheque #, TXN ID..."
                       style={{ width: '100%', padding: '8px 10px', fontSize: 12, fontWeight: 600, border: '1.5px solid #e2e8f0', borderRadius: 8, outline: 'none', color: '#0f172a', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' }}
                       onFocus={e => e.target.style.borderColor = '#f43f5e'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                   </div>
-                </div>
-
-                {/* Remarks */}
-                <div style={{ marginTop: 12 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 5 }}>Particulars / Remarks <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>(Optional)</span></label>
-                  <input type="text" name="exp_detail" value={formData.exp_detail} onChange={handleInputChange} placeholder="Additional details..."
-                    style={{ width: '100%', padding: '8px 10px', fontSize: 12, fontWeight: 500, border: '1.5px solid #e2e8f0', borderRadius: 8, outline: 'none', color: '#0f172a', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                    onFocus={e => e.target.style.borderColor = '#f43f5e'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 5 }}>Particulars / Remarks <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>(Optional)</span></label>
+                    <input type="text" name="exp_detail" value={formData.exp_detail} onChange={handleInputChange} placeholder="Additional details..."
+                      style={{ width: '100%', padding: '8px 10px', fontSize: 12, fontWeight: 500, border: '1.5px solid #e2e8f0', borderRadius: 8, outline: 'none', color: '#0f172a', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                      onFocus={e => e.target.style.borderColor = '#f43f5e'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                  </div>
                 </div>
               </div>
 
@@ -1054,8 +1183,9 @@ export default function ExpensesPage() {
               {/* Info Rows */}
               <div>
                 {[
-                  { label: 'Expense Title', value: <strong style={{ color: '#0f172a', fontSize: 13 }}>{viewingVoucher.exp_title}</strong> },
-                  { label: 'Category', value: <span style={{ fontSize: 11, fontWeight: 700, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', padding: '2px 10px', borderRadius: 20 }}>{viewingVoucher.expense_title?.title || 'Uncategorized'}</span> },
+                  { label: 'Category / Title', value: <span style={{ fontSize: 11, fontWeight: 700, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', padding: '2px 10px', borderRadius: 20 }}>{viewingVoucher.expense_title?.title || 'Uncategorized'}</span> },
+                  ...(viewingVoucher.sub_title ? [{ label: 'Sub-Title', value: <span style={{ fontSize: 11, fontWeight: 700, background: '#f3e8ff', color: '#6b21a8', border: '1px solid #e9d5ff', padding: '2px 10px', borderRadius: 20 }}>{viewingVoucher.sub_title.title}</span> }] : []),
+                  { label: 'Expense Title / Description', value: <strong style={{ color: '#0f172a', fontSize: 13 }}>{viewingVoucher.exp_title}</strong> },
                   { label: 'Timestamp', value: <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{formatDateTimePK(viewingVoucher.payment_date || viewingVoucher.created_at)}</span> },
                   ...(viewingVoucher.payment_reference ? [{ label: 'Reference', value: <span style={{ fontFamily: 'monospace', fontWeight: 700, background: '#f1f5f9', padding: '2px 8px', borderRadius: 6, border: '1px solid #e2e8f0' }}>{viewingVoucher.payment_reference}</span> }] : []),
                 ].map((row, i) => (
@@ -1118,14 +1248,14 @@ export default function ExpensesPage() {
             <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #fecdd3' }}>
               <Tag style={{ color: '#e11d48', width: 14, height: 14 }} />
             </div>
-            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>Add Expense Category</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>Add Expense Category / Title</Typography>
           </Box>
           <IconButton onClick={() => setShowTypeDialog(false)} size="small"><X size={16} color="#94a3b8" /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ py: 2, pt: 2.5 }}>
-          <TextField fullWidth autoFocus label="Category Title *" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)}
+          <TextField fullWidth autoFocus label="Category / Title *" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateType(); } }}
-            placeholder="e.g., Office Rent, Electricity, Fuel" size="small" variant="outlined"
+            placeholder="e.g., Office Supplies, Utility Bills, Transport" size="small" variant="outlined"
             sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.8rem' } }} />
         </DialogContent>
         <DialogActions sx={{ px: 2.5, py: 1.5, borderTop: '1px solid #f1f5f9', gap: 1 }}>
@@ -1133,6 +1263,35 @@ export default function ExpensesPage() {
           <Button onClick={handleCreateType} disabled={isSubmittingType || !newTypeName.trim()} size="small" variant="contained"
             sx={{ borderRadius: '8px', fontSize: '0.75rem', textTransform: 'none', fontWeight: 800, background: 'linear-gradient(135deg, #f43f5e, #e11d48)', '&:hover': { background: 'linear-gradient(135deg, #e11d48, #be123c)' } }}>
             {isSubmittingType ? 'Saving...' : 'Save Category'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ═══════════════════════ ADD SUB-TITLE DIALOG ═══════════════════════ */}
+      <Dialog open={showSubTitleDialog} onClose={() => setShowSubTitleDialog(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '16px', p: 0.5, overflow: 'hidden' } }}>
+        <div style={{ height: 4, background: 'linear-gradient(90deg, #8b5cf6, #7c3aed, #a78bfa)' }} />
+        <DialogTitle sx={{ m: 0, p: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd6fe' }}>
+              <Layers style={{ color: '#7c3aed', width: 14, height: 14 }} />
+            </div>
+            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+              Add Sub-Title ({selectedExpenseTitleObj?.title || 'Category'})
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setShowSubTitleDialog(false)} size="small"><X size={16} color="#94a3b8" /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ py: 2, pt: 2.5 }}>
+          <TextField fullWidth autoFocus label="Sub-Title Name *" value={newSubTitleName} onChange={(e) => setNewSubTitleName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateSubTitle(); } }}
+            placeholder="e.g., Electricity Bill, Fuel, Stationery" size="small" variant="outlined"
+            sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.8rem' } }} />
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, py: 1.5, borderTop: '1px solid #f1f5f9', gap: 1 }}>
+          <Button onClick={() => setShowSubTitleDialog(false)} size="small" variant="outlined" sx={{ borderRadius: '8px', fontSize: '0.75rem', textTransform: 'none', fontWeight: 700, borderColor: '#e2e8f0', color: '#64748b' }}>Cancel</Button>
+          <Button onClick={handleCreateSubTitle} disabled={isSubmittingSubTitle || !newSubTitleName.trim()} size="small" variant="contained"
+            sx={{ borderRadius: '8px', fontSize: '0.75rem', textTransform: 'none', fontWeight: 800, background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', '&:hover': { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' } }}>
+            {isSubmittingSubTitle ? 'Saving...' : 'Save Sub-Title'}
           </Button>
         </DialogActions>
       </Dialog>

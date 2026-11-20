@@ -15,7 +15,14 @@ export async function GET(request) {
 
     if (listOnly) {
       const expenseTitles = await prisma.expenseTitle.findMany({
-        select: { id: true, title: true },
+        select: {
+          id: true,
+          title: true,
+          sub_titles: {
+            select: { id: true, title: true, expense_title_id: true },
+            orderBy: { title: 'asc' },
+          },
+        },
         orderBy: { title: 'asc' },
       });
       return NextResponse.json(expenseTitles);
@@ -26,6 +33,9 @@ export async function GET(request) {
       const expenseTitle = await prisma.expenseTitle.findUnique({
         where: { id },
         include: {
+          sub_titles: {
+            orderBy: { title: 'asc' },
+          },
           expenses: {
             include: {
               updated_by_user: {
@@ -51,6 +61,9 @@ export async function GET(request) {
       // Fetch all expense titles
       const expenseTitles = await prisma.expenseTitle.findMany({
         include: {
+          sub_titles: {
+            orderBy: { title: 'asc' },
+          },
           expenses: {
             include: {
               updated_by_user: {
@@ -85,7 +98,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { title } = body;
+    const { title, sub_titles } = body;
 
     // Validate required fields
     if (!title || title.trim() === '') {
@@ -103,12 +116,29 @@ export async function POST(request) {
 
     const idVal = body.id || await getNextId('expenseTitle', 'id');
 
-    // Create expense title
+    // Create expense title with optional sub_titles
+    const subTitleData = Array.isArray(sub_titles)
+      ? sub_titles
+          .map((st) => (typeof st === 'string' ? st.trim() : (st?.title || '').trim()))
+          .filter((st) => st.length > 0)
+          .map((st) => ({ title: st }))
+      : [];
+
     const expenseTitle = await prisma.expenseTitle.create({
       data: {
         id: idVal,
-        title: title.trim()
-      }
+        title: title.trim(),
+        ...(subTitleData.length > 0
+          ? {
+              sub_titles: {
+                create: subTitleData,
+              },
+            }
+          : {}),
+      },
+      include: {
+        sub_titles: true,
+      },
     });
 
     return NextResponse.json(expenseTitle, { status: 201 });
@@ -125,7 +155,7 @@ export async function PUT(request) {
 
   try {
     const body = await request.json();
-    const { id, title } = body;
+    const { id, title, sub_titles } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Expense title ID is required' }, { status: 400 });
@@ -139,7 +169,7 @@ export async function PUT(request) {
     const existingTitle = await prisma.expenseTitle.findFirst({
       where: {
         title: title.trim(),
-        NOT: { id }
+        NOT: { id: parseInt(id) }
       }
     });
 
@@ -149,11 +179,57 @@ export async function PUT(request) {
 
     // Update expense title
     const expenseTitle = await prisma.expenseTitle.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         title: title.trim()
+      },
+      include: {
+        sub_titles: true,
       }
     });
+
+    // If sub_titles array provided in PUT, sync/add any new ones
+    if (Array.isArray(sub_titles)) {
+      for (const st of sub_titles) {
+        const subTitleText = typeof st === 'string' ? st.trim() : (st?.title || '').trim();
+        if (!subTitleText) continue;
+
+        if (st?.id) {
+          // Update existing
+          await prisma.expenseSubTitle.update({
+            where: { id: parseInt(st.id) },
+            data: { title: subTitleText }
+          }).catch(() => {});
+        } else {
+          // Check if exists under this title
+          const existingSub = await prisma.expenseSubTitle.findFirst({
+            where: {
+              expense_title_id: parseInt(id),
+              title: subTitleText
+            }
+          });
+          if (!existingSub) {
+            await prisma.expenseSubTitle.create({
+              data: {
+                expense_title_id: parseInt(id),
+                title: subTitleText
+              }
+            });
+          }
+        }
+      }
+
+      // Re-fetch with updated sub_titles
+      const refreshed = await prisma.expenseTitle.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+          sub_titles: {
+            orderBy: { title: 'asc' }
+          }
+        }
+      });
+      return NextResponse.json(refreshed);
+    }
 
     return NextResponse.json(expenseTitle);
   } catch (error) {

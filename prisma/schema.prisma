@@ -385,43 +385,60 @@ model Ledger {
 }
 
 model ExpenseTitle {
-  id         Int       @id
-  branch_id  Int       @default(1)
+  id         Int               @id
+  branch_id  Int               @default(1)
   title      String
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  branch     Branch    @relation(fields: [branch_id], references: [branch_id])
+  created_at DateTime          @default(now())
+  updated_at DateTime          @updatedAt
+  branch     Branch            @relation(fields: [branch_id], references: [branch_id])
   expenses   Expense[]
+  sub_titles ExpenseSubTitle[]
 
   @@index([branch_id], map: "expense_titles_branch_id_fkey")
   @@map("expense_titles")
 }
 
+model ExpenseSubTitle {
+  id               Int          @id @default(autoincrement())
+  expense_title_id Int
+  title            String       @db.VarChar(255)
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+  expense_title    ExpenseTitle @relation(fields: [expense_title_id], references: [id], onDelete: Cascade)
+  expenses         Expense[]
+
+  @@index([expense_title_id], map: "expense_sub_titles_title_id_idx")
+  @@map("expense_sub_titles")
+}
+
 model Expense {
-  exp_id                Int          @id
-  branch_id             Int          @default(1)
+  exp_id                Int              @id
+  branch_id             Int              @default(1)
   exp_title             String
   exp_type              Int
+  sub_title_id          Int?
   exp_detail            String?
-  exp_amount                    Decimal   @db.Decimal(18, 2)
-  is_paid               Boolean      @default(false)
+  exp_amount            Decimal          @db.Decimal(18, 2)
+  is_paid               Boolean          @default(false)
   paid_from_account_id  Int?
-  cash_amount                   Decimal   @default(0.00) @db.Decimal(10, 2)
+  cash_amount           Decimal          @default(0.00) @db.Decimal(10, 2)
   bank_account_id       Int?
-  bank_amount                   Decimal   @default(0.00) @db.Decimal(10, 2)
+  bank_amount           Decimal          @default(0.00) @db.Decimal(10, 2)
   payment_date          DateTime?
   payment_reference     String?
-  created_at            DateTime     @default(now())
-  updated_at            DateTime     @updatedAt
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
   updated_by            Int?
-  branch                Branch       @relation(fields: [branch_id], references: [branch_id])
-  expense_title         ExpenseTitle @relation(fields: [exp_type], references: [id])
-  paid_from_account     Customer?    @relation("ExpensePaidFrom", fields: [paid_from_account_id], references: [cus_id])
-  bank_account          Customer?    @relation("ExpenseBankPaidFrom", fields: [bank_account_id], references: [cus_id])
-  updated_by_user       Users?       @relation(fields: [updated_by], references: [user_id])
+  branch                Branch           @relation(fields: [branch_id], references: [branch_id])
+  expense_title         ExpenseTitle     @relation(fields: [exp_type], references: [id])
+  sub_title             ExpenseSubTitle? @relation(fields: [sub_title_id], references: [id])
+  paid_from_account     Customer?        @relation("ExpensePaidFrom", fields: [paid_from_account_id], references: [cus_id])
+  bank_account          Customer?        @relation("ExpenseBankPaidFrom", fields: [bank_account_id], references: [cus_id])
+  updated_by_user       Users?           @relation(fields: [updated_by], references: [user_id])
 
   @@index([branch_id], map: "expenses_branch_id_fkey")
   @@index([exp_type], map: "expenses_exp_type_fkey")
+  @@index([sub_title_id], map: "expenses_sub_title_id_idx")
   @@index([updated_by], map: "expenses_updated_by_fkey")
   @@index([paid_from_account_id], map: "expenses_paid_from_account_id_fkey")
   @@index([bank_account_id], map: "expenses_bank_account_id_fkey")
