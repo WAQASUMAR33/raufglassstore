@@ -65,6 +65,7 @@ export const SYSTEM_PAGES = [
   { id: 'addons', name: "Ad On's Management", section: 'Products', path: '/dashboard/addons' },
 
   { id: 'expense-titles', name: 'Expense Titles', section: 'Finance', path: '/dashboard/expense-titles' },
+  { id: 'expense-sub-titles', name: 'Expense Sub-Titles', section: 'Finance', path: '/dashboard/expense-sub-titles' },
   { id: 'expenses', name: 'Expense Management', section: 'Finance', path: '/dashboard/expenses' },
   { id: 'journal', name: 'Journal Entries', section: 'Finance', path: '/dashboard/journal' },
   { id: 'internal-transfer', name: 'Internal Transfer', section: 'Finance', path: '/dashboard/internal-transfer' },
@@ -139,7 +140,7 @@ export const LEGACY_MODULE_TO_PAGES = {
   sale_returns: ['sale-returns', 'loaders', 'quotations'],
   purchases: ['purchases', 'new-purchase', 'purchase-list', 'purchase-returns', 'vehicles', 'purchase-details', 'super-order'],
   cargo: ['cargo'],
-  finance: ['expense-titles', 'expenses', 'journal', 'ledger', 'internal-transfer', 'adjustment-management', 'bank-accounts'],
+  finance: ['expense-titles', 'expense-sub-titles', 'expenses', 'journal', 'ledger', 'internal-transfer', 'adjustment-management', 'bank-accounts'],
   cash_bank_day_end: ['day-end', 'day-end-history', 'cash-report', 'bank-report'],
   hr: ['hr', 'employees', 'attendance', 'payroll', 'salary-management'],
   reports: [
@@ -193,6 +194,7 @@ const PATH_PAGE_RULES = [
   { prefix: '/dashboard/subcategories', pageIds: ['sub-categories'] },
   { prefix: '/dashboard/products', pageIds: ['products'] },
   { prefix: '/dashboard/addons', pageIds: ['addons'] },
+  { prefix: '/dashboard/expense-sub-titles', pageIds: ['expense-sub-titles', 'expense-titles'] },
   { prefix: '/dashboard/expense-titles', pageIds: ['expense-titles'] },
   { prefix: '/dashboard/expenses', pageIds: ['expenses'] },
   { prefix: '/dashboard/journal', pageIds: ['journal'] },

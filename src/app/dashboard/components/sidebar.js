@@ -78,7 +78,7 @@ const SALES_IDS = new Set(['orders', 'new-sale', 'sales', 'hold-bills', 'sale-re
 const PURCHASE_IDS = new Set(['purchases', 'new-purchase', 'purchase-list', 'purchase-returns', 'vehicles', 'purchase-details', 'super-order']);
 const INVENTORY_IDS = new Set(['products', 'categories', 'sub-categories', 'store-stock', 'stock-transfer', 'stores', 'cargo', 'addons', 'formulas']);
 const OPERATIONS_IDS = new Set(['day-end', 'day-end-history', 'cash-report', 'bank-report', 'bank-accounts']);
-const FINANCE_IDS = new Set(['expenses', 'expense-titles', 'journal', 'internal-transfer', 'adjustment-management']);
+const FINANCE_IDS = new Set(['expenses', 'expense-titles', 'expense-sub-titles', 'journal', 'internal-transfer', 'adjustment-management']);
 const ACCOUNTS_IDS = new Set(['customercategory', 'customer-types', 'customers']);
 
 const getNavFn = (item) => {
@@ -122,6 +122,7 @@ const ROUTE_MAP = {
   'sale-returns': '/dashboard/sales',
   'loaders': '/dashboard/loaders',
   'expense-titles': '/dashboard/expense-titles',
+  'expense-sub-titles': '/dashboard/expense-sub-titles',
   'expenses': '/dashboard/expenses',
   'assets': '/dashboard/assets',
   'journal': '/dashboard/journal',
@@ -224,6 +225,7 @@ export default function Sidebar({
     { id: 'formulas', name: 'Formulas Management', icon: CalculateIcon, category: 'product-management', parent: 'Product Management' },
 
     { id: 'expense-titles', name: 'Expense Titles', icon: LabelIcon, category: 'financial', parent: 'Finance' },
+    { id: 'expense-sub-titles', name: 'Expense Sub-Titles', icon: LabelIcon, category: 'financial', parent: 'Finance' },
     { id: 'expenses', name: 'Expense Management', icon: AttachMoneyIcon, category: 'financial', parent: 'Finance' },
     { id: 'assets', name: 'Fixed Assets', icon: TableChartIcon, category: 'financial', parent: 'Finance' },
     { id: 'journal', name: 'Journal Entries', icon: MenuBookIcon, category: 'financial', parent: 'Finance' },
@@ -329,6 +331,7 @@ export default function Sidebar({
       { path: '/dashboard/finance', id: 'ledger', category: 'main' },
       { path: '/dashboard/hold-bills', id: 'hold-bills', category: 'sales-operations' },
       { path: '/dashboard/expense-titles', id: 'expense-titles', category: 'financial' },
+      { path: '/dashboard/expense-sub-titles', id: 'expense-sub-titles', category: 'financial' },
       { path: '/dashboard/expenses', id: 'expenses', category: 'financial' },
       { path: '/dashboard/internal-transfer', id: 'internal-transfer', category: 'financial' },
       { path: '/dashboard/bank-accounts', id: 'bank-accounts', category: 'main' },
