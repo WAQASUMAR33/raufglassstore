@@ -483,7 +483,7 @@ const PURCHASE_ENTRY_ROW2_SX = {
   gridTemplateColumns: {
     xs: '1fr 1fr',
     sm: 'repeat(3, minmax(0, 1fr))',
-    md: 'minmax(0, 1.8fr) minmax(0, 0.9fr) minmax(0, 0.45fr) minmax(0, 0.45fr) minmax(0, 0.4fr) minmax(0, 0.55fr) minmax(0, 0.6fr) minmax(0, 0.6fr) minmax(0, 0.55fr) minmax(0, 0.6fr) minmax(0, 0.6fr) minmax(0, 0.5fr) 44px',
+    md: 'minmax(0, 1.8fr) minmax(0, 0.9fr) minmax(0, 0.45fr) minmax(0, 0.45fr) minmax(0, 0.4fr) minmax(0, 0.55fr) minmax(0, 0.6fr) minmax(0, 0.6fr) minmax(0, 0.55fr) minmax(0, 0.6fr) minmax(0, 0.6fr) 44px',
   },
   gap: { xs: 1.25, md: 1.25 },
   alignItems: 'end',
@@ -2091,10 +2091,7 @@ function PurchasesPageContent() {
   };
 
   const calculateTotalAmount = () => {
-    return Number(formData.purchase_details.reduce((sum, detail) => {
-      const bRate = parseFloat(detail.base_rate !== undefined && detail.base_rate !== null && detail.base_rate !== '' ? detail.base_rate : (detail.original_crate || detail.crate || 0));
-      return sum + (bRate * parseFloat(detail.qnty || 0));
-    }, 0).toFixed(2));
+    return Number(formData.purchase_details.reduce((sum, detail) => sum + parseFloat(detail.total_amount || 0), 0).toFixed(2));
   };
 
   // New: total quantity across purchase details
@@ -2104,14 +2101,13 @@ function PurchasesPageContent() {
 
   const calculateNetTotal = () => {
     const totalAmount = calculateTotalAmount();
-    const discount = parseFloat(formData.discount || 0);
-
     const unloadingAmount = parseFloat(formData.unloading_amount || 0);
     // Transport and labour always added to supplier total
     const transportAmount = parseFloat(formData.transport_amount || 0);
     const labourAmount = parseFloat(formData.labour_amount || 0);
 
-    return Number((totalAmount + unloadingAmount + transportAmount + labourAmount - discount).toFixed(2));
+    // NOTE: Discount is applied to product purchase rates directly, so do NOT subtract discount again from total invoice amount
+    return Number((totalAmount + unloadingAmount + transportAmount + labourAmount).toFixed(2));
   };
 
   // Format amount: show decimals only when non-zero (e.g. 143575.00 → "143,575", 12.99 → "12.99")
@@ -4900,7 +4896,7 @@ function PurchasesPageContent() {
                       />
                   </Box>
 
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                  <Box sx={{ ...PURCHASE_ENTRY_CELL_SX, display: 'none' }}>
                       <Typography sx={PURCHASE_ENTRY_LABEL_SX}>STOCK</Typography>
                       <TextField
                         fullWidth
@@ -5545,7 +5541,43 @@ function PurchasesPageContent() {
                       />
                     </Box>
 
-
+                    {/* DISCOUNT (Rs) */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
+                        DISCOUNT (Rs)
+                      </Typography>
+                      <TextField
+                        size="small"
+                        type="number"
+                        placeholder="0.00"
+                        value={formData.discount || ''}
+                        onChange={(e) => {
+                          const newDiscount = e.target.value;
+                          setFormData(prev => {
+                            const totalBase = prev.purchase_details.reduce((sum, d) => {
+                              const base = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
+                              const qty = parseFloat(d.qnty || 0);
+                              return sum + (base * qty);
+                            }, 0);
+                            const discAmt = parseFloat(newDiscount || 0);
+                            const percent = totalBase > 0 ? (discAmt > 0 ? -((discAmt / totalBase) * 100) : 0) : 0;
+                            const updatedDetails = recomputeAllPurchaseDetails(prev.purchase_details, prev, {
+                              discount: newDiscount,
+                              discount_percent: percent ? percent.toFixed(2) : ''
+                            });
+                            return {
+                              ...prev,
+                              discount: newDiscount,
+                              discount_percent: percent ? percent.toFixed(2) : '',
+                              purchase_details: updatedDetails
+                            };
+                          });
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        inputProps={{ min: 0, step: 'any' }}
+                        sx={{ width: 150 }}
+                      />
+                    </Box>
 
                     {/* DELIVERY CHARGES */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -5629,77 +5661,6 @@ function PurchasesPageContent() {
                       <Typography variant="body2">
                         Include Labour Charges
                       </Typography>
-                    </Box>
-
-                    {/* DISCOUNT */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
-                        DISCOUNT
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 0.5, width: 150 }}>
-                        <TextField
-                          size="small"
-                          type="number"
-                          placeholder="Amount"
-                          value={formData.discount || ''}
-                          onChange={(e) => {
-                            const newDiscount = e.target.value;
-                            setFormData(prev => {
-                              const totalBase = prev.purchase_details.reduce((sum, d) => {
-                                const base = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
-                                const qty = parseFloat(d.qnty || 0);
-                                return sum + (base * qty);
-                              }, 0);
-                              const discAmt = parseFloat(newDiscount || 0);
-                              const percent = totalBase > 0 ? (discAmt > 0 ? -((discAmt / totalBase) * 100) : 0) : 0;
-                              const updatedDetails = recomputeAllPurchaseDetails(prev.purchase_details, prev, {
-                                discount: newDiscount,
-                                discount_percent: percent ? percent.toFixed(2) : ''
-                              });
-                              return {
-                                ...prev,
-                                discount: newDiscount,
-                                discount_percent: percent ? percent.toFixed(2) : '',
-                                purchase_details: updatedDetails
-                              };
-                            });
-                          }}
-                          onFocus={(e) => e.target.select()}
-                          inputProps={{ min: 0 }}
-                          sx={{ flex: 1.2 }}
-                        />
-                        <TextField
-                          size="small"
-                          type="number"
-                          placeholder="%"
-                          value={formData.discount_percent || ''}
-                          onChange={(e) => {
-                            const newPercentStr = e.target.value;
-                            setFormData(prev => {
-                              const totalBase = prev.purchase_details.reduce((sum, d) => {
-                                const base = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
-                                const qty = parseFloat(d.qnty || 0);
-                                return sum + (base * qty);
-                              }, 0);
-                              const pVal = parseFloat(newPercentStr || 0);
-                              const effectivePercent = pVal > 0 ? -pVal : pVal;
-                              const discAmt = totalBase > 0 ? Math.abs((effectivePercent / 100) * totalBase) : 0;
-                              const updatedDetails = recomputeAllPurchaseDetails(prev.purchase_details, prev, {
-                                discount: discAmt ? discAmt.toFixed(2) : '',
-                                discount_percent: newPercentStr
-                              });
-                              return {
-                                ...prev,
-                                discount: discAmt ? discAmt.toFixed(2) : '',
-                                discount_percent: newPercentStr,
-                                purchase_details: updatedDetails
-                              };
-                            });
-                          }}
-                          onFocus={(e) => e.target.select()}
-                          sx={{ width: 60 }}
-                        />
-                      </Box>
                     </Box>
 
                     {/* GRAND TOTAL */}

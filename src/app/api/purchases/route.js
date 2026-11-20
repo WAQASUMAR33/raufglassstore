@@ -1046,9 +1046,10 @@ export async function POST(request) {
       return errorResponse('Valid payment type is required (CASH, CHEQUE, BANK_TRANSFER)');
     }
 
-    // Calculate net total: product subtotal + internal charges (unloading, fare, transport, labour) - discount
+    // Calculate net total: product subtotal + internal charges (unloading, fare, transport, labour)
+    // NOTE: Product rates/subtotal already incorporate the discount, so discount is not subtracted again from total invoice amount
     // OUT charges (out_labour/out_delivery) are treated as external and should NOT be included in the supplier-facing net_total
-    const net_total = safeParseFloat(total_amount) + safeParseFloat(unloading_amount) + safeParseFloat(fare_amount) + safeParseFloat(transport_amount) + safeParseFloat(labour_amount) - safeParseFloat(discount);
+    const net_total = safeParseFloat(total_amount) + safeParseFloat(unloading_amount) + safeParseFloat(fare_amount) + safeParseFloat(transport_amount) + safeParseFloat(labour_amount);
 
     // Update payment amount to use total payment from split payments
     // payment is now calculated as totalPaymentAmount
@@ -1273,8 +1274,8 @@ export async function POST(request) {
       const ledgerEntries = [];
       let runningSupplierBalance = 0;
 
-      // Calculate supplier amount — includes product + unloading + fare + labour + delivery minus discount (matches net_total, OUT charges excluded)
-      const supplierAmount = safeParseFloat(total_amount) + safeParseFloat(unloading_amount) + safeParseFloat(fare_amount) + safeParseFloat(labour_amount) + safeParseFloat(transport_amount) - safeParseFloat(discount);
+      // Calculate supplier amount — includes product + unloading + fare + labour + delivery (matches net_total, OUT charges excluded)
+      const supplierAmount = safeParseFloat(total_amount) + safeParseFloat(unloading_amount) + safeParseFloat(fare_amount) + safeParseFloat(labour_amount) + safeParseFloat(transport_amount);
 
       // 1. Supplier Account Entry — includes product + labour + delivery (OUT charges are NOT included)
       if (cus_id) {
@@ -1783,7 +1784,7 @@ export async function PUT(request) {
     };
 
     // Calculate net total: exclude OUT charges (they are posted separately as external expenses)
-    const net_total = safeParseFloat(total_amount) + safeParseFloat(unloading_amount) + safeParseFloat(fare_amount) + safeParseFloat(transport_amount) + safeParseFloat(labour_amount) - safeParseFloat(discount);
+    const net_total = safeParseFloat(total_amount) + safeParseFloat(unloading_amount) + safeParseFloat(fare_amount) + safeParseFloat(transport_amount) + safeParseFloat(labour_amount);
 
     // Check if purchase exists
     const existingPurchase = await prisma.purchase.findUnique({
@@ -2040,8 +2041,8 @@ export async function PUT(request) {
 
       const isReturnPUT = purchase_type === 'return' || existingPurchase.bill_type === 'PURCHASE_RETURN';
 
-      // Calculate supplier amount — includes product + unloading + fare + labour + delivery minus discount (matches net_total, OUT charges excluded)
-      const supplierAmount = safeParseFloat(total_amount) + safeParseFloat(unloading_amount) + safeParseFloat(fare_amount) + safeParseFloat(labour_amount) + safeParseFloat(transport_amount) - safeParseFloat(discount);
+      // Calculate supplier amount — includes product + unloading + fare + labour + delivery (matches net_total, OUT charges excluded)
+      const supplierAmount = safeParseFloat(total_amount) + safeParseFloat(unloading_amount) + safeParseFloat(fare_amount) + safeParseFloat(labour_amount) + safeParseFloat(transport_amount);
 
       // 1. Supplier Account Entry
       if (cus_id) {
