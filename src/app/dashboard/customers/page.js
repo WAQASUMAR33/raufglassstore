@@ -158,8 +158,12 @@ export default function CustomersPage() {
     severity: 'success'
   });
 
+  // Balance Nature for new customers (Receivable = negative, Payable = positive)
+  const [balanceNature, setBalanceNature] = useState('receivable');
+
   const openNewCustomerForm = () => {
     setEditingCustomer(null);
+    setBalanceNature('receivable');
     setFormData({ ...EMPTY_CUSTOMER_FORM });
     setShowCustomerForm(true);
   };
@@ -359,12 +363,24 @@ export default function CustomersPage() {
     setIsSubmitting(true);
 
     try {
+      let balanceToSubmit = parseFloat(formData.cus_balance || 0);
+      if (balanceNature === 'receivable' && balanceToSubmit > 0) {
+        balanceToSubmit = -balanceToSubmit;
+      } else if (balanceNature === 'payable' && balanceToSubmit < 0) {
+        balanceToSubmit = Math.abs(balanceToSubmit);
+      }
+
+      const payload = {
+        ...formData,
+        cus_balance: balanceToSubmit,
+      };
+
       const response = await fetch('/api/customers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -404,6 +420,7 @@ export default function CustomersPage() {
 
   const handleEditCustomer = (customer) => {
     setEditingCustomer(customer);
+    setBalanceNature(parseFloat(customer.cus_balance || 0) < 0 ? 'receivable' : 'payable');
     setFormData({
       cus_name: customer.cus_name || '',
       cus_phone_no: customer.cus_phone_no || '',
@@ -1878,44 +1895,101 @@ export default function CustomersPage() {
                 />
 
                 {/* Row 6 - Initial Balance & Account Info */}
-                <TextField
-                  fullWidth
-                  disabled={!!editingCustomer}
-                  label={editingCustomer ? 'Account Balance' : 'Opening Balance'}
-                  name="cus_balance"
-                  type="number"
-                  inputProps={{ step: '0.01', ...(editingCustomer ? { readOnly: true } : {}) }}
-                  value={formData.cus_balance}
-                  onChange={handleFormChange}
-                  placeholder={editingCustomer ? 'Use ledger to adjust balance' : '0 — optional'}
-                  helperText={editingCustomer ? 'Balance is managed via ledger transactions' : 'Set starting balance when creating the account'}
-                  sx={{
-                    bgcolor: editingCustomer ? '#f8fafc' : '#ffffff',
-                    borderRadius: '10px',
-                    '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
-                    '& .MuiOutlinedInput-root': {
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <TextField
+                    fullWidth
+                    disabled={!!editingCustomer}
+                    label={editingCustomer ? 'Account Balance' : 'Opening Balance'}
+                    name="cus_balance"
+                    type="number"
+                    inputProps={{ step: '0.01', ...(editingCustomer ? { readOnly: true } : {}) }}
+                    value={formData.cus_balance}
+                    onChange={handleFormChange}
+                    placeholder={editingCustomer ? 'Use ledger to adjust balance' : '0 — optional'}
+                    helperText={
+                      editingCustomer
+                        ? 'Balance is managed via ledger transactions'
+                        : balanceNature === 'receivable'
+                        ? 'Negative balance (-) = Customer owes money (Receivable)'
+                        : 'Positive balance (+) = Advance payment / We owe customer (Payable)'
+                    }
+                    sx={{
+                      bgcolor: editingCustomer ? '#f8fafc' : '#ffffff',
                       borderRadius: '10px',
-                      backgroundColor: editingCustomer ? '#f8fafc' : '#ffffff',
-                      fontSize: '0.9rem',
-                      '& fieldset': { borderColor: editingCustomer ? '#e2e8f0' : '#cbd5e1', borderWidth: '1.5px' },
-                      ...(!editingCustomer && {
-                        '&:hover fieldset': { borderColor: '#818cf8' },
-                        '&.Mui-focused fieldset': { borderColor: '#16a34a', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(22, 163, 74, 0.12)' },
-                      }),
-                    },
-                    '& .MuiInputLabel-root': { color: '#64748b', fontWeight: 500, ...(!editingCustomer && { '&.Mui-focused': { color: '#16a34a', fontWeight: 700 } }) }
-                  }}
-                  InputProps={{
-                    readOnly: !!editingCustomer,
-                    startAdornment: (
-                      <InputAdornment position="start" sx={{ mr: 0.8 }}>
-                        <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <DollarSign size={16} color="#16a34a" />
-                        </Box>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                      '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        backgroundColor: editingCustomer ? '#f8fafc' : '#ffffff',
+                        fontSize: '0.9rem',
+                        '& fieldset': {
+                          borderColor: editingCustomer
+                            ? '#e2e8f0'
+                            : (balanceNature === 'receivable' ? '#fca5a5' : '#86efac'),
+                          borderWidth: '1.5px'
+                        },
+                        ...(!editingCustomer && {
+                          '&:hover fieldset': { borderColor: balanceNature === 'receivable' ? '#ef4444' : '#16a34a' },
+                          '&.Mui-focused fieldset': {
+                            borderColor: balanceNature === 'receivable' ? '#dc2626' : '#16a34a',
+                            borderWidth: '2px',
+                            boxShadow: balanceNature === 'receivable' ? '0 0 0 3.5px rgba(220, 38, 38, 0.12)' : '0 0 0 3.5px rgba(22, 163, 74, 0.12)'
+                          },
+                        }),
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#64748b',
+                        fontWeight: 500,
+                        ...(!editingCustomer && { '&.Mui-focused': { color: balanceNature === 'receivable' ? '#dc2626' : '#16a34a', fontWeight: 700 } })
+                      }
+                    }}
+                    InputProps={{
+                      readOnly: !!editingCustomer,
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ mr: 0.8 }}>
+                          <Box sx={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: '7px',
+                            bgcolor: (!editingCustomer && balanceNature === 'receivable') ? '#fee2e2' : '#dcfce7',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <DollarSign size={16} color={(!editingCustomer && balanceNature === 'receivable') ? '#dc2626' : '#16a34a'} />
+                          </Box>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  {!editingCustomer && (
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5, flexWrap: 'wrap' }}>
+                      <span className="text-xs font-semibold text-gray-500">Balance Nature:</span>
+                      <button
+                        type="button"
+                        onClick={() => setBalanceNature('receivable')}
+                        className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${
+                          balanceNature === 'receivable'
+                            ? 'bg-rose-600 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Receivable (Customer Owes) [-]
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBalanceNature('payable')}
+                        className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${
+                          balanceNature === 'payable'
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Payable (Advance) [+]
+                      </button>
+                    </Box>
+                  )}
+                </Box>
 
                 <TextField
                   fullWidth
