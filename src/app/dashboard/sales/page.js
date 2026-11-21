@@ -1247,7 +1247,7 @@ function SalesPageContent() {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Additional filter states
@@ -3086,7 +3086,7 @@ function SalesPageContent() {
       showSnackbar('Please select a bank account for the bank payment', 'error');
       return;
     }
-// Delivery charges can be saved without transport account (assign later)
+    // Delivery charges can be saved without transport account (assign later)
 
     // Check for profit/loss on every product in the bill (skip on returns)
     if (billType !== 'SALE_RETURN' && !bypassLossCheck) {
@@ -7174,7 +7174,7 @@ function SalesPageContent() {
                               borderRight: 'none',
                               fontWeight: 700,
                               fontVariantNumeric: 'tabular-nums',
-                              color: parseFloat(option.cus_balance || 0) > 0 ? '#b91c1c' : parseFloat(option.cus_balance || 0) < 0 ? '#15803d' : '#475569',
+                              color: parseFloat(option.cus_balance || 0) < 0 ? '#b91c1c' : parseFloat(option.cus_balance || 0) > 0 ? '#15803d' : '#475569',
                               justifyContent: 'flex-end',
                               paddingRight: 10,
                             }}

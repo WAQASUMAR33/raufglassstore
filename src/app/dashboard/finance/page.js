@@ -4193,7 +4193,7 @@ function FinancePageContent() {
                           fontSize: 12,
                           fontWeight: 700,
                           fontVariantNumeric: 'tabular-nums',
-                          color: balance > 0 ? '#b45309' : balance < 0 ? '#15803d' : '#4b5563',
+                          color: balance < 0 ? '#b91c1c' : balance > 0 ? '#15803d' : '#4b5563',
                         }}
                       >
                         PKR {fmtAmt(balance)}
@@ -5075,8 +5075,8 @@ function FinancePageContent() {
                               py: 0.25,
                               mt: 0.5,
                               borderRadius: 1,
-                              bgcolor: balance > 0 ? '#fef3c7' : balance < 0 ? '#dcfce7' : '#f1f5f9',
-                              color: balance > 0 ? '#b45309' : balance < 0 ? '#15803d' : '#475569',
+                              bgcolor: balance < 0 ? '#fee2e2' : balance > 0 ? '#dcfce7' : '#f1f5f9',
+                              color: balance < 0 ? '#b91c1c' : balance > 0 ? '#15803d' : '#475569',
                               display: 'inline-block'
                             }}
                           >

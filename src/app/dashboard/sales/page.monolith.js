@@ -5891,7 +5891,7 @@ function SalesPageContent() {
                               borderRight: 'none',
                               fontWeight: 700,
                               fontVariantNumeric: 'tabular-nums',
-                              color: parseFloat(option.cus_balance || 0) > 0 ? '#b91c1c' : parseFloat(option.cus_balance || 0) < 0 ? '#15803d' : '#475569',
+                              color: parseFloat(option.cus_balance || 0) < 0 ? '#b91c1c' : parseFloat(option.cus_balance || 0) > 0 ? '#15803d' : '#475569',
                               justifyContent: 'flex-end',
                               paddingRight: 10,
                             }}

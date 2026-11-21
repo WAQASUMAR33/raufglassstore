@@ -152,8 +152,8 @@ async function createTransferEntries(tx, {
   const sourceLedgerEntry = createLedgerEntry({
     cus_id: sourceAccount.cus_id,
     opening_balance: sourceOpening,
-    debit_amount: 0,
-    credit_amount: transferAmount,
+    debit_amount: transferAmount,
+    credit_amount: 0,
     bill_no: billNo,
     trnx_type: 'BANK_TRANSFER',
     ledger_type: 'Transfer',
@@ -185,8 +185,8 @@ async function createTransferEntries(tx, {
   const destLedgerEntry = createLedgerEntry({
     cus_id: destAccount.cus_id,
     opening_balance: destOpening,
-    debit_amount: transferAmount,
-    credit_amount: 0,
+    debit_amount: 0,
+    credit_amount: transferAmount,
     bill_no: billNo,
     trnx_type: 'BANK_TRANSFER',
     ledger_type: 'Transfer',

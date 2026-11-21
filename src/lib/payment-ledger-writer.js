@@ -196,25 +196,25 @@ export async function persistPaymentLedger(tx, ctx) {
 
     if (mainAccountIsBankOrCash) {
       if (payment_type === 'RECEIVE') {
-        cashDebitAmount = 0;
-        cashCreditAmount = parseFloat(cash_amount);
-        cashTrnxType = 'CREDIT';
-        cashClosingBalance = (balanceMap[parseInt(cash_account_id)] || 0) - parseFloat(cash_amount);
-      } else {
         cashDebitAmount = parseFloat(cash_amount);
         cashCreditAmount = 0;
         cashTrnxType = 'DEBIT';
+        cashClosingBalance = (balanceMap[parseInt(cash_account_id)] || 0) - parseFloat(cash_amount);
+      } else {
+        cashDebitAmount = 0;
+        cashCreditAmount = parseFloat(cash_amount);
+        cashTrnxType = 'CREDIT';
         cashClosingBalance = (balanceMap[parseInt(cash_account_id)] || 0) + parseFloat(cash_amount);
       }
     } else if (payment_type === 'RECEIVE') {
-      cashDebitAmount = parseFloat(cash_amount);
-      cashCreditAmount = 0;
-      cashTrnxType = 'DEBIT';
-      cashClosingBalance = (balanceMap[parseInt(cash_account_id)] || 0) + parseFloat(cash_amount);
-    } else {
       cashDebitAmount = 0;
       cashCreditAmount = parseFloat(cash_amount);
       cashTrnxType = 'CREDIT';
+      cashClosingBalance = (balanceMap[parseInt(cash_account_id)] || 0) + parseFloat(cash_amount);
+    } else {
+      cashDebitAmount = parseFloat(cash_amount);
+      cashCreditAmount = 0;
+      cashTrnxType = 'DEBIT';
       cashClosingBalance = (balanceMap[parseInt(cash_account_id)] || 0) - parseFloat(cash_amount);
     }
 
@@ -253,25 +253,25 @@ export async function persistPaymentLedger(tx, ctx) {
 
     if (mainAccountIsBankOrCash) {
       if (payment_type === 'RECEIVE') {
-        bankDebitAmount = 0;
-        bankCreditAmount = parseFloat(bank_amount);
-        bankTrnxType = 'CREDIT';
-        bankClosingBalance = (balanceMap[parseInt(bank_account_id)] || 0) - parseFloat(bank_amount);
-      } else {
         bankDebitAmount = parseFloat(bank_amount);
         bankCreditAmount = 0;
         bankTrnxType = 'DEBIT';
+        bankClosingBalance = (balanceMap[parseInt(bank_account_id)] || 0) - parseFloat(bank_amount);
+      } else {
+        bankDebitAmount = 0;
+        bankCreditAmount = parseFloat(bank_amount);
+        bankTrnxType = 'CREDIT';
         bankClosingBalance = (balanceMap[parseInt(bank_account_id)] || 0) + parseFloat(bank_amount);
       }
     } else if (payment_type === 'RECEIVE') {
-      bankDebitAmount = parseFloat(bank_amount);
-      bankCreditAmount = 0;
-      bankTrnxType = 'DEBIT';
-      bankClosingBalance = (balanceMap[parseInt(bank_account_id)] || 0) + parseFloat(bank_amount);
-    } else {
       bankDebitAmount = 0;
       bankCreditAmount = parseFloat(bank_amount);
       bankTrnxType = 'CREDIT';
+      bankClosingBalance = (balanceMap[parseInt(bank_account_id)] || 0) + parseFloat(bank_amount);
+    } else {
+      bankDebitAmount = parseFloat(bank_amount);
+      bankCreditAmount = 0;
+      bankTrnxType = 'DEBIT';
       bankClosingBalance = (balanceMap[parseInt(bank_account_id)] || 0) - parseFloat(bank_amount);
     }
 

@@ -267,7 +267,7 @@ export async function POST(request) {
 
       // Entry 1: Main Return entry for Supplier (DEBIT)
       const l_id_pr = await getNextId('ledger', 'l_id', tx);
-      const supplierClosingAfterReturn = supplierBalance + returnAmount; // under receivable formula: + debit
+      const supplierClosingAfterReturn = Number((supplierBalance - returnAmount).toFixed(2));
 
       await tx.ledger.create({
         data: {
@@ -309,7 +309,7 @@ export async function POST(request) {
           where: { cus_id: purchase.debit_account_id }
         });
         if (cashAccount) {
-          const cashClosing = parseFloat(cashAccount.cus_balance || 0) + cashRefund; // Cash account debited (receives money)
+          const cashClosing = Number((parseFloat(cashAccount.cus_balance || 0) + cashRefund).toFixed(2));
           
           // Entry 2a: Cash Account Ledger Entry
           const l_id_cash = await getNextId('ledger', 'l_id', tx);
@@ -318,11 +318,11 @@ export async function POST(request) {
               l_id: l_id_cash,
               cus_id: purchase.debit_account_id,
               opening_balance: parseFloat(cashAccount.cus_balance || 0),
-              debit_amount: cashRefund,
-              credit_amount: 0,
+              debit_amount: 0,
+              credit_amount: cashRefund,
               closing_balance: cashClosing,
               bill_no: `PR-${newPurchaseReturn.id}`,
-              trnx_type: 'DEBIT',
+              trnx_type: 'CREDIT',
               ledger_type: 'Purchase Return',
               details: `Refund Received (CASH) - Purchase Return #${newPurchaseReturn.id} - Amount: ${cashRefund}`,
               payments: cashRefund,
@@ -337,7 +337,7 @@ export async function POST(request) {
           });
 
           // Entry 2b: Supplier Account Payment/Refund Entry (CREDIT)
-          const supplierClosingAfterCash = supplierBalance - cashRefund; // under receivable formula: - credit
+          const supplierClosingAfterCash = Number((supplierBalance + cashRefund).toFixed(2));
           const l_id_sup_cash = await getNextId('ledger', 'l_id', tx);
           await tx.ledger.create({
             data: {
@@ -367,7 +367,7 @@ export async function POST(request) {
           where: { cus_id: purchase.credit_account_id }
         });
         if (bankAccount) {
-          const bankClosing = parseFloat(bankAccount.cus_balance || 0) + bankRefund; // Bank account debited (receives money)
+          const bankClosing = Number((parseFloat(bankAccount.cus_balance || 0) + bankRefund).toFixed(2));
 
           // Entry 3a: Bank Account Ledger Entry
           const l_id_bank = await getNextId('ledger', 'l_id', tx);
@@ -376,11 +376,11 @@ export async function POST(request) {
               l_id: l_id_bank,
               cus_id: purchase.credit_account_id,
               opening_balance: parseFloat(bankAccount.cus_balance || 0),
-              debit_amount: bankRefund,
-              credit_amount: 0,
+              debit_amount: 0,
+              credit_amount: bankRefund,
               closing_balance: bankClosing,
               bill_no: `PR-${newPurchaseReturn.id}`,
-              trnx_type: 'DEBIT',
+              trnx_type: 'CREDIT',
               ledger_type: 'Purchase Return',
               details: `Refund Received (BANK) - Purchase Return #${newPurchaseReturn.id} - Amount: ${bankRefund}`,
               payments: bankRefund,
@@ -395,7 +395,7 @@ export async function POST(request) {
           });
 
           // Entry 3b: Supplier Account Payment/Refund Entry (CREDIT)
-          const supplierClosingAfterBank = supplierBalance - bankRefund; // under receivable formula: - credit
+          const supplierClosingAfterBank = Number((supplierBalance + bankRefund).toFixed(2));
           const l_id_sup_bank = await getNextId('ledger', 'l_id', tx);
           await tx.ledger.create({
             data: {
@@ -611,7 +611,7 @@ export async function PUT(request) {
 
       // Entry 1: Main Return entry for Supplier (DEBIT)
       const l_id_pr = await getNextId('ledger', 'l_id', tx);
-      const supplierClosingAfterReturn = supplierBalance + returnAmount; // under receivable formula: + debit
+      const supplierClosingAfterReturn = Number((supplierBalance - returnAmount).toFixed(2));
 
       await tx.ledger.create({
         data: {
@@ -655,7 +655,7 @@ export async function PUT(request) {
           where: { cus_id: purchase.debit_account_id }
         });
         if (cashAccount) {
-          const cashClosing = parseFloat(cashAccount.cus_balance || 0) + cashRefund; // Cash account debited (receives money)
+          const cashClosing = Number((parseFloat(cashAccount.cus_balance || 0) + cashRefund).toFixed(2));
           
           // Entry 2a: Cash Account Ledger Entry
           const l_id_cash = await getNextId('ledger', 'l_id', tx);
@@ -664,11 +664,11 @@ export async function PUT(request) {
               l_id: l_id_cash,
               cus_id: purchase.debit_account_id,
               opening_balance: parseFloat(cashAccount.cus_balance || 0),
-              debit_amount: cashRefund,
-              credit_amount: 0,
+              debit_amount: 0,
+              credit_amount: cashRefund,
               closing_balance: cashClosing,
               bill_no: `PR-${id}`,
-              trnx_type: 'DEBIT',
+              trnx_type: 'CREDIT',
               ledger_type: 'Purchase Return',
               details: `Refund Received (CASH) - Purchase Return #${id} - Amount: ${cashRefund}`,
               payments: cashRefund,
@@ -683,7 +683,7 @@ export async function PUT(request) {
           });
 
           // Entry 2b: Supplier Account Payment/Refund Entry (CREDIT)
-          const supplierClosingAfterCash = supplierBalance - cashRefund; // under receivable formula: - credit
+          const supplierClosingAfterCash = Number((supplierBalance + cashRefund).toFixed(2));
           const l_id_sup_cash = await getNextId('ledger', 'l_id', tx);
           await tx.ledger.create({
             data: {
@@ -715,7 +715,7 @@ export async function PUT(request) {
           where: { cus_id: purchase.credit_account_id }
         });
         if (bankAccount) {
-          const bankClosing = parseFloat(bankAccount.cus_balance || 0) + bankRefund; // Bank account debited (receives money)
+          const bankClosing = Number((parseFloat(bankAccount.cus_balance || 0) + bankRefund).toFixed(2));
 
           // Entry 3a: Bank Account Ledger Entry
           const l_id_bank = await getNextId('ledger', 'l_id', tx);
@@ -724,11 +724,11 @@ export async function PUT(request) {
               l_id: l_id_bank,
               cus_id: purchase.credit_account_id,
               opening_balance: parseFloat(bankAccount.cus_balance || 0),
-              debit_amount: bankRefund,
-              credit_amount: 0,
+              debit_amount: 0,
+              credit_amount: bankRefund,
               closing_balance: bankClosing,
               bill_no: `PR-${id}`,
-              trnx_type: 'DEBIT',
+              trnx_type: 'CREDIT',
               ledger_type: 'Purchase Return',
               details: `Refund Received (BANK) - Purchase Return #${id} - Amount: ${bankRefund}`,
               payments: bankRefund,
@@ -743,7 +743,7 @@ export async function PUT(request) {
           });
 
           // Entry 3b: Supplier Account Payment/Refund Entry (CREDIT)
-          const supplierClosingAfterBank = supplierBalance - bankRefund; // under receivable formula: - credit
+          const supplierClosingAfterBank = Number((supplierBalance + bankRefund).toFixed(2));
           const l_id_sup_bank = await getNextId('ledger', 'l_id', tx);
           await tx.ledger.create({
             data: {
