@@ -238,18 +238,18 @@ export async function GET(request) {
       
       let receivablesWhere = { ...statsWhere };
       if (balanceFilter === 'all' || balanceFilter === 'non-zero') {
-        receivablesWhere.cus_balance = { gt: 0 };
-      } else if (balanceFilter === 'positive') {
-        receivablesWhere.cus_balance = { gt: 0 };
+        receivablesWhere.cus_balance = { lt: 0 };
+      } else if (balanceFilter === 'negative') {
+        receivablesWhere.cus_balance = { lt: 0 };
       } else {
         receivablesWhere = null;
       }
 
       let payablesWhere = { ...statsWhere };
       if (balanceFilter === 'all' || balanceFilter === 'non-zero') {
-        payablesWhere.cus_balance = { lt: 0 };
-      } else if (balanceFilter === 'negative') {
-        payablesWhere.cus_balance = { lt: 0 };
+        payablesWhere.cus_balance = { gt: 0 };
+      } else if (balanceFilter === 'positive') {
+        payablesWhere.cus_balance = { gt: 0 };
       } else {
         payablesWhere = null;
       }
@@ -267,7 +267,7 @@ export async function GET(request) {
 
       const totalCustomers = aggregateResult._count.cus_id || 0;
       const netBalance = aggregateResult._sum.cus_balance || 0;
-      const totalReceivables = receivablesResult?._sum?.cus_balance || 0;
+      const totalReceivables = Math.abs(receivablesResult?._sum?.cus_balance || 0);
       const totalPayables = payablesResult?._sum?.cus_balance || 0;
 
       return NextResponse.json({

@@ -317,13 +317,14 @@ export default function SaleViewBillDialog() {
                       const prevBalance = parseFloat(selectedBill.previous_balance || 0);
                       const currentBillAmount = parseFloat(selectedBill.total_amount || 0);
                       const payment = parseFloat(selectedBill.payment || 0);
-                      const totalBalance = prevBalance + currentBillAmount - payment;
+                      const unpaidDue = currentBillAmount - payment;
+                      const totalBalance = prevBalance - unpaidDue;
 
                       return (
                         <TableContainer component={Paper} variant="outlined" sx={{ mb: 2, border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden', width: '100%', boxShadow: 'none' }}>
                           <Table size="small">
                             <TableBody>
-                              {prevBalance > 0 && (
+                              {prevBalance !== 0 && (
                                 <TableRow>
                                   <TableCell sx={{ fontWeight: 'bold', direction: 'rtl', px: 1.25, py: 0.6, borderRight: '1px solid #e0e0e0', borderBottom: '1px solid #e0e0e0', color: '#000000', fontSize: '0.875rem' }}>سابقہ بقایا</TableCell>
                                   <TableCell align="right" sx={{ px: 1.25, py: 0.6, borderBottom: '1px solid #e0e0e0', fontWeight: 'bold', color: '#000000', fontSize: '0.875rem' }}>

@@ -466,7 +466,8 @@ async function recalculateLedgerBalances(tx, cus_id, startFromDate = null) {
     const opening = runningBalance;
     const debit = parseFloat(entry.debit_amount || 0);
     const credit = parseFloat(entry.credit_amount || 0);
-    const change = debit - credit;
+    // Credit adds balance (purchases), Debit deducts balance (payments)
+    const change = credit - debit;
     const closing = opening + change;
 
     if (

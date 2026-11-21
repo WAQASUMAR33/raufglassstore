@@ -135,16 +135,16 @@ function getOrderReceiptBalances(bill) {
   if (storedPrevRaw != null && storedPrevRaw !== '' && !Number.isNaN(storedPrev)) {
     previousBalance = storedPrev;
   } else if (isOrder) {
-    // After order save: customer balance = previous - advance payment
-    previousBalance = currentBalance + payment;
+    // After order save: customer advance payment added to balance
+    previousBalance = currentBalance - payment;
   } else {
-    previousBalance = currentBalance - remaining;
+    previousBalance = currentBalance + remaining;
   }
 
   return {
     previousBalance,
     remaining,
-    totalBalance: previousBalance + remaining,
+    totalBalance: previousBalance - remaining,
   };
 }
 
@@ -181,7 +181,7 @@ function buildOrderReceiptBill({
     created_at: createdAt || new Date().toISOString(),
     previous_balance: prevBalanceAtSave,
     customer: formSelectedCustomer
-      ? { ...formSelectedCustomer, cus_balance: Number((prevBalanceAtSave - totalCashReceived).toFixed(2)) }
+      ? { ...formSelectedCustomer, cus_balance: Number((prevBalanceAtSave + totalCashReceived).toFixed(2)) }
       : null,
     sale_details: productTableData.map((product, index) => ({
       sale_detail_id: index + 1,

@@ -2155,9 +2155,9 @@ export default function SalesPageContent() {
         if (formSelectedCustomer?.cus_id) {
           const nextBal = Number((
             parseFloat(formSelectedCustomer.cus_balance || 0)
-            + parseFloat(grandTotal || 0)
-            - cashAmount
-            - bankAmount
+            - parseFloat(grandTotal || 0)
+            + cashAmount
+            + bankAmount
           ).toFixed(2));
           setCustomers((prev) => prev.map((c) => (
             c.cus_id === formSelectedCustomer.cus_id ? { ...c, cus_balance: nextBal } : c

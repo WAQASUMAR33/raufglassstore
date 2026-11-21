@@ -13,20 +13,17 @@ export const ACCOUNT_NATURE = {
 
 /**
  * Calculate closing balance for a party ledger account.
- * - RECEIVABLE (customers): what they owe us — opening + debit - credit (debit increases balance)
- * - PAYABLE (suppliers): bill/purchase = debit, payment = credit; balance negative when we owe
- *   closing = opening - debit + credit (e.g. bill 2500 → -2500, pay 1000 credit → -1500)
+ * Universal Accounting Rule:
+ * - Debit reduces balance: Sale bill / charge -> negative balance = RECEIVABLE (customer owes us)
+ * - Credit increases balance: Payment received / return -> positive balance = PAYABLE (we owe account / advance)
+ * closing = opening - debit + credit
  */
-export function calculateClosingBalance(openingBalance, debitAmount = 0, creditAmount = 0, account_nature = ACCOUNT_NATURE.RECEIVABLE) {
+export function calculateClosingBalance(openingBalance, debitAmount = 0, creditAmount = 0) {
   const opening = parseFloat(openingBalance || 0);
   const debit = parseFloat(debitAmount || 0);
   const credit = parseFloat(creditAmount || 0);
 
-  if (account_nature === ACCOUNT_NATURE.PAYABLE) {
-    return opening - debit + credit;
-  }
-
-  return opening + debit - credit;
+  return opening - debit + credit;
 }
 
 /**

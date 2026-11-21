@@ -565,7 +565,7 @@ export async function PUT(request) {
             opening = runningBalance;
             const debit = parseFloat(entry.debit_amount || 0);
             const credit = parseFloat(entry.credit_amount || 0);
-            closing = opening + debit - credit;
+            closing = opening - debit + credit;
           }
 
           if (

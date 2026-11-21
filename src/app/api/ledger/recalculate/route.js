@@ -63,7 +63,7 @@ export async function POST(request) {
       const opening = currentBalance;
       const debit = parseFloat(entry.debit_amount || 0);
       const credit = parseFloat(entry.credit_amount || 0);
-      const closing = Number((opening + debit - credit).toFixed(2));
+      const closing = Number((opening - debit + credit).toFixed(2));
 
       updates.push({
         l_id: entry.l_id,

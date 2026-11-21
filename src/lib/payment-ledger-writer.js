@@ -31,7 +31,7 @@ export async function recalculateLedgerBalances(tx, cus_id) {
       const opening = runningBalance;
       const debit = parseFloat(entry.debit_amount || 0);
       const credit = parseFloat(entry.credit_amount || 0);
-      const closing = opening + debit - credit;
+      const closing = opening - debit + credit;
       if (
         Math.abs(parseFloat(entry.opening_balance) - opening) > 0.01 ||
         Math.abs(parseFloat(entry.closing_balance) - closing) > 0.01
@@ -143,13 +143,15 @@ export async function persistPaymentLedger(tx, ctx) {
   let trnxTypeToUse = '';
 
   if (payment_type === 'RECEIVE') {
-    mainDebitAmount = parseFloat(total_amount);
-    mainCreditAmount = 0;
-    trnxTypeToUse = 'DEBIT';
-  } else {
+    // Payment received from customer/account: credit customer (increases balance towards 0 / reduces debt)
     mainDebitAmount = 0;
     mainCreditAmount = parseFloat(total_amount);
     trnxTypeToUse = 'CREDIT';
+  } else {
+    // Payment made to account (supplier payment or refund): debit account (reduces liability towards 0)
+    mainDebitAmount = parseFloat(total_amount);
+    mainCreditAmount = 0;
+    trnxTypeToUse = 'DEBIT';
   }
 
   const mainAccountEntry = createLedgerEntry({
@@ -169,12 +171,12 @@ export async function persistPaymentLedger(tx, ctx) {
   });
 
   if (payment_type === 'RECEIVE') {
-    mainAccountEntry.debit_amount = parseFloat(total_amount);
-    mainAccountEntry.credit_amount = 0;
-    mainAccountEntry.closing_balance = mainAccountEntry.opening_balance + parseFloat(total_amount);
-  } else if (payment_type === 'PAY') {
     mainAccountEntry.debit_amount = 0;
     mainAccountEntry.credit_amount = parseFloat(total_amount);
+    mainAccountEntry.closing_balance = mainAccountEntry.opening_balance + parseFloat(total_amount);
+  } else if (payment_type === 'PAY') {
+    mainAccountEntry.debit_amount = parseFloat(total_amount);
+    mainAccountEntry.credit_amount = 0;
     mainAccountEntry.closing_balance = mainAccountEntry.opening_balance - parseFloat(total_amount);
   }
 

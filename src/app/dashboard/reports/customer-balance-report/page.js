@@ -533,13 +533,13 @@ export default function CustomerBalanceReport() {
                                                 </TableCell>
                                                 <TableCell sx={{ textAlign: 'center' }}>
                                                     <Chip
-                                                        label={balance >= 0 ? 'Receivable' : 'Payable'}
+                                                        label={balance < 0 ? 'Receivable' : balance > 0 ? 'Payable' : 'Settled'}
                                                         size="small"
                                                         variant="outlined"
                                                         sx={{
                                                             fontWeight: 700,
-                                                            borderColor: color,
-                                                            color: color,
+                                                            borderColor: balance < 0 ? '#dc2626' : balance > 0 ? '#16a34a' : '#94a3b8',
+                                                            color: balance < 0 ? '#dc2626' : balance > 0 ? '#16a34a' : '#64748b',
                                                             textTransform: 'uppercase',
                                                             fontSize: '0.65rem'
                                                         }}

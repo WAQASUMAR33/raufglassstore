@@ -307,12 +307,8 @@ async function recalculateLedgerBalances(tx, cus_id) {
       const debit = parseFloat(entry.debit_amount || 0);
       const credit = parseFloat(entry.credit_amount || 0);
       
-      let change = 0;
-      if (categoryTitle.includes('cash') || categoryTitle.includes('bank')) {
-        change = debit - credit;
-      } else {
-        change = debit - credit;
-      }
+      // Debit deducts balance (sales/charges), Credit adds balance (returns/payments)
+      const change = credit - debit;
       const closing = opening + change;
 
       if (

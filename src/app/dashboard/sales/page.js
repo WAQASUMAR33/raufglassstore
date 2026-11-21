@@ -223,14 +223,14 @@ function resolveSaleReceiptBalances(bill) {
   const currentDue = parseFloat(bill?.total_amount || 0) - parseFloat(bill?.payment || 0);
   if (bill?.previous_balance !== undefined && bill?.previous_balance !== null) {
     const prev = parseFloat(bill.previous_balance);
-    return { prevBal: prev, currentDue, totalBal: prev + currentDue };
+    return { prevBal: prev, currentDue, totalBal: prev - currentDue };
   }
   if (bill?.previous_customer_balance !== undefined && bill?.previous_customer_balance !== null) {
     const prev = parseFloat(bill.previous_customer_balance);
-    return { prevBal: prev, currentDue, totalBal: prev + currentDue };
+    return { prevBal: prev, currentDue, totalBal: prev - currentDue };
   }
   const postBal = parseFloat(bill?.customer?.cus_balance || 0);
-  return { prevBal: postBal - currentDue, currentDue, totalBal: postBal };
+  return { prevBal: postBal + currentDue, currentDue, totalBal: postBal };
 }
 
 /** Ink-saving outline print styling optimized for B&W & thermal printers (white background, bold black text & borders) */
@@ -3720,9 +3720,9 @@ function SalesPageContent() {
         if (formSelectedCustomer?.cus_id) {
           const nextBal = Number((
             parseFloat(formSelectedCustomer.cus_balance || 0)
-            + parseFloat(grandTotal || 0)
-            - cashAmount
-            - bankAmount
+            - parseFloat(grandTotal || 0)
+            + cashAmount
+            + bankAmount
           ).toFixed(2));
           setCustomers((prev) => prev.map((c) => (
             c.cus_id === formSelectedCustomer.cus_id ? { ...c, cus_balance: nextBal } : c

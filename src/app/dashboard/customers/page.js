@@ -681,17 +681,17 @@ export default function CustomersPage() {
 
   const getBalanceMeta = (balance) => {
     const bal = parseFloat(balance) || 0;
-    if (bal > 0) {
-      return {
-        amountClass: 'text-emerald-700',
-        badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        label: 'Receivable',
-      };
-    }
     if (bal < 0) {
       return {
         amountClass: 'text-rose-700',
         badgeClass: 'bg-rose-100 text-rose-800 border-rose-200',
+        label: 'Receivable',
+      };
+    }
+    if (bal > 0) {
+      return {
+        amountClass: 'text-emerald-700',
+        badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
         label: 'Payable',
       };
     }
@@ -864,8 +864,8 @@ export default function CustomersPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { title: 'Total Accounts', val: totalCustomers, color: 'blue', icon: Users, currency: false },
-              { title: 'Receivables', val: totalReceivables, color: 'emerald', icon: TrendingUp, currency: true },
-              { title: 'Payables', val: totalPayables, color: 'rose', icon: TrendingDown, currency: true },
+              { title: 'Receivables', val: totalReceivables, color: 'rose', icon: TrendingDown, currency: true },
+              { title: 'Payables', val: totalPayables, color: 'emerald', icon: TrendingUp, currency: true },
               { title: 'Net Balance', val: netBalance, color: 'amber', icon: Wallet, currency: true },
             ].map((stat) => {
               const Icon = stat.icon;
@@ -1017,8 +1017,8 @@ export default function CustomersPage() {
                     size="small"
                     options={[
                       { value: 'all', label: 'All Balances' },
-                      { value: 'positive', label: 'Positive (+)' },
-                      { value: 'negative', label: 'Negative (−)' },
+                      { value: 'negative', label: 'Receivable (−)' },
+                      { value: 'positive', label: 'Payable (+)' },
                       { value: 'zero', label: 'Zero' },
                       { value: 'non-zero', label: 'Non-Zero' },
                     ]}
@@ -1027,8 +1027,8 @@ export default function CustomersPage() {
                       value: balanceFilter,
                       label:
                         balanceFilter === 'all' ? 'All Balances' :
-                        balanceFilter === 'positive' ? 'Positive (+)' :
-                        balanceFilter === 'negative' ? 'Negative (−)' :
+                        balanceFilter === 'negative' ? 'Receivable (−)' :
+                        balanceFilter === 'positive' ? 'Payable (+)' :
                         balanceFilter === 'zero' ? 'Zero' :
                         balanceFilter === 'non-zero' ? 'Non-Zero' : 'All Balances',
                     }}

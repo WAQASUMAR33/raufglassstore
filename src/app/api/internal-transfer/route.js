@@ -79,7 +79,7 @@ async function recalculateLedgerBalances(tx, cus_id) {
       const opening = runningBalance;
       const debit = parseFloat(entry.debit_amount || 0);
       const credit = parseFloat(entry.credit_amount || 0);
-      const closing = opening + debit - credit;
+      const closing = opening - debit + credit;
       if (
         Math.abs(parseFloat(entry.opening_balance) - opening) > 0.01 ||
         Math.abs(parseFloat(entry.closing_balance) - closing) > 0.01

@@ -60,7 +60,7 @@ export default function CustomersBalanceReport() {
     
     reportData.customers.forEach(customer => {
       const balance = parseFloat(customer.cus_balance);
-      const status = balance > 0 ? 'Receivable' : balance < 0 ? 'Payable' : 'Zero';
+      const status = balance < 0 ? 'Receivable' : balance > 0 ? 'Payable' : 'Zero';
       csv += `${customer.cus_name},${customer.cus_phone_no || ''},${customer.city?.city_name || ''},${customer.customer_category?.cus_cat_title || ''},${customer.customer_type?.cus_type_title || ''},${fmtAmt(balance)},${status}\n`;
     });
 
@@ -160,8 +160,8 @@ export default function CustomersBalanceReport() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {reportData.customers.map((customer) => {
                         const balance = parseFloat(customer.cus_balance);
-                        const status = balance > 0 ? 'Receivable' : balance < 0 ? 'Payable' : 'Zero';
-                        const statusColor = balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-600';
+                        const status = balance < 0 ? 'Receivable' : balance > 0 ? 'Payable' : 'Zero';
+                        const statusColor = balance < 0 ? 'text-red-600' : balance > 0 ? 'text-green-600' : 'text-gray-600';
                         
                         return (
                           <tr key={customer.cus_id} className="hover:bg-gray-50 print:hover:bg-white">

@@ -105,14 +105,14 @@ export function resolveSaleReceiptBalances(bill) {
   const currentDue = parseFloat(bill?.total_amount || 0) - parseFloat(bill?.payment || 0);
   if (bill?.previous_balance !== undefined && bill?.previous_balance !== null) {
     const prev = parseFloat(bill.previous_balance);
-    return { prevBal: prev, currentDue, totalBal: prev + currentDue };
+    return { prevBal: prev, currentDue, totalBal: prev - currentDue };
   }
   if (bill?.previous_customer_balance !== undefined && bill?.previous_customer_balance !== null) {
     const prev = parseFloat(bill.previous_customer_balance);
-    return { prevBal: prev, currentDue, totalBal: prev + currentDue };
+    return { prevBal: prev, currentDue, totalBal: prev - currentDue };
   }
   const postBal = parseFloat(bill?.customer?.cus_balance || 0);
-  return { prevBal: postBal - currentDue, currentDue, totalBal: postBal };
+  return { prevBal: postBal + currentDue, currentDue, totalBal: postBal };
 }
 
 // ─── Print Styles ────────────────────────────────────────────────────────────
