@@ -4591,8 +4591,10 @@ function SalesPageContent() {
         if (productsRes) {
           if (productsRes.ok) {
             const productsData = await productsRes.json();
-            setProducts(productsData || []);
+            const list = Array.isArray(productsData) ? productsData : (productsData?.products || productsData?.data || []);
+            setProducts(list);
           } else {
+            console.error('Failed to load products for sale form:', productsRes.status);
             setProducts([]);
           }
         }

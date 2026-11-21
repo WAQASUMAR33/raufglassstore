@@ -788,7 +788,7 @@ function PurchasesPageContent() {
       try {
         const u = JSON.parse(localStorage.getItem('user') || '{}');
         setCurrentUser(u);
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
@@ -1246,7 +1246,7 @@ function PurchasesPageContent() {
     } catch (e) {
       console.warn('Failed to restore purchase draft:', e);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount unless URL already requests create
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount unless URL already requests create
   }, []);
 
   // Auto-save draft whenever form state changes (skipped right after successful save / clear)
@@ -1377,7 +1377,7 @@ function PurchasesPageContent() {
       .then((data) => {
         if (data?.pur_id) purchaseDetailCacheRef.current.set(data.pur_id, data);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -2495,8 +2495,8 @@ function PurchasesPageContent() {
           const resolvedPrevBalance = freshData.previous_customer_balance !== undefined && freshData.previous_customer_balance !== null
             ? parseFloat(freshData.previous_customer_balance)
             : (wasEditing && editingPurchase?.previous_customer_balance !== undefined && editingPurchase?.previous_customer_balance !== null
-                ? parseFloat(editingPurchase.previous_customer_balance)
-                : parseFloat(supplier?.cus_balance ?? 0));
+              ? parseFloat(editingPurchase.previous_customer_balance)
+              : parseFloat(supplier?.cus_balance ?? 0));
 
           return {
             ...freshData,
@@ -3738,91 +3738,91 @@ function PurchasesPageContent() {
                     </TableRow>
                   ) : (
                     paginatedPurchases.map((purchase, rowIndex) => (
-                        <TableRow
-                          key={purchase.pur_id}
-                          onClick={() => handleOpenCustomerLedger(purchase)}
-                          sx={{
-                            bgcolor: rowIndex % 2 === 0 ? '#ffffff' : '#f8fafc',
-                            '&:hover': { bgcolor: '#eff6ff' },
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <TableCell sx={{ fontWeight: 700, color: BRAND.primary.blue, whiteSpace: 'nowrap' }}>
-                            #{purchase.pur_id}
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 500, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            <Box>{purchase.customer?.cus_name || 'N/A'}</Box>
-                            <Typography component="span" sx={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                              {purchase.customer?.cus_phone_no || '—'}
+                      <TableRow
+                        key={purchase.pur_id}
+                        onClick={() => handleOpenCustomerLedger(purchase)}
+                        sx={{
+                          bgcolor: rowIndex % 2 === 0 ? '#ffffff' : '#f8fafc',
+                          '&:hover': { bgcolor: '#eff6ff' },
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <TableCell sx={{ fontWeight: 700, color: BRAND.primary.blue, whiteSpace: 'nowrap' }}>
+                          #{purchase.pur_id}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 500, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <Box>{purchase.customer?.cus_name || 'N/A'}</Box>
+                          <Typography component="span" sx={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                            {purchase.customer?.cus_phone_no || '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ ...PURCHASE_NUM_CELL_SX, fontWeight: 700, color: '#1e293b' }}>
+                          {fmtAmt(purchase.net_total)}
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.75rem', color: '#64748b', maxWidth: 200 }}>
+                          T: {fmtAmt(purchase.total_amount)} · U: {fmtAmt(purchase.unloading_amount)} · F: {fmtAmt(purchase.fare_amount)}
+                          {parseFloat(purchase.discount || 0) > 0 && (
+                            <Box component="span" sx={{ display: 'block', color: BRAND.primary.pink, fontWeight: 600 }}>
+                              Disc: -{fmtAmt(purchase.discount)}
+                            </Box>
+                          )}
+                        </TableCell>
+                        <TableCell sx={{ ...PURCHASE_NUM_CELL_SX, fontWeight: 600, color: BRAND.text.green }}>
+                          {fmtAmt(purchase.payment)}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={purchase.payment_type || '—'}
+                            size="small"
+                            sx={{
+                              height: 22,
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              borderRadius: '4px',
+                              bgcolor: '#f1f5f9',
+                              color: '#475569',
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ color: '#64748b', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <Box sx={{ fontWeight: 600, color: '#1e293b' }}>{purchase.vehicle_no || '—'}</Box>
+                          {purchase.dc_no && (
+                            <Typography component="span" sx={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>
+                              DC: {purchase.dc_no}
                             </Typography>
-                          </TableCell>
-                          <TableCell sx={{ ...PURCHASE_NUM_CELL_SX, fontWeight: 700, color: '#1e293b' }}>
-                            {fmtAmt(purchase.net_total)}
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.75rem', color: '#64748b', maxWidth: 200 }}>
-                            T: {fmtAmt(purchase.total_amount)} · U: {fmtAmt(purchase.unloading_amount)} · F: {fmtAmt(purchase.fare_amount)}
-                            {parseFloat(purchase.discount || 0) > 0 && (
-                              <Box component="span" sx={{ display: 'block', color: BRAND.primary.pink, fontWeight: 600 }}>
-                                Disc: -{fmtAmt(purchase.discount)}
-                              </Box>
-                            )}
-                          </TableCell>
-                          <TableCell sx={{ ...PURCHASE_NUM_CELL_SX, fontWeight: 600, color: BRAND.text.green }}>
-                            {fmtAmt(purchase.payment)}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip
-                              label={purchase.payment_type || '—'}
-                              size="small"
-                              sx={{
-                                height: 22,
-                                fontSize: '0.68rem',
-                                fontWeight: 700,
-                                borderRadius: '4px',
-                                bgcolor: '#f1f5f9',
-                                color: '#475569',
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell sx={{ color: '#64748b', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            <Box sx={{ fontWeight: 600, color: '#1e293b' }}>{purchase.vehicle_no || '—'}</Box>
-                            {purchase.dc_no && (
-                              <Typography component="span" sx={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>
-                                DC: {purchase.dc_no}
-                              </Typography>
-                            )}
-                          </TableCell>
-                          <TableCell align="center" sx={{ color: '#64748b', whiteSpace: 'nowrap' }}>
-                            {formatDatePK(purchase?.created_at) || '—'}
-                          </TableCell>
-                          <TableCell sx={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {purchase.updated_by_user?.full_name || '—'}
-                          </TableCell>
-                          <TableCell align="center" sx={{ p: 0.4, whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
-                            <Stack direction="row" spacing={0} justifyContent="center" flexWrap="nowrap">
-                              <Tooltip title="View Details">
-                                <IconButton size="small" color="primary" onClick={() => handleViewPurchase(purchase)} sx={{ p: 0.4 }}>
-                                  <EyeIcon sx={{ fontSize: 17 }} />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Edit Purchase">
-                                <IconButton
-                                  size="small"
-                                  sx={{ color: '#f59e0b', p: 0.4 }}
-                                  onMouseEnter={() => prefetchPurchaseForEdit(purchase.pur_id)}
-                                  onClick={() => handleEdit(purchase)}
-                                >
-                                  <EditIcon sx={{ fontSize: 17 }} />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Delete">
-                                <IconButton size="small" color="error" onClick={() => handleDelete(purchase.pur_id)} sx={{ p: 0.4 }}>
-                                  <DeleteIcon sx={{ fontSize: 17 }} />
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
-                          </TableCell>
-                        </TableRow>
+                          )}
+                        </TableCell>
+                        <TableCell align="center" sx={{ color: '#64748b', whiteSpace: 'nowrap' }}>
+                          {formatDatePK(purchase?.created_at) || '—'}
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {purchase.updated_by_user?.full_name || '—'}
+                        </TableCell>
+                        <TableCell align="center" sx={{ p: 0.4, whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
+                          <Stack direction="row" spacing={0} justifyContent="center" flexWrap="nowrap">
+                            <Tooltip title="View Details">
+                              <IconButton size="small" color="primary" onClick={() => handleViewPurchase(purchase)} sx={{ p: 0.4 }}>
+                                <EyeIcon sx={{ fontSize: 17 }} />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edit Purchase">
+                              <IconButton
+                                size="small"
+                                sx={{ color: '#f59e0b', p: 0.4 }}
+                                onMouseEnter={() => prefetchPurchaseForEdit(purchase.pur_id)}
+                                onClick={() => handleEdit(purchase)}
+                              >
+                                <EditIcon sx={{ fontSize: 17 }} />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                              <IconButton size="small" color="error" onClick={() => handleDelete(purchase.pur_id)} sx={{ p: 0.4 }}>
+                                <DeleteIcon sx={{ fontSize: 17 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
                     ))
                   )}
                 </TableBody>
@@ -3884,50 +3884,50 @@ function PurchasesPageContent() {
       )}
       <Container maxWidth={false} disableGutters sx={{ py: 1, px: { xs: 0, sm: 1 } }}>
         <Stack spacing={2} sx={{ width: '100%', pb: 4 }}>
-        {/* Header */}
-        <div className="flex-shrink-0 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <button
-                onClick={() => {
-                  setCurrentView('list');
-                  setPurchaseType('new');
-                  setSelectedPurchaseForReturn(null);
-                }}
-                className="mr-4 p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              >
-                <ArrowLeftIcon />
-              </button>
-              <div>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <h2 className="text-2xl font-bold text-gray-900">
+          {/* Header */}
+          <div className="flex-shrink-0 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <button
+                  onClick={() => {
+                    setCurrentView('list');
+                    setPurchaseType('new');
+                    setSelectedPurchaseForReturn(null);
+                  }}
+                  className="mr-4 p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                >
+                  <ArrowLeftIcon />
+                </button>
+                <div>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {editingPurchase
+                        ? 'Edit Purchase'
+                        : purchaseType === 'return'
+                          ? 'Create Purchase Return'
+                          : 'Create New Purchase'}
+                    </h2>
+                    {hasDraft && !editingPurchase && (
+                      <Chip
+                        label="Draft Saved"
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                        sx={{ fontWeight: 600, fontSize: '0.72rem' }}
+                      />
+                    )}
+                  </Box>
+                  <p className="text-gray-600 mt-1">
                     {editingPurchase
-                      ? 'Edit Purchase'
+                      ? 'Update purchase information'
                       : purchaseType === 'return'
-                        ? 'Create Purchase Return'
-                        : 'Create New Purchase'}
-                  </h2>
-                  {hasDraft && !editingPurchase && (
-                    <Chip
-                      label="Draft Saved"
-                      size="small"
-                      color="warning"
-                      variant="outlined"
-                      sx={{ fontWeight: 600, fontSize: '0.72rem' }}
-                    />
-                  )}
-                </Box>
-                <p className="text-gray-600 mt-1">
-                  {editingPurchase
-                    ? 'Update purchase information'
-                    : purchaseType === 'return'
-                      ? 'Return items from an existing purchase'
-                      : 'Select products and create purchase order'}
-                </p>
+                        ? 'Return items from an existing purchase'
+                        : 'Select products and create purchase order'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
           {/* Quick actions toolbar */}
           <Box sx={{ ...PURCHASE_PAGE_CARD_SX, px: { xs: 1.5, md: 2 }, py: 1.25 }}>
@@ -4123,21 +4123,21 @@ function PurchasesPageContent() {
                 <Box sx={
                   purchaseType === 'return'
                     ? {
-                        ...PURCHASE_ENTRY_ROW1_RETURN_SX,
-                        gridTemplateColumns: {
-                          xs: '1fr',
-                          sm: 'repeat(2, minmax(0, 1fr))',
-                          md: 'minmax(0, 1.8fr) minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1fr)',
-                        },
-                      }
+                      ...PURCHASE_ENTRY_ROW1_RETURN_SX,
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, minmax(0, 1fr))',
+                        md: 'minmax(0, 1.8fr) minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1fr)',
+                      },
+                    }
                     : {
-                        ...PURCHASE_ENTRY_ROW1_SX,
-                        gridTemplateColumns: {
-                          xs: '1fr',
-                          sm: 'repeat(2, minmax(0, 1fr))',
-                          md: 'minmax(0, 2fr) minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr)',
-                        },
-                      }
+                      ...PURCHASE_ENTRY_ROW1_SX,
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, minmax(0, 1fr))',
+                        md: 'minmax(0, 2fr) minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr)',
+                      },
+                    }
                 }>
                   <Box sx={PURCHASE_ENTRY_CELL_SX}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75, gap: 1, minHeight: 22, flexWrap: 'wrap' }}>
@@ -4430,463 +4430,463 @@ function PurchasesPageContent() {
                     ? `${parseFloat(storeStockEntry.stock_quantity || 0).toLocaleString()} ${selectedProduct?.pro_unit || ''}`.trim()
                     : '';
                   return (
-                <Box sx={PURCHASE_ENTRY_ROW2_SX}>
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>SELECT PRODUCT</Typography>
-                      <Button
-                        size="small"
-                        variant="text"
-                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
-                        onClick={() => {
-                          void ensureCatalogLookups();
-                          setShowAddProductPopup(true);
-                        }}
-                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
-                      >
-                        + Add Product
-                      </Button>
-                    </Box>
-                    <Autocomplete
-                        size="small"
-                        fullWidth
-                        autoSelect={true}
-                        autoHighlight={true}
-                        openOnFocus={true}
-                        selectOnFocus={true}
-                        options={products}
-                        getOptionLabel={(option) => option.pro_title}
-                        slots={{ listbox: PurchaseProductDropdownListbox }}
-                        slotProps={{
-                          popper: {
-                            sx: PURCHASE_DROPDOWN_POPPER_SX,
-                            modifiers: [{ name: 'flip', enabled: false }],
-                          },
-                          paper: { sx: { width: '100%', mt: 0.5 } },
-                          listbox: {
-                            showCost: showProductCostInDropdown,
-                            onToggleCost: () => setShowProductCostInDropdown((prev) => !prev),
-                          },
-                        }}
-                        value={selectedProduct}
-                        onChange={(event, newValue) => {
-                          if (newValue) {
-                            handleProductSelect(newValue);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && selectedProduct) {
-                            e.preventDefault();
-                            // Move focus to Quantity field
-                            const qtyInputs = document.querySelectorAll('input[type="number"]');
-                            if (qtyInputs.length > 0) {
-                              qtyInputs[0]?.focus();
+                    <Box sx={PURCHASE_ENTRY_ROW2_SX}>
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                          <Typography sx={PURCHASE_ENTRY_LABEL_SX}>SELECT PRODUCT</Typography>
+                          <Button
+                            size="small"
+                            variant="text"
+                            startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                            onClick={() => {
+                              void ensureCatalogLookups();
+                              setShowAddProductPopup(true);
+                            }}
+                            sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                          >
+                            + Add Product
+                          </Button>
+                        </Box>
+                        <Autocomplete
+                          size="small"
+                          fullWidth
+                          autoSelect={true}
+                          autoHighlight={true}
+                          openOnFocus={true}
+                          selectOnFocus={true}
+                          options={products}
+                          getOptionLabel={(option) => option.pro_title}
+                          slots={{ listbox: PurchaseProductDropdownListbox }}
+                          slotProps={{
+                            popper: {
+                              sx: PURCHASE_DROPDOWN_POPPER_SX,
+                              modifiers: [{ name: 'flip', enabled: false }],
+                            },
+                            paper: { sx: { width: '100%', mt: 0.5 } },
+                            listbox: {
+                              showCost: showProductCostInDropdown,
+                              onToggleCost: () => setShowProductCostInDropdown((prev) => !prev),
+                            },
+                          }}
+                          value={selectedProduct}
+                          onChange={(event, newValue) => {
+                            if (newValue) {
+                              handleProductSelect(newValue);
                             }
-                          }
-                        }}
-                        filterOptions={filterProductDropdown}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            id="product-select-dropdown-input"
-                            placeholder="Select product..."
-                            onFocus={(e) => e.target.select()}
-                            sx={{ ...PURCHASE_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: selectedProduct ? 'bold' : 'normal' } }}
-                          />
-                        )}
-                        renderOption={(props, option, { index }) => {
-                          const { key, ownerState, ...optionProps } = props;
-                          const rawUnit = option.pro_unit ? String(option.pro_unit).trim() : '';
-                          const cleanUnit = (rawUnit && rawUnit.toLowerCase() !== 'null' && rawUnit.toLowerCase() !== 'undefined') ? rawUnit : '';
-
-                          const storeId = formData.store_id ? parseInt(formData.store_id, 10) : null;
-                          const storeStockEntry = storeId
-                            ? option.store_stocks?.find((s) => s.store_id === storeId)
-                            : null;
-                          const stockQty = storeStockEntry != null
-                            ? parseFloat(storeStockEntry.stock_quantity || 0)
-                            : (option.store_stocks?.length
-                              ? option.store_stocks.reduce((sum, s) => sum + parseFloat(s.stock_quantity || 0), 0)
-                              : (option.pro_stock_qnty != null ? parseFloat(option.pro_stock_qnty || 0) : 0));
-                          const formattedQty = Number.isFinite(stockQty)
-                            ? (Math.abs(stockQty) < 0.001 ? 0 : (stockQty % 1 === 0 ? stockQty : parseFloat(stockQty.toFixed(2))))
-                            : 0;
-                          const stockLabel = `${formattedQty.toLocaleString()}${cleanUnit ? ` ${cleanUnit}` : ''}`;
-                          const isCostVisible = showProductCostInDropdown || Boolean(revealedCostProductIds[option.pro_id]);
-                          return (
-                            <li key={option.pro_id ?? key} {...optionProps} style={{ ...purchaseDropdownRowStyle(PURCHASE_PRODUCT_DROPDOWN_GRID), ...optionProps.style }}>
-                              <span style={{ ...purchaseDropdownCellStyle, justifyContent: 'center', color: '#64748b', fontSize: 12, fontWeight: 700 }}>
-                                {index + 1}
-                              </span>
-                              <span title={option.pro_title || ''} style={{ ...purchaseDropdownCellStyle, fontWeight: 600, color: '#111827' }}>
-                                {option.pro_title || ''}
-                              </span>
-                              <span title={stockLabel} style={{ ...purchaseDropdownCellStyle, fontVariantNumeric: 'tabular-nums', justifyContent: 'flex-end', fontWeight: 600, color: stockQty > 0 ? '#15803d' : '#64748b' }}>
-                                {stockLabel}
-                              </span>
-                              <span style={{ ...purchaseDropdownCellStyle, borderRight: 'none', justifyContent: 'flex-end', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, gap: 4 }}>
-                                <span>{isCostVisible ? fmtAmt(option.pro_cost_price) : '••••••'}</span>
-                                <Box
-                                  component="span"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setRevealedCostProductIds((prev) => ({
-                                      ...prev,
-                                      [option.pro_id]: !prev[option.pro_id],
-                                    }));
-                                  }}
-                                  sx={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    cursor: 'pointer',
-                                    pointerEvents: 'auto',
-                                    p: 0.25,
-                                    borderRadius: 0.5,
-                                    color: isCostVisible ? '#0284c7' : '#94a3b8',
-                                    '&:hover': { color: '#0284c7', bgcolor: 'rgba(2, 132, 199, 0.12)' },
-                                  }}
-                                  title={isCostVisible ? 'Hide Cost' : 'Show Cost'}
-                                >
-                                  {isCostVisible ? (
-                                    <EyeIcon sx={{ fontSize: 13 }} />
-                                  ) : (
-                                    <EyeOffIcon sx={{ fontSize: 13 }} />
-                                  )}
-                                </Box>
-                              </span>
-                            </li>
-                          );
-                        }}
-                        disablePortal={false}
-                        sx={{ width: '100%', minWidth: 0 }}
-                      />
-                  </Box>
-
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>COMMENTS</Typography>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        placeholder="Particular comments..."
-                        value={productFormData.comments ?? ''}
-                        onChange={(e) => setProductFormData(prev => ({ ...prev, comments: e.target.value }))}
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Tab' || e.key === 'Enter') {
-                            const widthInput = document.getElementById('purchase-width-input');
-                            if (widthInput) {
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && selectedProduct) {
                               e.preventDefault();
-                              widthInput.focus();
+                              // Move focus to Quantity field
+                              const qtyInputs = document.querySelectorAll('input[type="number"]');
+                              if (qtyInputs.length > 0) {
+                                qtyInputs[0]?.focus();
+                              }
                             }
-                          }
-                        }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
+                          }}
+                          filterOptions={filterProductDropdown}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              id="product-select-dropdown-input"
+                              placeholder="Select product..."
+                              onFocus={(e) => e.target.select()}
+                              sx={{ ...PURCHASE_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: selectedProduct ? 'bold' : 'normal' } }}
+                            />
+                          )}
+                          renderOption={(props, option, { index }) => {
+                            const { key, ownerState, ...optionProps } = props;
+                            const rawUnit = option.pro_unit ? String(option.pro_unit).trim() : '';
+                            const cleanUnit = (rawUnit && rawUnit.toLowerCase() !== 'null' && rawUnit.toLowerCase() !== 'undefined') ? rawUnit : '';
 
-                  <Box sx={{ ...PURCHASE_ENTRY_CELL_SX, display: 'none' }}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>STORE</Typography>
-                      <Autocomplete
-                        size="small"
-                        fullWidth
-                        autoSelect={true}
-                        autoHighlight={true}
-                        openOnFocus={true}
-                        selectOnFocus={true}
-                        options={stores}
-                        getOptionLabel={(option) => option.store_name}
-                        value={stores.find(store => store.storeid === parseInt(formData.store_id)) || null}
-                        onChange={(event, newValue) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            store_id: newValue ? newValue.storeid.toString() : ''
-                          }));
-                        }}
-                        filterOptions={createUniversalFilter((option) => [option?.store_name, option?.store_address])}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            placeholder={formData.store_id ? 'Store Selected' : 'Select store'}
-                            sx={{ ...PURCHASE_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: formData.store_id ? 'bold' : 'normal' } }}
-                          />
-                        )}
-                      />
-                  </Box>
+                            const storeId = formData.store_id ? parseInt(formData.store_id, 10) : null;
+                            const storeStockEntry = storeId
+                              ? option.store_stocks?.find((s) => s.store_id === storeId)
+                              : null;
+                            const stockQty = storeStockEntry != null
+                              ? parseFloat(storeStockEntry.stock_quantity || 0)
+                              : (option.store_stocks?.length
+                                ? option.store_stocks.reduce((sum, s) => sum + parseFloat(s.stock_quantity || 0), 0)
+                                : (option.pro_stock_qnty != null ? parseFloat(option.pro_stock_qnty || 0) : 0));
+                            const formattedQty = Number.isFinite(stockQty)
+                              ? (Math.abs(stockQty) < 0.001 ? 0 : (stockQty % 1 === 0 ? stockQty : parseFloat(stockQty.toFixed(2))))
+                              : 0;
+                            const stockLabel = `${formattedQty.toLocaleString()}${cleanUnit ? ` ${cleanUnit}` : ''}`;
+                            const isCostVisible = showProductCostInDropdown || Boolean(revealedCostProductIds[option.pro_id]);
+                            return (
+                              <li key={option.pro_id ?? key} {...optionProps} style={{ ...purchaseDropdownRowStyle(PURCHASE_PRODUCT_DROPDOWN_GRID), ...optionProps.style }}>
+                                <span style={{ ...purchaseDropdownCellStyle, justifyContent: 'center', color: '#64748b', fontSize: 12, fontWeight: 700 }}>
+                                  {index + 1}
+                                </span>
+                                <span title={option.pro_title || ''} style={{ ...purchaseDropdownCellStyle, fontWeight: 600, color: '#111827' }}>
+                                  {option.pro_title || ''}
+                                </span>
+                                <span title={stockLabel} style={{ ...purchaseDropdownCellStyle, fontVariantNumeric: 'tabular-nums', justifyContent: 'flex-end', fontWeight: 600, color: stockQty > 0 ? '#15803d' : '#64748b' }}>
+                                  {stockLabel}
+                                </span>
+                                <span style={{ ...purchaseDropdownCellStyle, borderRight: 'none', justifyContent: 'flex-end', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, gap: 4 }}>
+                                  <span>{isCostVisible ? fmtAmt(option.pro_cost_price) : '••••••'}</span>
+                                  <Box
+                                    component="span"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setRevealedCostProductIds((prev) => ({
+                                        ...prev,
+                                        [option.pro_id]: !prev[option.pro_id],
+                                      }));
+                                    }}
+                                    sx={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      cursor: 'pointer',
+                                      pointerEvents: 'auto',
+                                      p: 0.25,
+                                      borderRadius: 0.5,
+                                      color: isCostVisible ? '#0284c7' : '#94a3b8',
+                                      '&:hover': { color: '#0284c7', bgcolor: 'rgba(2, 132, 199, 0.12)' },
+                                    }}
+                                    title={isCostVisible ? 'Hide Cost' : 'Show Cost'}
+                                  >
+                                    {isCostVisible ? (
+                                      <EyeIcon sx={{ fontSize: 13 }} />
+                                    ) : (
+                                      <EyeOffIcon sx={{ fontSize: 13 }} />
+                                    )}
+                                  </Box>
+                                </span>
+                              </li>
+                            );
+                          }}
+                          disablePortal={false}
+                          sx={{ width: '100%', minWidth: 0 }}
+                        />
+                      </Box>
 
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>WIDTH</Typography>
-                      <TextField
-                        id="purchase-width-input"
-                        fullWidth
-                        size="small"
-                        type="number"
-                        placeholder="W"
-                        value={productFormData.width ?? ''}
-                        onChange={(e) => handleDimensionChange('width', e.target.value)}
-                        onFocus={(e) => e.target.select()}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>COMMENTS</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          placeholder="Particular comments..."
+                          value={productFormData.comments ?? ''}
+                          onChange={(e) => setProductFormData(prev => ({ ...prev, comments: e.target.value }))}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Tab' || e.key === 'Enter') {
+                              const widthInput = document.getElementById('purchase-width-input');
+                              if (widthInput) {
+                                e.preventDefault();
+                                widthInput.focus();
+                              }
+                            }
+                          }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
 
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>HEIGHT</Typography>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        type="number"
-                        placeholder="H"
-                        value={productFormData.height ?? ''}
-                        onChange={(e) => handleDimensionChange('height', e.target.value)}
-                        onFocus={(e) => e.target.select()}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
+                      <Box sx={{ ...PURCHASE_ENTRY_CELL_SX, display: 'none' }}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>STORE</Typography>
+                        <Autocomplete
+                          size="small"
+                          fullWidth
+                          autoSelect={true}
+                          autoHighlight={true}
+                          openOnFocus={true}
+                          selectOnFocus={true}
+                          options={stores}
+                          getOptionLabel={(option) => option.store_name}
+                          value={stores.find(store => store.storeid === parseInt(formData.store_id)) || null}
+                          onChange={(event, newValue) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              store_id: newValue ? newValue.storeid.toString() : ''
+                            }));
+                          }}
+                          filterOptions={createUniversalFilter((option) => [option?.store_name, option?.store_address])}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              placeholder={formData.store_id ? 'Store Selected' : 'Select store'}
+                              sx={{ ...PURCHASE_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: formData.store_id ? 'bold' : 'normal' } }}
+                            />
+                          )}
+                        />
+                      </Box>
 
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>PCS</Typography>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        type="number"
-                        placeholder="1"
-                        value={productFormData.pcs ?? ''}
-                        onChange={(e) => handleDimensionChange('pcs', e.target.value)}
-                        onFocus={(e) => e.target.select()}
-                        inputProps={{ min: 1, step: '1' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>WIDTH</Typography>
+                        <TextField
+                          id="purchase-width-input"
+                          fullWidth
+                          size="small"
+                          type="number"
+                          placeholder="W"
+                          value={productFormData.width ?? ''}
+                          onChange={(e) => handleDimensionChange('width', e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          inputProps={{ min: 0, step: 'any' }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
 
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>QTY (FT)</Typography>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        type="number"
-                        value={productFormData.qnty ?? ''}
-                        onChange={(e) => setProductFormData(prev => ({ ...prev, qnty: e.target.value }))}
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (parseFloat(productFormData.crate || productFormData.base_rate || 0) > 0) {
-                              addProductToPurchase();
-                            } else {
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>HEIGHT</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="number"
+                          placeholder="H"
+                          value={productFormData.height ?? ''}
+                          onChange={(e) => handleDimensionChange('height', e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          inputProps={{ min: 0, step: 'any' }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
+
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>PCS</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="number"
+                          placeholder="1"
+                          value={productFormData.pcs ?? ''}
+                          onChange={(e) => handleDimensionChange('pcs', e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          inputProps={{ min: 1, step: '1' }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
+
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>QTY (FT)</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="number"
+                          value={productFormData.qnty ?? ''}
+                          onChange={(e) => setProductFormData(prev => ({ ...prev, qnty: e.target.value }))}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (parseFloat(productFormData.crate || productFormData.base_rate || 0) > 0) {
+                                addProductToPurchase();
+                              } else {
+                                const baseInput = document.getElementById('purchase-base-rate-input');
+                                if (baseInput) baseInput.focus();
+                              }
+                            } else if (e.key === 'Tab') {
+                              e.preventDefault();
                               const baseInput = document.getElementById('purchase-base-rate-input');
-                              if (baseInput) baseInput.focus();
+                              if (baseInput) {
+                                baseInput.focus();
+                              }
                             }
-                          } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            const baseInput = document.getElementById('purchase-base-rate-input');
-                            if (baseInput) {
-                              baseInput.focus();
+                          }}
+                          inputProps={{ min: 0, step: 'any' }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
+
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>BASE RATE</Typography>
+                        <TextField
+                          id="purchase-base-rate-input"
+                          fullWidth
+                          size="small"
+                          type="number"
+                          placeholder="0.00"
+                          value={productFormData.base_rate ?? ''}
+                          onChange={(e) => {
+                            const newBase = e.target.value;
+                            const baseVal = parseFloat(newBase || 0);
+                            let discountPercent = 0;
+                            if (formData.discount_percent !== undefined && formData.discount_percent !== '' && formData.discount_percent !== null) {
+                              discountPercent = parseFloat(formData.discount_percent || 0);
+                            } else if (parseFloat(formData.discount || 0) > 0) {
+                              const totalBase = (formData.purchase_details || []).reduce((sum, d) => sum + (parseFloat(d.qnty || 0) * parseFloat(d.base_rate || d.crate || 0)), 0) + (baseVal * parseFloat(productFormData.qnty || 1));
+                              discountPercent = totalBase > 0 ? -((parseFloat(formData.discount || 0) / totalBase) * 100) : 0;
                             }
-                          }
-                        }}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
-
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>BASE RATE</Typography>
-                      <TextField
-                        id="purchase-base-rate-input"
-                        fullWidth
-                        size="small"
-                        type="number"
-                        placeholder="0.00"
-                        value={productFormData.base_rate ?? ''}
-                        onChange={(e) => {
-                          const newBase = e.target.value;
-                          const baseVal = parseFloat(newBase || 0);
-                          let discountPercent = 0;
-                          if (formData.discount_percent !== undefined && formData.discount_percent !== '' && formData.discount_percent !== null) {
-                            discountPercent = parseFloat(formData.discount_percent || 0);
-                          } else if (parseFloat(formData.discount || 0) > 0) {
-                            const totalBase = (formData.purchase_details || []).reduce((sum, d) => sum + (parseFloat(d.qnty || 0) * parseFloat(d.base_rate || d.crate || 0)), 0) + (baseVal * parseFloat(productFormData.qnty || 1));
-                            discountPercent = totalBase > 0 ? -((parseFloat(formData.discount || 0) / totalBase) * 100) : 0;
-                          }
-                          const purchaseRate = Number((baseVal + ((baseVal / 100) * discountPercent)).toFixed(2));
-                          const tempAmt = parseFloat(productFormData.temper_amount || 0);
-                          const calculatedCost = (purchaseRate + tempAmt).toFixed(2);
-                          setProductFormData(prev => ({
-                            ...prev,
-                            base_rate: newBase,
-                            crate: purchaseRate > 0 ? purchaseRate.toString() : '',
-                            unit_rate: purchaseRate > 0 ? purchaseRate.toString() : '',
-                            cost_rate: calculatedCost
-                          }));
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addProductToPurchase();
-                          } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            const crateInput = document.getElementById('purchase-rate-input');
-                            if (crateInput) crateInput.focus();
-                          }
-                        }}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
-
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>PURCHASE RATE</Typography>
-                      <TextField
-                        id="purchase-rate-input"
-                        fullWidth
-                        size="small"
-                        type="number"
-                        value={productFormData.crate || productFormData.unit_rate || ''}
-                        onChange={(e) => {
-                          const newCrate = e.target.value;
-                          const tempAmt = parseFloat(productFormData.temper_amount || 0);
-                          const crateVal = parseFloat(newCrate || 0);
-                          const calculatedCost = (crateVal + tempAmt).toFixed(2);
-                          setProductFormData(prev => ({ ...prev, crate: newCrate, unit_rate: newCrate, cost_rate: calculatedCost }));
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addProductToPurchase();
-                          } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            const temperInput = document.getElementById('temper-amount-input');
-                            if (temperInput) temperInput.focus();
-                          }
-                        }}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
-
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>TEMPER AMOUNT</Typography>
-                      <TextField
-                        id="temper-amount-input"
-                        fullWidth
-                        size="small"
-                        type="number"
-                        placeholder="0.00"
-                        value={productFormData.temper_amount ?? ''}
-                        onChange={(e) => {
-                          const newTemp = e.target.value;
-                          const tempAmt = parseFloat(newTemp || 0);
-                          const crateVal = parseFloat(productFormData.crate || productFormData.unit_rate || 0);
-                          const calculatedCost = (crateVal + tempAmt).toFixed(2);
-                          setProductFormData(prev => ({
-                            ...prev,
-                            temper_amount: newTemp,
-                            cost_rate: calculatedCost
-                          }));
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addProductToPurchase();
-                          } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            const costInput = document.getElementById('purchase-cost-rate-input');
-                            if (costInput) costInput.focus();
-                          }
-                        }}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
-
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>COST RATE</Typography>
-                      <TextField
-                        id="purchase-cost-rate-input"
-                        fullWidth
-                        size="small"
-                        type="number"
-                        value={productFormData.cost_rate ?? ''}
-                        onChange={(e) => setProductFormData(prev => ({ ...prev, cost_rate: e.target.value }))}
-                        onFocus={(e) => e.target.select()}
-                        onBlur={async (e) => {
-                          const newCost = parseFloat(e.target.value || 0);
-                          if (selectedProduct) {
-                            setProducts(prev => prev.map(p => p.pro_id === selectedProduct.pro_id ? { ...p, pro_cost_price: newCost } : p));
-                            try {
-                              await fetch('/api/products', {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id: selectedProduct.pro_id, pro_cost_price: newCost })
-                              });
-                            } catch (err) {
-                              console.error('Failed to persist cost_rate change from selection', err);
+                            const purchaseRate = Number((baseVal + ((baseVal / 100) * discountPercent)).toFixed(2));
+                            const tempAmt = parseFloat(productFormData.temper_amount || 0);
+                            const calculatedCost = (purchaseRate + tempAmt).toFixed(2);
+                            setProductFormData(prev => ({
+                              ...prev,
+                              base_rate: newBase,
+                              crate: purchaseRate > 0 ? purchaseRate.toString() : '',
+                              unit_rate: purchaseRate > 0 ? purchaseRate.toString() : '',
+                              cost_rate: calculatedCost
+                            }));
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addProductToPurchase();
+                            } else if (e.key === 'Tab') {
+                              e.preventDefault();
+                              const crateInput = document.getElementById('purchase-rate-input');
+                              if (crateInput) crateInput.focus();
                             }
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addProductToPurchase();
-                          } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            const addBtn = document.getElementById('add-product-btn');
-                            if (addBtn) addBtn.focus();
-                          }
-                        }}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
+                          }}
+                          inputProps={{ min: 0, step: 'any' }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
 
-                  <Box sx={PURCHASE_ENTRY_CELL_SX}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>AMOUNT</Typography>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        value={parseFloat(productFormData.qnty || 0) * parseFloat(productFormData.crate || productFormData.unit_rate || 0)}
-                        InputProps={{ readOnly: true }}
-                        sx={PURCHASE_ENTRY_CONTROL_SX}
-                      />
-                  </Box>
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>PURCHASE RATE</Typography>
+                        <TextField
+                          id="purchase-rate-input"
+                          fullWidth
+                          size="small"
+                          type="number"
+                          value={productFormData.crate || productFormData.unit_rate || ''}
+                          onChange={(e) => {
+                            const newCrate = e.target.value;
+                            const tempAmt = parseFloat(productFormData.temper_amount || 0);
+                            const crateVal = parseFloat(newCrate || 0);
+                            const calculatedCost = (crateVal + tempAmt).toFixed(2);
+                            setProductFormData(prev => ({ ...prev, crate: newCrate, unit_rate: newCrate, cost_rate: calculatedCost }));
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addProductToPurchase();
+                            } else if (e.key === 'Tab') {
+                              e.preventDefault();
+                              const temperInput = document.getElementById('temper-amount-input');
+                              if (temperInput) temperInput.focus();
+                            }
+                          }}
+                          inputProps={{ min: 0, step: 'any' }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
 
-                  <Box sx={{ ...PURCHASE_ENTRY_CELL_SX, display: 'none' }}>
-                      <Typography sx={PURCHASE_ENTRY_LABEL_SX}>STOCK</Typography>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        value={stockDisplay}
-                        disabled
-                        sx={{ ...PURCHASE_ENTRY_CONTROL_SX, bgcolor: '#f8f9fa', '& .MuiInputBase-root': { ...PURCHASE_ENTRY_CONTROL_SX['& .MuiInputBase-root'], bgcolor: '#f8f9fa' } }}
-                      />
-                  </Box>
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>TEMPER AMOUNT</Typography>
+                        <TextField
+                          id="temper-amount-input"
+                          fullWidth
+                          size="small"
+                          type="number"
+                          placeholder="0.00"
+                          value={productFormData.temper_amount ?? ''}
+                          onChange={(e) => {
+                            const newTemp = e.target.value;
+                            const tempAmt = parseFloat(newTemp || 0);
+                            const crateVal = parseFloat(productFormData.crate || productFormData.unit_rate || 0);
+                            const calculatedCost = (crateVal + tempAmt).toFixed(2);
+                            setProductFormData(prev => ({
+                              ...prev,
+                              temper_amount: newTemp,
+                              cost_rate: calculatedCost
+                            }));
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addProductToPurchase();
+                            } else if (e.key === 'Tab') {
+                              e.preventDefault();
+                              const costInput = document.getElementById('purchase-cost-rate-input');
+                              if (costInput) costInput.focus();
+                            }
+                          }}
+                          inputProps={{ min: 0, step: 'any' }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
 
-                  <Box sx={{ minWidth: 0, width: '100%', display: 'flex', alignItems: 'end' }}>
-                    <Button
-                      variant="contained"
-                      id="add-product-btn"
-                      onClick={addProductToPurchase}
-                      disabled={!productFormData.qnty || !(productFormData.crate || productFormData.base_rate || productFormData.unit_rate)}
-                      sx={{
-                        bgcolor: BRAND.primary.blue,
-                        color: 'white',
-                        borderRadius: 1,
-                        minWidth: 40,
-                        width: 44,
-                        height: 40,
-                        p: 0,
-                        '&:hover': { bgcolor: '#1347c4' },
-                      }}
-                    >
-                      +
-                    </Button>
-                  </Box>
-                </Box>
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>COST RATE</Typography>
+                        <TextField
+                          id="purchase-cost-rate-input"
+                          fullWidth
+                          size="small"
+                          type="number"
+                          value={productFormData.cost_rate ?? ''}
+                          onChange={(e) => setProductFormData(prev => ({ ...prev, cost_rate: e.target.value }))}
+                          onFocus={(e) => e.target.select()}
+                          onBlur={async (e) => {
+                            const newCost = parseFloat(e.target.value || 0);
+                            if (selectedProduct) {
+                              setProducts(prev => prev.map(p => p.pro_id === selectedProduct.pro_id ? { ...p, pro_cost_price: newCost } : p));
+                              try {
+                                await fetch('/api/products', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: selectedProduct.pro_id, pro_cost_price: newCost })
+                                });
+                              } catch (err) {
+                                console.error('Failed to persist cost_rate change from selection', err);
+                              }
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addProductToPurchase();
+                            } else if (e.key === 'Tab') {
+                              e.preventDefault();
+                              const addBtn = document.getElementById('add-product-btn');
+                              if (addBtn) addBtn.focus();
+                            }
+                          }}
+                          inputProps={{ min: 0, step: 'any' }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
+
+                      <Box sx={PURCHASE_ENTRY_CELL_SX}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>AMOUNT</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          value={parseFloat(productFormData.qnty || 0) * parseFloat(productFormData.crate || productFormData.unit_rate || 0)}
+                          InputProps={{ readOnly: true }}
+                          sx={PURCHASE_ENTRY_CONTROL_SX}
+                        />
+                      </Box>
+
+                      <Box sx={{ ...PURCHASE_ENTRY_CELL_SX, display: 'none' }}>
+                        <Typography sx={PURCHASE_ENTRY_LABEL_SX}>STOCK</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          value={stockDisplay}
+                          disabled
+                          sx={{ ...PURCHASE_ENTRY_CONTROL_SX, bgcolor: '#f8f9fa', '& .MuiInputBase-root': { ...PURCHASE_ENTRY_CONTROL_SX['& .MuiInputBase-root'], bgcolor: '#f8f9fa' } }}
+                        />
+                      </Box>
+
+                      <Box sx={{ minWidth: 0, width: '100%', display: 'flex', alignItems: 'end' }}>
+                        <Button
+                          variant="contained"
+                          id="add-product-btn"
+                          onClick={addProductToPurchase}
+                          disabled={!productFormData.qnty || !(productFormData.crate || productFormData.base_rate || productFormData.unit_rate)}
+                          sx={{
+                            bgcolor: BRAND.primary.blue,
+                            color: 'white',
+                            borderRadius: 1,
+                            minWidth: 40,
+                            width: 44,
+                            height: 40,
+                            p: 0,
+                            '&:hover': { bgcolor: '#1347c4' },
+                          }}
+                        >
+                          +
+                        </Button>
+                      </Box>
+                    </Box>
                   );
                 })()}
               </Box>
@@ -5477,254 +5477,254 @@ function PurchasesPageContent() {
                   </Box>
 
                   {/* Right Section - Summary Fields */}
-                  <Box sx={{ width: { xs: '100%', md: 380, lg: 420 }, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    {/* SUBTOTAL */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
-                        SUBTOTAL
-                      </Typography>
-                      <TextField
-                        size="small"
-                        value={calculateTotalAmount().toFixed(2)}
-                        InputProps={{ readOnly: true }}
-                        sx={{ width: 220 }}
-                      />
-                    </Box>
+                    <Box sx={{ width: { xs: '100%', md: 380, lg: 420 }, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {/* SUBTOTAL */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
+                          SUBTOTAL
+                        </Typography>
+                        <TextField
+                          size="small"
+                          value={calculateTotalAmount().toFixed(2)}
+                          InputProps={{ readOnly: true }}
+                          sx={{ width: 220 }}
+                        />
+                      </Box>
 
-                    {/* DISCOUNT (Rs) */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
-                        DISCOUNT (Rs)
-                      </Typography>
-                      <TextField
-                        size="small"
-                        type="number"
-                        placeholder="0.00"
-                        value={formData.discount || ''}
-                        onChange={(e) => {
-                          const newDiscount = e.target.value;
-                          setFormData(prev => {
-                            const totalBase = prev.purchase_details.reduce((sum, d) => {
-                              const base = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
-                              const qty = parseFloat(d.qnty || 0);
-                              return sum + (base * qty);
-                            }, 0);
-                            const discAmt = parseFloat(newDiscount || 0);
-                            const percent = totalBase > 0 ? (discAmt > 0 ? -((discAmt / totalBase) * 100) : 0) : 0;
-                            const updatedDetails = recomputeAllPurchaseDetails(prev.purchase_details, prev, {
-                              discount: newDiscount,
-                              discount_percent: percent ? percent.toFixed(2) : ''
+                      {/* DISCOUNT (Rs) */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
+                          DISCOUNT (Rs)
+                        </Typography>
+                        <TextField
+                          size="small"
+                          type="number"
+                          placeholder="0.00"
+                          value={formData.discount || ''}
+                          onChange={(e) => {
+                            const newDiscount = e.target.value;
+                            setFormData(prev => {
+                              const totalBase = prev.purchase_details.reduce((sum, d) => {
+                                const base = parseFloat(d.base_rate !== undefined && d.base_rate !== null && d.base_rate !== '' ? d.base_rate : (d.original_crate || d.crate || 0));
+                                const qty = parseFloat(d.qnty || 0);
+                                return sum + (base * qty);
+                              }, 0);
+                              const discAmt = parseFloat(newDiscount || 0);
+                              const percent = totalBase > 0 ? (discAmt > 0 ? -((discAmt / totalBase) * 100) : 0) : 0;
+                              const updatedDetails = recomputeAllPurchaseDetails(prev.purchase_details, prev, {
+                                discount: newDiscount,
+                                discount_percent: percent ? percent.toFixed(2) : ''
+                              });
+                              return {
+                                ...prev,
+                                discount: newDiscount,
+                                discount_percent: percent ? percent.toFixed(2) : '',
+                                purchase_details: updatedDetails
+                              };
                             });
-                            return {
-                              ...prev,
-                              discount: newDiscount,
-                              discount_percent: percent ? percent.toFixed(2) : '',
-                              purchase_details: updatedDetails
-                            };
-                          });
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        inputProps={{ min: 0, step: 'any' }}
-                        sx={{ width: 220 }}
-                      />
-                    </Box>
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          inputProps={{ min: 0, step: 'any' }}
+                          sx={{ width: 220 }}
+                        />
+                      </Box>
 
-                    {/* DELIVERY CHARGES */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
-                        DELIVERY CHARGES
-                      </Typography>
-                      <TextField
-                        size="small"
-                        type="number"
-                        value={formData.transport_amount || ''}
-                        onChange={(e) => {
-                          const newTransport = e.target.value;
-                          setFormData(prev => {
-                            const updatedDetails = recomputeAllPurchaseDetails(
-                              prev.purchase_details,
-                              prev,
-                              { transport_amount: newTransport }
-                            );
-                            return { ...prev, transport_amount: newTransport, purchase_details: updatedDetails };
-                          });
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        inputProps={{ min: 0 }}
-                        sx={{ width: 220 }}
-                      />
-                    </Box>
+                      {/* DELIVERY CHARGES */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
+                          DELIVERY CHARGES
+                        </Typography>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={formData.transport_amount || ''}
+                          onChange={(e) => {
+                            const newTransport = e.target.value;
+                            setFormData(prev => {
+                              const updatedDetails = recomputeAllPurchaseDetails(
+                                prev.purchase_details,
+                                prev,
+                                { transport_amount: newTransport }
+                              );
+                              return { ...prev, transport_amount: newTransport, purchase_details: updatedDetails };
+                            });
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          inputProps={{ min: 0 }}
+                          sx={{ width: 220 }}
+                        />
+                      </Box>
 
-                    {/* LABOUR */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
-                        LABOUR
-                      </Typography>
-                      <TextField
-                        size="small"
-                        type="number"
-                        value={formData.labour_amount || ''}
-                        onChange={(e) => {
-                          const newLabourAmount = e.target.value;
-                          setFormData(prev => {
-                            const updatedDetails = recomputeAllPurchaseDetails(
-                              prev.purchase_details,
-                              prev,
-                              { labour_amount: newLabourAmount }
-                            );
-                            return {
-                              ...prev,
-                              labour_amount: newLabourAmount,
-                              purchase_details: updatedDetails
-                            };
-                          });
-                        }}
-                        inputProps={{ min: 0 }}
-                        sx={{ width: 220 }}
-                      />
-                    </Box>
+                      {/* LABOUR */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
+                          LABOUR
+                        </Typography>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={formData.labour_amount || ''}
+                          onChange={(e) => {
+                            const newLabourAmount = e.target.value;
+                            setFormData(prev => {
+                              const updatedDetails = recomputeAllPurchaseDetails(
+                                prev.purchase_details,
+                                prev,
+                                { labour_amount: newLabourAmount }
+                              );
+                              return {
+                                ...prev,
+                                labour_amount: newLabourAmount,
+                                purchase_details: updatedDetails
+                              };
+                            });
+                          }}
+                          inputProps={{ min: 0 }}
+                          sx={{ width: 220 }}
+                        />
+                      </Box>
 
-                    {/* Include Labour Charges Checkbox */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end', py: 0.5 }}>
-                      <Checkbox
-                        checked={formData.include_labour || false}
-                        onChange={(e) => {
-                          const newIncludeLabour = e.target.checked;
-                          setFormData(prev => {
-                            const updatedDetails = recomputeAllPurchaseDetails(
-                              prev.purchase_details,
-                              prev,
-                              { include_labour: newIncludeLabour }
-                            );
-                            return {
-                              ...prev,
-                              include_labour: newIncludeLabour,
-                              purchase_details: updatedDetails
-                            };
-                          });
-                        }}
-                        size="small"
-                        sx={{ py: 0 }}
-                      />
-                      <Typography variant="body2">
-                        Include Labour Charges
-                      </Typography>
-                    </Box>
+                      {/* Include Labour Charges Checkbox */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end', py: 0.5 }}>
+                        <Checkbox
+                          checked={formData.include_labour || false}
+                          onChange={(e) => {
+                            const newIncludeLabour = e.target.checked;
+                            setFormData(prev => {
+                              const updatedDetails = recomputeAllPurchaseDetails(
+                                prev.purchase_details,
+                                prev,
+                                { include_labour: newIncludeLabour }
+                              );
+                              return {
+                                ...prev,
+                                include_labour: newIncludeLabour,
+                                purchase_details: updatedDetails
+                              };
+                            });
+                          }}
+                          size="small"
+                          sx={{ py: 0 }}
+                        />
+                        <Typography variant="body2">
+                          Include Labour Charges
+                        </Typography>
+                      </Box>
 
-                    {/* GRAND TOTAL */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
-                        GRAND TOTAL
-                      </Typography>
-                      <TextField
-                        size="small"
-                        value={calculateNetTotal().toFixed(2)}
-                        InputProps={{ readOnly: true }}
-                        sx={{
-                          width: 220,
-                          '& .MuiInputBase-input': {
-                            fontWeight: 'bold',
-                            color: 'primary.main',
-                            fontSize: '1.1rem'
-                          }
-                        }}
-                      />
-                    </Box>
+                      {/* GRAND TOTAL */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
+                          GRAND TOTAL
+                        </Typography>
+                        <TextField
+                          size="small"
+                          value={calculateNetTotal().toFixed(2)}
+                          InputProps={{ readOnly: true }}
+                          sx={{
+                            width: 220,
+                            '& .MuiInputBase-input': {
+                              fontWeight: 'bold',
+                              color: 'primary.main',
+                              fontSize: '1.1rem'
+                            }
+                          }}
+                        />
+                      </Box>
 
-                    <Divider sx={{ my: 1 }} />
+                      <Divider sx={{ my: 1 }} />
 
-                    {/* TOTAL PAYMENT */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
-                        TOTAL PAYMENT
-                      </Typography>
-                      <TextField
-                        size="small"
-                        value={(parseFloat(formData.cash_payment || 0) + parseFloat(formData.bank_payment || 0)).toFixed(2)}
-                        InputProps={{ readOnly: true }}
-                        sx={{ width: 220, backgroundColor: 'action.hover' }}
-                      />
-                    </Box>
+                      {/* TOTAL PAYMENT */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
+                          TOTAL PAYMENT
+                        </Typography>
+                        <TextField
+                          size="small"
+                          value={(parseFloat(formData.cash_payment || 0) + parseFloat(formData.bank_payment || 0)).toFixed(2)}
+                          InputProps={{ readOnly: true }}
+                          sx={{ width: 220, backgroundColor: 'action.hover' }}
+                        />
+                      </Box>
 
-                    {/* BALANCE */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
-                        BALANCE
-                      </Typography>
-                      <TextField
-                        size="small"
-                        value={(calculateNetTotal() - (parseFloat(formData.cash_payment || 0) + parseFloat(formData.bank_payment || 0))).toFixed(2)}
-                        InputProps={{ readOnly: true }}
-                        sx={{ width: 220 }}
-                      />
+                      {/* BALANCE */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'right' }}>
+                          BALANCE
+                        </Typography>
+                        <TextField
+                          size="small"
+                          value={(calculateNetTotal() - (parseFloat(formData.cash_payment || 0) + parseFloat(formData.bank_payment || 0))).toFixed(2)}
+                          InputProps={{ readOnly: true }}
+                          sx={{ width: 220 }}
+                        />
+                      </Box>
                     </Box>
                   </Box>
                 </Box>
-              </Box>
 
-              {/* Form Actions */}
-              <Box sx={{ p: 3, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button
-                  type="button"
-                  variant="contained"
-                  sx={{
-                    bgcolor: '#dc3545',
-                    color: 'white',
-                    borderRadius: 2,
-                    '&:hover': { bgcolor: '#c82333' }
-                  }}
-                  tabIndex={-1}
-                  onClick={cancelCurrentScreen}
-                  title="Remove current screen from stack (Ctrl+X)"
-                >
-                  ✕ Cancel Current
-                </Button>
-                {!editingPurchase && (
+                {/* Form Actions */}
+                <Box sx={{ p: 3, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                   <Button
                     type="button"
-                    onClick={clearFormState}
+                    variant="contained"
+                    sx={{
+                      bgcolor: '#dc3545',
+                      color: 'white',
+                      borderRadius: 2,
+                      '&:hover': { bgcolor: '#c82333' }
+                    }}
+                    tabIndex={-1}
+                    onClick={cancelCurrentScreen}
+                    title="Remove current screen from stack (Ctrl+X)"
+                  >
+                    ✕ Cancel Current
+                  </Button>
+                  {!editingPurchase && (
+                    <Button
+                      type="button"
+                      onClick={clearFormState}
+                      variant="outlined"
+                      tabIndex={-1}
+                      color="warning"
+                      sx={{ px: 3, py: 1.5 }}
+                    >
+                      Clear Form
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={() => setCurrentView('list')}
                     variant="outlined"
                     tabIndex={-1}
-                    color="warning"
                     sx={{ px: 3, py: 1.5 }}
                   >
-                    Clear Form
+                    Back to List
                   </Button>
-                )}
-                <Button
-                  type="button"
-                  onClick={() => setCurrentView('list')}
-                  variant="outlined"
-                  tabIndex={-1}
-                  sx={{ px: 3, py: 1.5 }}
-                >
-                  Back to List
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  variant="contained"
-                  startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-                  onClick={(ev) => {
-                    if (purchaseSubmitInFlightRef.current || isSubmitting) {
-                      ev.preventDefault();
-                      ev.stopPropagation();
-                    }
-                  }}
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    bgcolor: 'secondary.main',
-                    pointerEvents: isSubmitting ? 'none' : 'auto',
-                    '&:hover': { bgcolor: 'secondary.dark' }
-                  }}
-                >
-                  {isSubmitting
-                    ? (editingPurchase ? 'Updating...' : 'Saving...')
-                    : (editingPurchase ? 'Update Purchase' : 'Save')}
-                </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    variant="contained"
+                    startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                    onClick={(ev) => {
+                      if (purchaseSubmitInFlightRef.current || isSubmitting) {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                      }
+                    }}
+                    sx={{
+                      px: 4,
+                      py: 1.5,
+                      bgcolor: 'secondary.main',
+                      pointerEvents: isSubmitting ? 'none' : 'auto',
+                      '&:hover': { bgcolor: 'secondary.dark' }
+                    }}
+                  >
+                    {isSubmitting
+                      ? (editingPurchase ? 'Updating...' : 'Saving...')
+                      : (editingPurchase ? 'Update Purchase' : 'Save')}
+                  </Button>
+                </Box>
               </Box>
-            </Box>
           </Card>
         </Stack>
       </Container>

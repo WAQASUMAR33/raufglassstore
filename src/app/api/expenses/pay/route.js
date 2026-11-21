@@ -9,10 +9,10 @@ import { rejectIfDayClosed } from '@/lib/day-end-guard';
 
 // POST - Mark expense as paid
 export async function POST(request) {
-  const __branchScope = await initBranchScope(request);
-  if (__branchScope.error) return __branchScope.error;
-  const dayClosed = await rejectIfDayClosed();
-  if (dayClosed) return dayClosed;
+    const __branchScope = await initBranchScope(request);
+    if (__branchScope.error) return __branchScope.error;
+    const dayClosed = await rejectIfDayClosed();
+    if (dayClosed) return dayClosed;
 
     try {
         const body = await request.json();

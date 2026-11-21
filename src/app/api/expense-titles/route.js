@@ -119,9 +119,9 @@ export async function POST(request) {
     // Create expense title with optional sub_titles
     const subTitleData = Array.isArray(sub_titles)
       ? sub_titles
-          .map((st) => (typeof st === 'string' ? st.trim() : (st?.title || '').trim()))
-          .filter((st) => st.length > 0)
-          .map((st) => ({ title: st }))
+        .map((st) => (typeof st === 'string' ? st.trim() : (st?.title || '').trim()))
+        .filter((st) => st.length > 0)
+        .map((st) => ({ title: st }))
       : [];
 
     const expenseTitle = await prisma.expenseTitle.create({
@@ -130,10 +130,10 @@ export async function POST(request) {
         title: title.trim(),
         ...(subTitleData.length > 0
           ? {
-              sub_titles: {
-                create: subTitleData,
-              },
-            }
+            sub_titles: {
+              create: subTitleData,
+            },
+          }
           : {}),
       },
       include: {
@@ -199,7 +199,7 @@ export async function PUT(request) {
           await prisma.expenseSubTitle.update({
             where: { id: parseInt(st.id) },
             data: { title: subTitleText }
-          }).catch(() => {});
+          }).catch(() => { });
         } else {
           // Check if exists under this title
           const existingSub = await prisma.expenseSubTitle.findFirst({
@@ -257,8 +257,8 @@ export async function DELETE(request) {
     });
 
     if (expenseCount > 0) {
-      return NextResponse.json({ 
-        error: `Cannot delete expense title. It has ${expenseCount} associated expense(s). Please delete the expenses first.` 
+      return NextResponse.json({
+        error: `Cannot delete expense title. It has ${expenseCount} associated expense(s). Please delete the expenses first.`
       }, { status: 400 });
     }
 

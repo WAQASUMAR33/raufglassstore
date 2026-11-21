@@ -102,12 +102,45 @@ export async function GET(request) {
               }
             })
       };
-      const products = await prisma.product.findMany({
-        where: whereClause,
-        select: dropdownSelect,
-        orderBy: { created_at: 'desc' }
-      });
-      return NextResponse.json(products);
+
+      try {
+        const products = await prisma.product.findMany({
+          where: whereClause,
+          select: dropdownSelect,
+          orderBy: { created_at: 'desc' }
+        });
+        return NextResponse.json(products);
+      } catch (dropdownErr) {
+        console.error('❌ Error with dropdown select query, falling back to minimal fields:', dropdownErr);
+        try {
+          const fallbackProducts = await prisma.product.findMany({
+            where: whereClause,
+            select: {
+              pro_id: true,
+              pro_title: true,
+              pro_cost_price: true,
+              pro_sale_price: true,
+              pro_wholesale_price: true,
+              pro_baser_price: true,
+              pro_crate: true,
+              pro_unit: true,
+              pro_packing: true,
+              pro_stock_qnty: true,
+              formula_id: true,
+            },
+            orderBy: { created_at: 'desc' }
+          });
+          return NextResponse.json(fallbackProducts);
+        } catch (fallbackErr) {
+          console.error('❌ Error with minimal fallback query:', fallbackErr);
+          const simpleProducts = await prisma.product.findMany({
+            where: whereClause,
+            take: 300,
+            orderBy: { created_at: 'desc' }
+          });
+          return NextResponse.json(simpleProducts);
+        }
+      }
     }
 
     try {

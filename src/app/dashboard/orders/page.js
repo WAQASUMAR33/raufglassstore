@@ -2982,7 +2982,11 @@ function OrdersPageContent() {
       ]);
       if (productsRes.ok) {
         const productsData = await productsRes.json();
-        setProducts(Array.isArray(productsData) ? productsData : []);
+        const list = Array.isArray(productsData) ? productsData : (productsData?.products || productsData?.data || []);
+        setProducts(list);
+      } else {
+        console.error('Failed to load products for order form:', productsRes.status);
+        setProducts([]);
       }
       if (customerTypesRes.ok) {
         const customerTypesResponse = await customerTypesRes.json();

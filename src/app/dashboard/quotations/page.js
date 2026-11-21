@@ -709,7 +709,11 @@ function QuotationsPageContent() {
 
       if (productsRes.ok) {
         const productsData = await productsRes.json();
-        setProducts(productsData || []);
+        const list = Array.isArray(productsData) ? productsData : (productsData?.products || productsData?.data || []);
+        setProducts(list);
+      } else {
+        console.error('Failed to load products for quotation form:', productsRes.status);
+        setProducts([]);
       }
 
       if (customerTypesRes.ok) {

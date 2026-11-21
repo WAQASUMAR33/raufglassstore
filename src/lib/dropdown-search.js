@@ -37,7 +37,13 @@ export function matchSearchPattern(targetStringOrArray, query) {
 /**
  * Filter customer / account dropdown options in MUI Autocomplete.
  */
-export function filterCustomerDropdown(options, { inputValue }, limit = 150) {
+export function filterCustomerDropdown(options, stateOrInput, limit = 150) {
+  if (!options || !Array.isArray(options)) return [];
+  const rawInput = typeof stateOrInput === 'object' && stateOrInput !== null
+    ? stateOrInput.inputValue
+    : stateOrInput;
+  const inputValue = typeof rawInput === 'string' ? rawInput : '';
+
   if (!inputValue || !inputValue.trim()) {
     return limit ? options.slice(0, limit) : options;
   }
@@ -47,6 +53,7 @@ export function filterCustomerDropdown(options, { inputValue }, limit = 150) {
 
   for (let i = 0; i < options.length; i++) {
     const o = options[i];
+    if (!o) continue;
     const searchable = [
       o.cus_name,
       o.name_urdu,
@@ -72,7 +79,13 @@ export function filterCustomerDropdown(options, { inputValue }, limit = 150) {
 /**
  * Filter product dropdown options in MUI Autocomplete.
  */
-export function filterProductDropdown(options, { inputValue }, limit = 150) {
+export function filterProductDropdown(options, stateOrInput, limit = 150) {
+  if (!options || !Array.isArray(options)) return [];
+  const rawInput = typeof stateOrInput === 'object' && stateOrInput !== null
+    ? stateOrInput.inputValue
+    : stateOrInput;
+  const inputValue = typeof rawInput === 'string' ? rawInput : '';
+
   if (!inputValue || !inputValue.trim()) {
     return limit ? options.slice(0, limit) : options;
   }
@@ -82,11 +95,12 @@ export function filterProductDropdown(options, { inputValue }, limit = 150) {
 
   for (let i = 0; i < options.length; i++) {
     const o = options[i];
+    if (!o) continue;
     const searchable = [
       o.pro_title,
       o.pro_code,
-      o.category?.cat_title || o.cat_title,
-      o.subcategory?.sub_cat_title || o.sub_cat_title,
+      o.category?.cat_name || o.category?.cat_title || o.cat_title || o.cat_name,
+      o.subcategory?.sub_cat_name || o.sub_category?.sub_cat_name || o.subcategory?.sub_cat_title || o.sub_cat_title,
       o.pro_id ? String(o.pro_id) : ''
     ].filter(Boolean).join(' ').toLowerCase();
 
@@ -103,7 +117,13 @@ export function filterProductDropdown(options, { inputValue }, limit = 150) {
  * Universal filter for generic object or string options in MUI Autocomplete.
  */
 export function createUniversalFilter(getFields = (o) => [o?.name || o?.title || o?.label || String(o || '')], limit = 150) {
-  return (options, { inputValue }) => {
+  return (options, stateOrInput) => {
+    if (!options || !Array.isArray(options)) return [];
+    const rawInput = typeof stateOrInput === 'object' && stateOrInput !== null
+      ? stateOrInput.inputValue
+      : stateOrInput;
+    const inputValue = typeof rawInput === 'string' ? rawInput : '';
+
     if (!inputValue || !inputValue.trim()) {
       return limit ? options.slice(0, limit) : options;
     }
@@ -113,6 +133,7 @@ export function createUniversalFilter(getFields = (o) => [o?.name || o?.title ||
 
     for (let i = 0; i < options.length; i++) {
       const o = options[i];
+      if (!o) continue;
       const fields = getFields(o);
       const searchable = (Array.isArray(fields) ? fields : [fields]).filter(Boolean).join(' ').toLowerCase();
 
