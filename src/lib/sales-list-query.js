@@ -161,7 +161,7 @@ function orderSql(sortBy, sortOrder) {
   return Prisma.raw(`created_at ${dir}`);
 }
 
-const SALE_LIST_SELECT = {
+const SALE_LIST_LEAN_SELECT = {
   sale_id: true,
   bill_number: true,
   total_amount: true,
@@ -188,6 +188,10 @@ const SALE_LIST_SELECT = {
       name_urdu: true,
     },
   },
+};
+
+const SALE_LIST_SELECT = {
+  ...SALE_LIST_LEAN_SELECT,
   sale_details: {
     select: {
       sale_detail_id: true,
@@ -200,7 +204,7 @@ const SALE_LIST_SELECT = {
   },
 };
 
-const RETURN_LIST_SELECT = {
+const RETURN_LIST_LEAN_SELECT = {
   return_id: true,
   sale_id: true,
   total_amount: true,
@@ -223,6 +227,10 @@ const RETURN_LIST_SELECT = {
       name_urdu: true,
     },
   },
+};
+
+const RETURN_LIST_SELECT = {
+  ...RETURN_LIST_LEAN_SELECT,
   return_details: {
     select: {
       return_detail_id: true,
@@ -325,9 +333,22 @@ export async function fetchPaginatedSalesList(prisma, branchId, params) {
 
   const offset = (page - 1) * pageSize;
   const order = orderSql(params.sortBy, params.sortOrder);
+  const includeDetails = params.includeDetails === 'true' || Boolean(params.item) || params.quantity != null;
+
+  // Optimized direct count to prevent MySQL from building and scanning large temporary union tables
+  const countQuery = (includeSales && includeReturns)
+    ? prisma.$queryRaw`
+        SELECT (
+          (SELECT COUNT(*) FROM ${t.sales} s LEFT JOIN ${t.customers} c ON c.cus_id = s.cus_id WHERE ${saleWhereSql(branchId, f, t)}) +
+          (SELECT COUNT(*) FROM ${t.sale_returns} r LEFT JOIN ${t.customers} c ON c.cus_id = r.cus_id WHERE ${returnWhereSql(branchId, f, t)})
+        ) AS cnt
+      `
+    : (includeReturns)
+      ? prisma.$queryRaw`SELECT COUNT(*) AS cnt FROM ${t.sale_returns} r LEFT JOIN ${t.customers} c ON c.cus_id = r.cus_id WHERE ${returnWhereSql(branchId, f, t)}`
+      : prisma.$queryRaw`SELECT COUNT(*) AS cnt FROM ${t.sales} s LEFT JOIN ${t.customers} c ON c.cus_id = s.cus_id WHERE ${saleWhereSql(branchId, f, t)}`;
 
   const [countRows, idRows] = await Promise.all([
-    prisma.$queryRaw`SELECT COUNT(*) AS cnt FROM (${unionSql}) listed`,
+    countQuery,
     prisma.$queryRaw`
       SELECT kind, id FROM (${unionSql}) listed
       ORDER BY ${order}
@@ -339,12 +360,15 @@ export async function fetchPaginatedSalesList(prisma, branchId, params) {
   const saleIds = idRows.filter((r) => r.kind === 'SALE').map((r) => Number(r.id));
   const returnIds = idRows.filter((r) => r.kind === 'RETURN').map((r) => Number(r.id));
 
+  const saleSelect = includeDetails ? SALE_LIST_SELECT : SALE_LIST_LEAN_SELECT;
+  const returnSelect = includeDetails ? RETURN_LIST_SELECT : RETURN_LIST_LEAN_SELECT;
+
   const [sales, returns] = await Promise.all([
     saleIds.length
-      ? prisma.sale.findMany({ where: { sale_id: { in: saleIds } }, select: SALE_LIST_SELECT })
+      ? prisma.sale.findMany({ where: { sale_id: { in: saleIds } }, select: saleSelect })
       : [],
     returnIds.length
-      ? prisma.saleReturn.findMany({ where: { return_id: { in: returnIds } }, select: RETURN_LIST_SELECT })
+      ? prisma.saleReturn.findMany({ where: { return_id: { in: returnIds } }, select: returnSelect })
       : [],
   ]);
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getNextId } from '@/lib/id-helper';
 import { initBranchScope } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 // Helper for JSON errors
 function errorResponse(message, status = 400) {
@@ -53,26 +54,29 @@ export async function GET(request) {
     }
 
     // Get all subcategories with category details
-    const subcategories = await prisma.SubCategory.findMany({
-      where: whereClause,
-      include: {
-        category: {
-          select: {
-            cat_id: true,
-            cat_name: true,
-            cat_code: true
+    const cacheKey = `subcategories:${categoryId || 'all'}`;
+    const subcategories = await withCache(cacheKey, 60, async () => {
+      return prisma.SubCategory.findMany({
+        where: whereClause,
+        include: {
+          category: {
+            select: {
+              cat_id: true,
+              cat_name: true,
+              cat_code: true
+            }
+          },
+          _count: {
+            select: {
+              products: true
+            }
           }
         },
-        _count: {
-          select: {
-            products: true
-          }
-        }
-      },
-      orderBy: { created_at: 'desc' },
+        orderBy: { created_at: 'desc' },
+      });
     });
 
-    return NextResponse.json(subcategories);
+    return cachedJsonResponse(subcategories, 200, 30);
   } catch (err) {
     console.error('❌ Error fetching subcategories:', err);
     return errorResponse('Failed to fetch subcategories', 500);
@@ -177,6 +181,7 @@ export async function POST(request) {
       }
     });
 
+    invalidateCache('subcategories');
     return NextResponse.json(newSubcategory, { status: 201 });
   } catch (err) {
     console.error('❌ Error creating subcategory:', err);
@@ -299,6 +304,7 @@ export async function PUT(request) {
       }
     });
 
+    invalidateCache('subcategories');
     return NextResponse.json(updated);
   } catch (err) {
     console.error('❌ Error updating subcategory:', err);
@@ -343,6 +349,8 @@ export async function DELETE(request) {
     await prisma.SubCategory.delete({
       where: { sub_cat_id: id },
     });
+
+    invalidateCache('subcategories');
 
     return NextResponse.json({ message: 'Subcategory deleted successfully' });
   } catch (err) {

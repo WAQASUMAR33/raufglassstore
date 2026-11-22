@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getNextId } from '@/lib/id-helper';
 import { initBranchScope } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 // Helper for JSON errors
 function errorResponse(message, status = 400) {
@@ -30,11 +31,13 @@ export async function GET(request) {
       return NextResponse.json(category);
     }
 
-    const categories = await prisma.customerCategory.findMany({
-      orderBy: { created_at: 'desc' },
+    const categories = await withCache('customer-categories:all', 60, async () => {
+      return prisma.customerCategory.findMany({
+        orderBy: { created_at: 'desc' },
+      });
     });
 
-    return NextResponse.json(categories);
+    return cachedJsonResponse(categories, 200, 30);
   } catch (err) {
     console.error('❌ Error fetching customer categories:', err);
     
@@ -85,6 +88,8 @@ export async function POST(request) {
         updated_by: updated_by || null
       },
     });
+
+    invalidateCache('customer-categories');
 
     return NextResponse.json(newCategory, { status: 201 });
   } catch (err) {
@@ -143,6 +148,8 @@ export async function PUT(request) {
       },
     });
 
+    invalidateCache('customer-categories');
+
     return NextResponse.json(updated);
   } catch (err) {
     console.error('❌ Error updating customer category:', err);
@@ -182,6 +189,8 @@ export async function DELETE(request) {
     await prisma.customerCategory.delete({
       where: { cus_cat_id: id },
     });
+
+    invalidateCache('customer-categories');
 
     return NextResponse.json({ message: 'Customer category deleted successfully' });
   } catch (err) {

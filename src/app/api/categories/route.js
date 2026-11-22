@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getNextId } from '@/lib/id-helper';
 import { initBranchScope } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 // Helper for JSON errors
 function errorResponse(message, status = 400) {
@@ -54,33 +55,35 @@ export async function GET(request) {
     }
 
     // Get all categories with subcategories and products count
-    const categories = await prisma.categories.findMany({
-      include: {
-        sub_categories: {
-          select: {
-            sub_cat_id: true,
-            sub_cat_name: true,
-            sub_cat_code: true,
-            created_at: true,
-            updated_at: true,
-            _count: {
-              select: {
-                products: true
+    const categories = await withCache('categories:all', 60, async () => {
+      return prisma.categories.findMany({
+        include: {
+          sub_categories: {
+            select: {
+              sub_cat_id: true,
+              sub_cat_name: true,
+              sub_cat_code: true,
+              created_at: true,
+              updated_at: true,
+              _count: {
+                select: {
+                  products: true
+                }
               }
+            }
+          },
+          _count: {
+            select: {
+              sub_categories: true,
+              products: true
             }
           }
         },
-        _count: {
-          select: {
-            sub_categories: true,
-            products: true
-          }
-        }
-      },
-      orderBy: { created_at: 'desc' },
+        orderBy: { created_at: 'desc' },
+      });
     });
 
-    return NextResponse.json(categories);
+    return cachedJsonResponse(categories, 200, 30);
   } catch (err) {
     console.error('❌ Error fetching categories:', err);
     return errorResponse('Failed to fetch categories', 500);
@@ -180,6 +183,7 @@ export async function POST(request) {
       }
     });
 
+    invalidateCache('categories');
     return NextResponse.json(newCategory, { status: 201 });
   } catch (err) {
     console.error('❌ Error creating category:', err);
@@ -297,6 +301,7 @@ export async function PUT(request) {
       }
     });
 
+    invalidateCache('categories');
     return NextResponse.json(updated);
   } catch (err) {
     console.error('❌ Error updating category:', err);
@@ -345,6 +350,8 @@ export async function DELETE(request) {
     await prisma.categories.delete({
       where: { cat_id: id },
     });
+
+    invalidateCache('categories');
 
     return NextResponse.json({ message: 'Category deleted successfully' });
   } catch (err) {

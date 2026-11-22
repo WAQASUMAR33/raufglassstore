@@ -5,6 +5,7 @@ import { getNextId } from '@/lib/id-helper';
 import { initBranchScope, resolveUpdatedByUserId } from '@/lib/branch-server';
 import { rejectIfDayClosed } from '@/lib/day-end-guard';
 import { persistPaymentLedger, recalculateLedgerBalances } from '@/lib/payment-ledger-writer';
+import { invalidateCache } from '@/lib/server-cache';
 
 // GET - Fetch all payments with related data
 export async function GET(request) {
@@ -331,6 +332,7 @@ export async function POST(request) {
       };
     }, { timeout: 15000 });
 
+    invalidateCache('customers');
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error creating payment:', error);
@@ -516,6 +518,7 @@ export async function PUT(request) {
       };
     }, { timeout: 20000 });
 
+    invalidateCache('customers');
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error updating payment:', error);
@@ -579,6 +582,7 @@ export async function DELETE(request) {
       // For now, we'll just mark the payment as cancelled
     }, { timeout: 20000 });
 
+    invalidateCache('customers');
     return NextResponse.json({ message: 'Payment cancelled successfully' });
   } catch (error) {
     console.error('Error cancelling payment:', error);

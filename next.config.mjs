@@ -10,6 +10,7 @@ const webSdkShimTurbopack = "./src/lib/websdk-shim.js";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true,
   serverExternalPackages: ['@prisma/client', 'nodeafis'],
   // Do not long-cache document responses: after a deploy, old HTML must not
   // reference removed /_next/static/chunks/*.js (→ 404, ChunkLoadError).

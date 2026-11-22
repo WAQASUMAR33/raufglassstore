@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { initBranchScope, resolveBranchId, mergeBranchWhere } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 function errorResponse(message, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -20,20 +21,23 @@ export async function GET(request) {
       where.is_active = true;
     }
 
-    const formulas = await prisma.formula.findMany({
-      where,
-      include: {
-        _count: {
-          select: { products: true }
-        }
-      },
-      orderBy: [
-        { is_default: 'desc' },
-        { id: 'asc' }
-      ]
+    const cacheKey = `formulas:${branchId}:${activeOnly}`;
+    const formulas = await withCache(cacheKey, 60, async () => {
+      return prisma.formula.findMany({
+        where,
+        include: {
+          _count: {
+            select: { products: true }
+          }
+        },
+        orderBy: [
+          { is_default: 'desc' },
+          { id: 'asc' }
+        ]
+      });
     });
 
-    return NextResponse.json(formulas);
+    return cachedJsonResponse(formulas, 200, 30);
   } catch (error) {
     console.error('Error fetching formulas:', error);
     return errorResponse('Failed to fetch formulas: ' + (error.message || 'Server error'), 500);
@@ -95,6 +99,7 @@ export async function POST(request) {
       }
     });
 
+    invalidateCache('formulas');
     return NextResponse.json(newFormula, { status: 201 });
   } catch (error) {
     console.error('Error creating formula:', error);
@@ -160,6 +165,7 @@ export async function PUT(request) {
       }
     });
 
+    invalidateCache('formulas');
     return NextResponse.json(updatedFormula);
   } catch (error) {
     console.error('Error updating formula:', error);
@@ -190,6 +196,7 @@ export async function DELETE(request) {
         where: { id },
         data: { is_active: false }
       });
+      invalidateCache('formulas');
       return NextResponse.json({
         message: `Formula deactivated because it is linked to ${linkedProducts} product(s).`
       });
@@ -198,6 +205,8 @@ export async function DELETE(request) {
     await prisma.formula.delete({
       where: { id }
     });
+
+    invalidateCache('formulas');
 
     return NextResponse.json({ message: 'Formula deleted successfully' });
   } catch (error) {

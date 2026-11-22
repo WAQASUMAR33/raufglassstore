@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { resolveBranchId, mergeBranchWhere, withBranchData } from '@/lib/branch-server';
 import { initBranchScope } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 // GET - Fetch all stores
 export async function GET(request) {
@@ -10,17 +11,20 @@ export async function GET(request) {
 
   try {
     const branchId = resolveBranchId(request);
-    const stores = await prisma.store.findMany({
-      where: mergeBranchWhere(branchId, {}),
-      orderBy: {
-        created_at: 'desc'
-      }
+    const cacheKey = `stores:${branchId}`;
+    const stores = await withCache(cacheKey, 60, async () => {
+      return prisma.store.findMany({
+        where: mergeBranchWhere(branchId, {}),
+        orderBy: {
+          created_at: 'desc'
+        }
+      });
     });
 
-    return NextResponse.json({
+    return cachedJsonResponse({
       success: true,
       data: stores
-    });
+    }, 200, 30);
   } catch (error) {
     console.error('Error fetching stores:', error);
     return NextResponse.json(
@@ -70,6 +74,8 @@ export async function POST(request) {
         store_address: store_address?.trim() || null,
       })
     });
+
+    invalidateCache('stores');
 
     return NextResponse.json({
       success: true,
@@ -147,6 +153,8 @@ export async function PUT(request) {
       }
     });
 
+    invalidateCache('stores');
+
     return NextResponse.json({
       success: true,
       data: updatedStore,
@@ -193,6 +201,8 @@ export async function DELETE(request) {
     await prisma.store.delete({
       where: { storeid: parseInt(storeid) }
     });
+
+    invalidateCache('stores');
 
     return NextResponse.json({
       success: true,

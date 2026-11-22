@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { initBranchScope, resolveBranchId, resolveUpdatedByUserId, mergeBranchWhere } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 function errorResponse(message, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -69,26 +70,29 @@ export async function GET(request) {
       ];
     }
 
-    const addons = await prisma.addon.findMany({
-      where: whereClause,
-      include: {
-        creator: {
-          select: { user_id: true, full_name: true, email: true },
+    const cacheKey = `addons:${branchId}:${status || 'all'}:${search.trim() || 'all'}`;
+    const addons = await withCache(cacheKey, 60, async () => {
+      return prisma.addon.findMany({
+        where: whereClause,
+        include: {
+          creator: {
+            select: { user_id: true, full_name: true, email: true },
+          },
+          updater: {
+            select: { user_id: true, full_name: true, email: true },
+          },
+          account: {
+            select: { cus_id: true, cus_name: true, cus_phone_no: true, cus_category: true },
+          },
+          _count: {
+            select: { product_addons: true },
+          },
         },
-        updater: {
-          select: { user_id: true, full_name: true, email: true },
-        },
-        account: {
-          select: { cus_id: true, cus_name: true, cus_phone_no: true, cus_category: true },
-        },
-        _count: {
-          select: { product_addons: true },
-        },
-      },
-      orderBy: [{ status: 'asc' }, { id: 'desc' }],
+        orderBy: [{ status: 'asc' }, { id: 'desc' }],
+      });
     });
 
-    return NextResponse.json(addons);
+    return cachedJsonResponse(addons, 200, 30);
   } catch (err) {
     console.error('❌ Error fetching add-ons:', err);
     return errorResponse('Failed to fetch add-ons: ' + (err.message || 'Server error'), 500);
@@ -155,6 +159,7 @@ export async function POST(request) {
       },
     });
 
+    invalidateCache('addons');
     return NextResponse.json(newAddon, { status: 201 });
   } catch (err) {
     console.error('❌ Error creating add-on:', err);
@@ -231,6 +236,7 @@ export async function PUT(request) {
       },
     });
 
+    invalidateCache('addons');
     return NextResponse.json(updatedAddon);
   } catch (err) {
     console.error('❌ Error updating add-on:', err);
@@ -272,6 +278,8 @@ export async function DELETE(request) {
     await prisma.addon.delete({
       where: { id },
     });
+
+    invalidateCache('addons');
 
     return NextResponse.json({ success: true, message: 'Add-on deleted successfully' });
   } catch (err) {

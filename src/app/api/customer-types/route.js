@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getNextId } from '@/lib/id-helper';
 import { initBranchScope } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 // GET - Fetch all customer types
 export async function GET(request) {
@@ -9,18 +10,20 @@ export async function GET(request) {
   if (__branchScope.error) return __branchScope.error;
 
   try {
-    const customerTypes = await prisma.customerType.findMany({
-      include: {
-        _count: {
-          select: { customers: true }
-        }
-      },
-      orderBy: {
-        created_at: 'desc',
-      },
+    const customerTypes = await withCache('customer-types:all', 60, async () => {
+      return prisma.customerType.findMany({
+        include: {
+          _count: {
+            select: { customers: true }
+          }
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
     });
 
-    return NextResponse.json(customerTypes);
+    return cachedJsonResponse(customerTypes, 200, 30);
   } catch (error) {
     console.error('Error fetching customer types:', error);
     return NextResponse.json(
@@ -56,6 +59,8 @@ export async function POST(request) {
       }
     });
 
+    invalidateCache('customer-types');
+
     return NextResponse.json(customerType, { status: 201 });
   } catch (error) {
     console.error('Error creating customer type:', error);
@@ -89,6 +94,8 @@ export async function PUT(request) {
         updated_by
       }
     });
+
+    invalidateCache('customer-types');
 
     return NextResponse.json(customerType);
   } catch (error) {
@@ -131,6 +138,8 @@ export async function DELETE(request) {
     await prisma.customerType.delete({
       where: { cus_type_id: id }
     });
+
+    invalidateCache('customer-types');
 
     return NextResponse.json({ message: 'Customer type deleted successfully' });
   } catch (error) {

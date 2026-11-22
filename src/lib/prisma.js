@@ -111,10 +111,23 @@ function createExtendedClient(base, { useBranchIdFilter }) {
   });
 }
 
+function getPooledDatabaseUrl() {
+  const url = process.env.DATABASE_URL || '';
+  if (!url) return undefined;
+  if (url.includes('connection_limit=')) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}connection_limit=15&pool_timeout=30&connect_timeout=20`;
+}
+
 function createBaseClient(useBranchIdFilter) {
-  const base = new PrismaClient({
+  const pooledUrl = getPooledDatabaseUrl();
+  const options = {
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-  });
+  };
+  if (pooledUrl) {
+    options.datasources = { db: { url: pooledUrl } };
+  }
+  const base = new PrismaClient(options);
   return createExtendedClient(base, { useBranchIdFilter });
 }
 
@@ -133,13 +146,15 @@ export function getDedicatedBranchClient(branch) {
     const key = `db:${branch.branch_id}:${branch.db_name}`;
     if (branchClientCache.has(key)) return branchClientCache.get(key);
 
-    const url = buildDatabaseUrl({
+    const rawUrl = buildDatabaseUrl({
       host: branch.db_host,
       port: branch.db_port || 3306,
       user: branch.db_user,
       password: branch.db_password,
       database: branch.db_name,
     });
+    const sep = rawUrl.includes('?') ? '&' : '?';
+    const url = `${rawUrl}${sep}connection_limit=15&pool_timeout=30&connect_timeout=20`;
 
     const base = new PrismaClient({
       datasources: { db: { url } },
@@ -153,8 +168,10 @@ export function getDedicatedBranchClient(branch) {
   return null;
 }
 
-export const centralPrisma = globalForPrisma.centralPrisma || createBaseClient(true);
-if (process.env.NODE_ENV !== 'production') globalForPrisma.centralPrisma = centralPrisma;
+if (!globalForPrisma.centralPrisma) {
+  globalForPrisma.centralPrisma = createBaseClient(true);
+}
+export const centralPrisma = globalForPrisma.centralPrisma;
 
 function resolveRequestClient() {
   const dedicated = getActiveBranchPrisma();

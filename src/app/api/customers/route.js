@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getNextId } from '@/lib/id-helper';
 import { resolveBranchId, mergeBranchWhere, withBranchData } from '@/lib/branch-server';
 import { initBranchScope } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 // Helper for JSON errors
 function errorResponse(message, status = 400) {
@@ -308,59 +309,64 @@ export async function GET(request) {
       }
 
       const isLite = searchParams.get('lite') === 'true';
-      const customers = await prisma.customer.findMany({
-        where,
-        select: isLite
-          ? {
-              cus_id: true,
-              cus_name: true,
-              cus_balance: true,
-              cus_phone_no: true,
-              customer_category: {
-                select: {
-                  cus_cat_id: true,
-                  cus_cat_title: true
+      const cacheKey = `customers:dropdown:${branchId}:${isLite ? 'lite' : 'full'}:${categoryParam || 'all'}:${typeParam || 'all'}`;
+
+      const customers = await withCache(cacheKey, 20, async () => {
+        return prisma.customer.findMany({
+          where,
+          select: isLite
+            ? {
+                cus_id: true,
+                cus_name: true,
+                cus_balance: true,
+                cus_phone_no: true,
+                customer_category: {
+                  select: {
+                    cus_cat_id: true,
+                    cus_cat_title: true
+                  }
                 }
               }
-            }
-          : {
-              cus_id: true,
-              cus_name: true,
-              cus_balance: true,
-              cus_phone_no: true,
-              cus_phone_no2: true,
-              cus_address: true,
-              cus_reference: true,
-              cus_category: true,
-              cus_type: true,
-              CNIC: true,
-              NTN_NO: true,
-              name_urdu: true,
-              other: true,
-              cus_account_info: true,
-              city_id: true,
-              customer_category: {
-                select: {
-                  cus_cat_id: true,
-                  cus_cat_title: true
+            : {
+                cus_id: true,
+                cus_name: true,
+                cus_balance: true,
+                cus_phone_no: true,
+                cus_phone_no2: true,
+                cus_address: true,
+                cus_reference: true,
+                cus_category: true,
+                cus_type: true,
+                CNIC: true,
+                NTN_NO: true,
+                name_urdu: true,
+                other: true,
+                cus_account_info: true,
+                city_id: true,
+                customer_category: {
+                  select: {
+                    cus_cat_id: true,
+                    cus_cat_title: true
+                  }
+                },
+                customer_type: {
+                  select: {
+                    cus_type_id: true,
+                    cus_type_title: true
+                  }
+                },
+                city: {
+                  select: {
+                    city_id: true,
+                    city_name: true
+                  }
                 }
               },
-              customer_type: {
-                select: {
-                  cus_type_id: true,
-                  cus_type_title: true
-                }
-              },
-              city: {
-                select: {
-                  city_id: true,
-                  city_name: true
-                }
-              }
-            },
-        orderBy: { created_at: 'desc' },
+          orderBy: { created_at: 'desc' },
+        });
       });
-      return NextResponse.json(customers);
+
+      return cachedJsonResponse(customers, 200, 15);
     }
 
     const customers = await prisma.customer.findMany({
@@ -518,6 +524,7 @@ export async function POST(request) {
       }
     });
 
+    invalidateCache('customers');
     return NextResponse.json(newCustomer, { status: 201 });
   } catch (err) {
     console.error('❌ Error creating customer:', err);
@@ -656,6 +663,7 @@ export async function PUT(request) {
       }
     });
 
+    invalidateCache('customers');
     return NextResponse.json(updated);
   } catch (err) {
     console.error('❌ Error updating customer:', err);
@@ -720,6 +728,8 @@ export async function DELETE(request) {
     await prisma.customer.delete({
       where: { cus_id: id },
     });
+
+    invalidateCache('customers');
 
     return NextResponse.json({ message: 'Customer deleted successfully' });
   } catch (err) {

@@ -10,6 +10,7 @@ import { initBranchScope, resolveUpdatedByUserId } from '@/lib/branch-server';
 import { rejectIfDayClosed } from '@/lib/day-end-guard';
 import { fetchPaginatedSalesList } from '@/lib/sales-list-query';
 import { logActivity, AUDIT_ACTIONS, AUDIT_MODULES } from '@/lib/audit-logger';
+import { withCache, invalidateCache } from '@/lib/server-cache';
 
 const SPECIAL_ACCOUNTS_CACHE_TTL_MS = 10 * 60_000;
 const saleLog = () => {};
@@ -993,9 +994,12 @@ export async function GET(request) {
       }
     } else {
       if (listMode && pageParam) {
-        const result = await fetchPaginatedSalesList(prisma, branchId, {
+        const isDefaultList = pageParam === '1' && !searchParams.get('q') && !searchParams.get('item') && !searchParams.get('from') && !searchParams.get('to') && !searchParams.get('cus_id');
+        const cacheKey = `sales:list:${branchId}:${pageParam}:${searchParams.get('pageSize') || searchParams.get('limit') || 25}:${billTypeFilter || 'all'}`;
+
+        const fetchList = () => fetchPaginatedSalesList(prisma, branchId, {
           page: pageParam,
-          pageSize: searchParams.get('pageSize'),
+          pageSize: searchParams.get('pageSize') || searchParams.get('limit') || 25,
           q: searchParams.get('q'),
           item: searchParams.get('item'),
           quantity: searchParams.get('quantity'),
@@ -1013,6 +1017,8 @@ export async function GET(request) {
           sortBy: searchParams.get('sort_by'),
           sortOrder: searchParams.get('sort_order'),
         });
+
+        const result = isDefaultList ? await withCache(cacheKey, 10, fetchList) : await fetchList();
         return NextResponse.json(result);
       }
 
@@ -2548,6 +2554,9 @@ export async function POST(request) {
       where: { cus_id: result.cus_id }
     });
 
+    invalidateCache('customers');
+    invalidateCache('sales');
+
     return NextResponse.json({
       ...result,
       customer: freshCustomer || result.customer,
@@ -3587,6 +3596,9 @@ export async function PUT(request) {
       where: { cus_id: parseInt(cus_id) }
     });
 
+    invalidateCache('customers');
+    invalidateCache('sales');
+
     return NextResponse.json({
       ...result,
       customer: freshCustomer || result.customer,
@@ -3764,6 +3776,9 @@ export async function DELETE(request) {
         bill_type: existingSale?.bill_type,
       },
     }).catch(() => {});
+
+    invalidateCache('customers');
+    invalidateCache('sales');
 
     return NextResponse.json({ message: 'Sale deleted successfully' });
   } catch (error) {

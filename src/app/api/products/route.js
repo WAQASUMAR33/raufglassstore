@@ -4,6 +4,7 @@ import { getNextId } from '@/lib/id-helper';
 import { updateStoreStock } from '@/lib/storeStock';
 import { resolveBranchId, mergeBranchWhere, withBranchData } from '@/lib/branch-server';
 import { initBranchScope } from '@/lib/branch-server';
+import { withCache, invalidateCache, cachedJsonResponse } from '@/lib/server-cache';
 
 // Helper for JSON errors
 function errorResponse(message, status = 400) {
@@ -103,13 +104,17 @@ export async function GET(request) {
             })
       };
 
+      const cacheKey = `products:dropdown:${branchId}:${skipStoreStocks ? 'noStore' : 'withStore'}:${categoryId || 'all'}:${subCategoryId || 'all'}`;
+
       try {
-        const products = await prisma.product.findMany({
-          where: whereClause,
-          select: dropdownSelect,
-          orderBy: { created_at: 'desc' }
+        const products = await withCache(cacheKey, 30, async () => {
+          return prisma.product.findMany({
+            where: whereClause,
+            select: dropdownSelect,
+            orderBy: { created_at: 'desc' }
+          });
         });
-        return NextResponse.json(products);
+        return cachedJsonResponse(products, 200, 15);
       } catch (dropdownErr) {
         console.error('❌ Error with dropdown select query, falling back to minimal fields:', dropdownErr);
         try {
@@ -337,6 +342,7 @@ export async function POST(request) {
       }
     });
 
+    invalidateCache('products');
     console.log('✅ Product created successfully');
     return NextResponse.json(createdProductWithRelations, { status: 201 });
   } catch (err) {
@@ -529,6 +535,7 @@ export async function PUT(request) {
       }
     });
 
+    invalidateCache('products');
     return NextResponse.json(finalProduct || updatedProduct);
   } catch (err) {
     console.error('❌ Error updating product:', err);
@@ -576,6 +583,8 @@ export async function DELETE(request) {
     await prisma.product.delete({
       where: { pro_id: id },
     });
+
+    invalidateCache('products');
 
     return NextResponse.json({ message: 'Product deleted successfully' });
   } catch (err) {
