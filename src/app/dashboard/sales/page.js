@@ -5144,7 +5144,8 @@ function SalesPageContent() {
 </style></head><body>
   <div class="page">
     <header class="company-header">
-      <div class="company-name" style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${COMPANY.name || 'Zain Traders Mandi Bahauddin'}</div>
+      <div class="company-name" style="font-size: 18px; font-weight: 900; color: #0f172a; margin-bottom: 0px; line-height: 1.1;">ZAIN TRADERS</div>
+      <div class="company-sub" style="font-size: 11px; font-weight: 700; color: #475569; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 3px;">Mandi Bahauddin</div>
       <div class="urdu-name" style="font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Urdu Typesetting',serif !important; font-size: 16px; margin-bottom: 2px;">${COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}</div>
       <div class="urdu-address" style="font-size: 11px; color: #475569; margin-bottom: 2px;">${COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'}</div>
       <div class="phone">${INVOICE_STORE_PHONE_LINE.replace('Ph:- ', 'Ph: ')}</div>
@@ -10885,8 +10886,11 @@ function SalesPageContent() {
                 }}
               >
                 <Box sx={{ textAlign: 'center', pb: 1, borderBottom: '1px solid #000' }}>
-                  <Typography sx={{ fontSize: '15px', fontWeight: 900, color: '#000', mb: 0.25 }}>
-                    {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
+                  <Typography sx={{ fontSize: '16px', fontWeight: 900, color: '#000', mb: 0.1, letterSpacing: '0.02em' }}>
+                    ZAIN TRADERS
+                  </Typography>
+                  <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.25 }}>
+                    Mandi Bahauddin
                   </Typography>
                   <Typography className="nastaliq-text" sx={{ fontSize: '15px', fontWeight: 'bold', fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif !important', color: '#000', direction: 'rtl', mb: 0.25 }}>
                     {COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}
@@ -13466,8 +13470,11 @@ function SalesPageContent() {
           >
             {/* Header */}
             <Box sx={{ textAlign: 'center', pb: 1, borderBottom: '2px solid #000' }}>
-              <Typography sx={{ fontWeight: 900, fontSize: '16px', color: '#000', mb: 0.5 }}>
-                {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
+              <Typography sx={{ fontWeight: 900, fontSize: '16px', color: '#000', mb: 0.1 }}>
+                ZAIN TRADERS
+              </Typography>
+              <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
+                Mandi Bahauddin
               </Typography>
               <Typography sx={{ fontWeight: 800, fontSize: '17px', fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif', direction: 'rtl', color: '#000', mb: 0.5 }}>
                 {COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}

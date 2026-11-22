@@ -3460,7 +3460,8 @@ export default function SalesPageContent() {
 </style></head><body>
   <div class="page">
     <header class="company-header">
-      <div class="company-name" style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${COMPANY.name || 'Zain Traders Mandi Bahauddin'}</div>
+      <div class="company-name" style="font-size: 18px; font-weight: 900; color: #0f172a; margin-bottom: 0px; line-height: 1.1;">ZAIN TRADERS</div>
+      <div class="company-sub" style="font-size: 11px; font-weight: 700; color: #475569; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 3px;">Mandi Bahauddin</div>
       <div class="urdu-name" style="font-family:'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Urdu Typesetting',serif !important; font-size: 16px; margin-bottom: 2px;">${COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}</div>
       <div class="urdu-address" style="font-size: 11px; color: #475569; margin-bottom: 2px;">${COMPANY.address || 'Phalia Road , Near Aljannat Petrol pump M.B.Din.'}</div>
       <div class="phone">${INVOICE_STORE_PHONE_LINE.replace('Ph:- ', 'Ph: ')}</div>

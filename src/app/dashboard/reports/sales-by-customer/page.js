@@ -150,7 +150,8 @@ export default function SalesByCustomerReport() {
             {/* Print Header */}
             <div className="hidden print:block mb-6 border-b-2 border-gray-800 pb-4">
               <div className="text-center">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">Zain Traders Mandi Bahauddin</h1>
+                <h1 className="text-4xl font-black text-gray-900 mb-0">ZAIN TRADERS</h1>
+                <p className="text-sm font-bold tracking-widest uppercase text-gray-700 mb-2">MANDI BAHAUDDIN</p>
                 <p className="text-gray-700 text-lg">Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
                 <p className="text-gray-700 text-lg">Phone: 0302-2133218, 0347-7743218</p>
                 <div className="mt-4 pt-4 border-t border-gray-300">

@@ -126,7 +126,18 @@ export default function SaleViewBillDialog() {
                       letterSpacing: '0.03em',
                       lineHeight: 1.15,
                     }}>
-                      {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
+                      ZAIN TRADERS
+                    </Typography>
+                    <Typography sx={{
+                      fontWeight: 800,
+                      fontSize: { xs: '0.8rem', md: '0.95rem' },
+                      color: '#475569',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      lineHeight: 1.2,
+                      mt: 0.2,
+                    }}>
+                      Mandi Bahauddin
                     </Typography>
                     <Typography className="nastaliq-text" sx={{
                       fontWeight: 'bold',

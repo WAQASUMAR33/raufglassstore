@@ -411,8 +411,11 @@ export default function CommercialInvoiceReceipt({
                       />
                     </td>
                     <td style={{ verticalAlign: 'top', border: 'none', padding: 0 }}>
-                      <div style={{ fontSize: '0.98rem', fontWeight: 900, letterSpacing: '0.02em', lineHeight: 1.1, color: '#000000' }}>
-                        ZAIN TRADERS MANDI BAHAUDDIN
+                      <div style={{ fontSize: '1.05rem', fontWeight: 900, letterSpacing: '0.03em', lineHeight: 1.1, color: '#000000' }}>
+                        ZAIN TRADERS
+                      </div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.15, color: '#1e293b', textTransform: 'uppercase', marginTop: '1px' }}>
+                        Mandi Bahauddin
                       </div>
                       <div style={{ fontSize: '0.68rem', fontWeight: 600, color: '#333333', lineHeight: 1.15, marginTop: '2px' }}>
                         Phalia Road , Near Aljannat Petrol pump M.B.Din.

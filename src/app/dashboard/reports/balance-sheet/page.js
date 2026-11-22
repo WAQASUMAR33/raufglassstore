@@ -278,7 +278,8 @@ export default function BalanceSheet() {
               {/* Print Header */}
               <div className="hidden print:block border-b-2 border-black pb-4 mb-4">
                 <div className="text-center">
-                  <h1 className="text-2xl font-bold tracking-wider">ZAIN TRADERS MANDI BAHAUDDIN</h1>
+                  <h1 className="text-2xl font-black tracking-wider text-slate-900">ZAIN TRADERS</h1>
+                  <p className="text-xs font-bold tracking-widest uppercase text-slate-600">MANDI BAHAUDDIN</p>
                   <p className="text-sm text-gray-600">Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</p>
                   <div className="mt-3 py-2 bg-black text-white">
                     <h2 className="text-lg font-bold tracking-widest">BALANCE SHEET</h2>

@@ -105,8 +105,11 @@ export default function SaleReceiptDialog() {
                   alt="Zain Traders"
                   sx={{ width: 44, height: 44, objectFit: 'contain', mx: 'auto', mb: 0.5, display: 'block' }}
                 />
-                <Typography sx={{ fontSize: '15px', fontWeight: 900, color: '#000', mb: 0.25 }}>
-                  {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
+                <Typography sx={{ fontSize: '16px', fontWeight: 900, color: '#000', mb: 0.1, letterSpacing: '0.02em' }}>
+                  ZAIN TRADERS
+                </Typography>
+                <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.25 }}>
+                  Mandi Bahauddin
                 </Typography>
                 <Typography className="nastaliq-text" sx={{ fontSize: '15px', fontWeight: 'bold', fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif !important', color: '#000', direction: 'rtl', mb: 0.25 }}>
                   {COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}
@@ -246,12 +249,24 @@ export default function SaleReceiptDialog() {
               }}>
                 <Typography variant="h4" sx={{
                   fontWeight: 900,
-                  mb: 0.5,
                   fontSize: { xs: '1.4rem', md: '1.8rem' },
                   color: '#0f172a',
                   letterSpacing: '0.03em',
+                  lineHeight: 1.15,
                 }}>
-                  {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
+                  ZAIN TRADERS
+                </Typography>
+                <Typography sx={{
+                  fontWeight: 800,
+                  fontSize: { xs: '0.8rem', md: '0.95rem' },
+                  color: '#475569',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.2,
+                  mt: 0.2,
+                  mb: 0.5,
+                }}>
+                  Mandi Bahauddin
                 </Typography>
                 <Typography className="nastaliq-text" sx={{
                   fontWeight: 'bold',

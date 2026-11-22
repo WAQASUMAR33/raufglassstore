@@ -462,7 +462,8 @@ export default function SalesByDateReport() {
             {/* Print Header - Only show on print */}
             <div className="hidden print:block mb-6 border-b-2 border-gray-800 pb-4">
               <div className="text-center">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">Zain Traders Mandi Bahauddin</h1>
+                <h1 className="text-4xl font-black text-gray-900 mb-0">ZAIN TRADERS</h1>
+                <p className="text-sm font-bold tracking-widest uppercase text-gray-700 mb-2">MANDI BAHAUDDIN</p>
                 <p className="text-gray-700 text-lg">Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
                 <p className="text-gray-700 text-lg">Phone: 0302-2133218, 0347-7743218</p>
                 <div className="mt-4 pt-4 border-t border-gray-300">
@@ -514,7 +515,8 @@ export default function SalesByDateReport() {
                 {selectedSale ? (
                   <Box sx={{ width: '100%', bgcolor: 'white' }}>
                     <Box sx={{ textAlign: 'center', py: 2, borderBottom: '2px solid #000' }}>
-                      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>Zain Traders Mandi Bahauddin</Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0 }}>ZAIN TRADERS</Typography>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary', mb: 0.5 }}>MANDI BAHAUDDIN</Typography>
                       <Typography variant="body2" sx={{ mb: 0.5 }}>Address: Phalia Road , Near Aljannat Petrol pump M.B.Din.</Typography>
                       <Typography variant="body2">Phone: 0302-2133218, 0347-7743218</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>SALE INVOICE</Typography>

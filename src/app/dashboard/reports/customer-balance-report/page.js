@@ -457,7 +457,8 @@ export default function CustomerBalanceReport() {
                 >
                     {/* Print Header (Only visible when printing) */}
                     <Box className="hidden print:block" sx={{ textAlign: 'center', p: 3, borderBottom: '2px solid #000' }}>
-                        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>ZAIN TRADERS MANDI BAHAUDDIN</Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>ZAIN TRADERS</Typography>
+                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary' }}>MANDI BAHAUDDIN</Typography>
                         <Typography variant="body2" sx={{ color: '#475569', mt: 0.5 }}>Phalia Road , Near Aljannat Petrol pump M.B.Din. | Tel: 0302-2133218, 0347-7743218</Typography>
                         <Typography variant="h6" sx={{ mt: 1, fontWeight: 700 }}>Customer Balance Report</Typography>
                         <Typography variant="caption" sx={{ color: '#64748b' }}>Date: {formatDatePK(new Date())}</Typography>

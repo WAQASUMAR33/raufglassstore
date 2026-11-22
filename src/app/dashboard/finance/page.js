@@ -2972,7 +2972,8 @@ function FinancePageContent() {
       });
       tempEl.innerHTML = `
         <div style="text-align:center;padding-bottom:14px;border-bottom:2px solid #000;margin-bottom:16px;">
-          <h2 style="margin:0;font-size:20px;font-weight:800;">Zain Traders Mandi Bahauddin</h2>
+          <h2 style="margin:0;font-size:20px;font-weight:900;">ZAIN TRADERS</h2>
+          <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-top:2px;">Mandi Bahauddin</div>
           <p style="margin:4px 0;direction:rtl;font-size:16px;">زین ٹریڈرز منڈی بہاؤالدین</p>
           <p style="margin:4px 0;font-size:12px;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
           <p style="margin:4px 0;font-weight:bold;">Ph:- 0302-2133218, 0347-7743218</p>
