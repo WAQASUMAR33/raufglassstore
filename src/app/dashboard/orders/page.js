@@ -422,16 +422,16 @@ const ORDER_VIEW_TOGGLE_BTN_SX = (active) => ({
   transition: 'all 0.2s ease',
   ...(active
     ? {
-        bgcolor: '#fff',
-        color: BRAND.primary.blue,
-        boxShadow: '0 1px 4px rgba(15, 23, 42, 0.1)',
-        '&:hover': { bgcolor: '#fff', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.12)' },
-      }
+      bgcolor: '#fff',
+      color: BRAND.primary.blue,
+      boxShadow: '0 1px 4px rgba(15, 23, 42, 0.1)',
+      '&:hover': { bgcolor: '#fff', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.12)' },
+    }
     : {
-        bgcolor: 'transparent',
-        color: '#64748b',
-        '&:hover': { bgcolor: 'rgba(255,255,255,0.6)', color: '#475569' },
-      }),
+      bgcolor: 'transparent',
+      color: '#64748b',
+      '&:hover': { bgcolor: 'rgba(255,255,255,0.6)', color: '#475569' },
+    }),
 });
 
 const ORDER_PAGE_CARD_SX = {
@@ -1637,12 +1637,12 @@ function OrdersPageContent() {
       const cW = parseFloat(updated.calc_width) || 0;
       const cH = parseFloat(updated.calc_height) || 0;
       const pcs = parseInt(updated.pieces, 10) || 1;
-      
+
       let qty = parseFloat(p.quantity) || 0;
       if (cW > 0 && cH > 0) {
         qty = Number(((cW * cH / 144) * pcs).toFixed(2));
       }
-      
+
       const glassRate = parseFloat(p.rate || p.glass_rate || 0);
       const addonsTotal = (p.selected_addons || []).reduce(
         (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
@@ -1681,7 +1681,7 @@ function OrdersPageContent() {
       if (p.id !== rowId) return p;
       const cW = parseFloat(p.calc_width) || 0;
       const cH = parseFloat(p.calc_height) || 0;
-      
+
       let qty = parseFloat(p.quantity) || 0;
       if (cW > 0 && cH > 0) {
         qty = Number(((cW * cH / 144) * pcs).toFixed(2));
@@ -2619,7 +2619,7 @@ function OrdersPageContent() {
           return updated ? { ...prev, ...updated } : prev;
         });
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
   useEffect(() => {
@@ -3844,50 +3844,50 @@ function OrdersPageContent() {
               {/* First Row - Type, Customer, Bill, Date, Reference */}
               <Box sx={ORDER_ENTRY_ROW1_SX}>
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Typography sx={ORDER_ENTRY_LABEL_SX}>
-                      CUSTOMER TYPE
-                    </Typography>
-                    <Autocomplete
-                      id="customer-type-select"
-                      size="small"
-                      fullWidth
-                      sx={{ width: '100%', minWidth: 0 }}
-                      options={
-                        selectedCustomerType &&
+                  <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                    CUSTOMER TYPE
+                  </Typography>
+                  <Autocomplete
+                    id="customer-type-select"
+                    size="small"
+                    fullWidth
+                    sx={{ width: '100%', minWidth: 0 }}
+                    options={
+                      selectedCustomerType &&
                         !orderPageCustomerTypeOptions.some((t) => t.cus_type_id === selectedCustomerType.cus_type_id)
-                          ? [selectedCustomerType, ...orderPageCustomerTypeOptions]
-                          : orderPageCustomerTypeOptions
-                      }
-                      getOptionLabel={(option) => option.cus_type_title || ''}
-                      getOptionKey={(option) => option.cus_type_id}
-                      value={selectedCustomerType}
-                      onChange={(event, newValue) => {
-                        setSelectedCustomerType(newValue);
-                        if (newValue) {
-                          const typeTitle = (newValue.cus_type_title || '').toLowerCase();
-                          if (typeTitle.includes('walk')) {
-                            const matchingCustomer = customers.find((c) =>
-                              Number(c.cus_type) === Number(newValue.cus_type_id) ||
-                              (c.customer_type?.cus_type_id != null && Number(c.customer_type.cus_type_id) === Number(newValue.cus_type_id)) ||
-                              (c.cus_name || '').toLowerCase().includes('walk')
-                            );
-                            if (matchingCustomer) {
-                              applySelectedCustomer(matchingCustomer);
-                            }
+                        ? [selectedCustomerType, ...orderPageCustomerTypeOptions]
+                        : orderPageCustomerTypeOptions
+                    }
+                    getOptionLabel={(option) => option.cus_type_title || ''}
+                    getOptionKey={(option) => option.cus_type_id}
+                    value={selectedCustomerType}
+                    onChange={(event, newValue) => {
+                      setSelectedCustomerType(newValue);
+                      if (newValue) {
+                        const typeTitle = (newValue.cus_type_title || '').toLowerCase();
+                        if (typeTitle.includes('walk')) {
+                          const matchingCustomer = customers.find((c) =>
+                            Number(c.cus_type) === Number(newValue.cus_type_id) ||
+                            (c.customer_type?.cus_type_id != null && Number(c.customer_type.cus_type_id) === Number(newValue.cus_type_id)) ||
+                            (c.cus_name || '').toLowerCase().includes('walk')
+                          );
+                          if (matchingCustomer) {
+                            applySelectedCustomer(matchingCustomer);
                           }
                         }
-                      }}
-                      isOptionEqualToValue={(option, value) => option.cus_type_id === value?.cus_type_id}
-                      autoSelect={true}
-                      autoHighlight={true}
-                      openOnFocus={true}
-                      selectOnFocus={true}
-                      onHighlightChange={(_, option) => {
-                        if (option) customerTypeHighlightRef.current = option;
-                      }}
-                      renderInput={(params) => {
-                        const prevKeyDown = params.inputProps?.onKeyDown;
-                        return (
+                      }
+                    }}
+                    isOptionEqualToValue={(option, value) => option.cus_type_id === value?.cus_type_id}
+                    autoSelect={true}
+                    autoHighlight={true}
+                    openOnFocus={true}
+                    selectOnFocus={true}
+                    onHighlightChange={(_, option) => {
+                      if (option) customerTypeHighlightRef.current = option;
+                    }}
+                    renderInput={(params) => {
+                      const prevKeyDown = params.inputProps?.onKeyDown;
+                      return (
                         <TextField
                           {...params}
                           id="customer-type-select-input"
@@ -3922,101 +3922,101 @@ function OrdersPageContent() {
                             }
                           }}
                         />
-                        );
-                      }}
-                    />
+                      );
+                    }}
+                  />
                 </Box>
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75, gap: 1, minHeight: 22, flexWrap: 'wrap' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography sx={{ ...ORDER_ENTRY_LABEL_SX, mb: 0 }}>
-                          CUSTOMER
-                        </Typography>
-                        <Button
-                          size="small"
-                          variant="text"
-                          startIcon={<AddIcon sx={{ fontSize: 13 }} />}
-                          onClick={() => handleOpenCustomerPopup('customer')}
-                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
-                        >
-                          Add Customer
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="text"
-                          component="a"
-                          href="/dashboard/customers"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
-                        >
-                          Customers Page ↗
-                        </Button>
-                      </Box>
-                      {formSelectedCustomer && (
-                        <Box
-                          component="span"
-                          sx={{
-                            bgcolor: '#bbf7d0',
-                            color: '#14532d',
-                            border: '1px solid #22c55e',
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: '6px',
-                            fontSize: '0.7rem',
-                            fontWeight: 800,
-                            lineHeight: 1.3,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Prev. Bal: {fmtAmt(formCustomerPrevBalance)}
-                        </Box>
-                      )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75, gap: 1, minHeight: 22, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ ...ORDER_ENTRY_LABEL_SX, mb: 0 }}>
+                        CUSTOMER
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                        onClick={() => handleOpenCustomerPopup('customer')}
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                      >
+                        Add Customer
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        component="a"
+                        href="/dashboard/customers"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
+                      >
+                        Customers Page ↗
+                      </Button>
                     </Box>
-                    <Autocomplete
-                      id="customer-autocomplete"
-                      size="small"
-                      fullWidth
-                      sx={{ width: '100%', minWidth: 0 }}
-                      options={customers.filter(customer => {
-                        if (!isCustomerAccount(customer, customerCategories)) return false;
-                        if (selectedCustomerType) {
-                          return matchesCustomerType(customer, selectedCustomerType);
-                        }
-                        return true;
-                      })}
-                      getOptionLabel={(option) => option.cus_name || ''}
-                      ListboxProps={{ sx: { maxHeight: 180 } }}
-                      getOptionKey={(option) => option.cus_id}
-                      filterOptions={(options, { inputValue }) => filterOrderCustomers(options, inputValue)}
-                      renderOption={(props, option) => {
-                        const { key, ...optionProps } = props;
-                        return (
-                          <li key={key} {...optionProps}>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{option.cus_name}</Typography>
-                              {option.cus_phone_no && (
-                                <Typography variant="caption" color="text.secondary">{option.cus_phone_no}{option.cus_phone_no2 ? ` / ${option.cus_phone_no2}` : ''}</Typography>
-                              )}
-                            </Box>
-                          </li>
-                        );
-                      }}
-                      value={formSelectedCustomer}
-                      onChange={(event, newValue) => {
-                        applySelectedCustomer(newValue);
-                      }}
-                      isOptionEqualToValue={(option, value) => option.cus_id === value?.cus_id}
-                      autoSelect={true}
-                      autoHighlight={true}
-                      openOnFocus={true}
-                      selectOnFocus={true}
-                      onHighlightChange={(_, option) => {
-                        if (option) customerHighlightRef.current = option;
-                      }}
-                      renderInput={(params) => {
-                        const prevKeyDown = params.inputProps?.onKeyDown;
-                        return (
+                    {formSelectedCustomer && (
+                      <Box
+                        component="span"
+                        sx={{
+                          bgcolor: '#bbf7d0',
+                          color: '#14532d',
+                          border: '1px solid #22c55e',
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: '6px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          lineHeight: 1.3,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Prev. Bal: {fmtAmt(formCustomerPrevBalance)}
+                      </Box>
+                    )}
+                  </Box>
+                  <Autocomplete
+                    id="customer-autocomplete"
+                    size="small"
+                    fullWidth
+                    sx={{ width: '100%', minWidth: 0 }}
+                    options={customers.filter(customer => {
+                      if (!isCustomerAccount(customer, customerCategories)) return false;
+                      if (selectedCustomerType) {
+                        return matchesCustomerType(customer, selectedCustomerType);
+                      }
+                      return true;
+                    })}
+                    getOptionLabel={(option) => option.cus_name || ''}
+                    ListboxProps={{ sx: { maxHeight: 180 } }}
+                    getOptionKey={(option) => option.cus_id}
+                    filterOptions={(options, { inputValue }) => filterOrderCustomers(options, inputValue)}
+                    renderOption={(props, option) => {
+                      const { key, ...optionProps } = props;
+                      return (
+                        <li key={key} {...optionProps}>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{option.cus_name}</Typography>
+                            {option.cus_phone_no && (
+                              <Typography variant="caption" color="text.secondary">{option.cus_phone_no}{option.cus_phone_no2 ? ` / ${option.cus_phone_no2}` : ''}</Typography>
+                            )}
+                          </Box>
+                        </li>
+                      );
+                    }}
+                    value={formSelectedCustomer}
+                    onChange={(event, newValue) => {
+                      applySelectedCustomer(newValue);
+                    }}
+                    isOptionEqualToValue={(option, value) => option.cus_id === value?.cus_id}
+                    autoSelect={true}
+                    autoHighlight={true}
+                    openOnFocus={true}
+                    selectOnFocus={true}
+                    onHighlightChange={(_, option) => {
+                      if (option) customerHighlightRef.current = option;
+                    }}
+                    renderInput={(params) => {
+                      const prevKeyDown = params.inputProps?.onKeyDown;
+                      return (
                         <TextField
                           {...params}
                           id="customer-autocomplete-input"
@@ -4061,9 +4061,9 @@ function OrdersPageContent() {
                           }}
                           sx={{ ...ORDER_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: formSelectedCustomer ? 700 : 500 } }}
                         />
-                        );
-                      }}
-                    />
+                      );
+                    }}
+                  />
                 </Box>
                 {/* BILL TYPE (Retail / Whole sale) */}
                 <Box sx={ORDER_ENTRY_CELL_SX}>
@@ -4114,33 +4114,33 @@ function OrdersPageContent() {
 
                 {/* ORDER TYPE */}
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Typography sx={ORDER_ENTRY_LABEL_SX}>
-                      ORDER TYPE
-                    </Typography>
-                    <FormControl fullWidth size="small" sx={{ minWidth: 0, width: '100%' }}>
-                      <Select
-                        value={billType}
-                        onChange={(e) => setBillType(e.target.value)}
-                        sx={{
-                          height: 40,
-                          bgcolor: '#fff',
+                  <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                    ORDER TYPE
+                  </Typography>
+                  <FormControl fullWidth size="small" sx={{ minWidth: 0, width: '100%' }}>
+                    <Select
+                      value={billType}
+                      onChange={(e) => setBillType(e.target.value)}
+                      sx={{
+                        height: 40,
+                        bgcolor: '#fff',
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        '& .MuiSelect-select': {
+                          py: 0,
+                          display: 'flex',
+                          alignItems: 'center',
                           fontWeight: 700,
-                          fontSize: '0.875rem',
-                          '& .MuiSelect-select': {
-                            py: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            fontWeight: 700,
-                          },
-                        }}
-                      >
-                        <MenuItem value="ORDER">Order</MenuItem>
-                        <MenuItem value="ORDER_TRASH">Order Trash</MenuItem>
-                        <MenuItem value="BILL">Bill</MenuItem>
-                        <MenuItem value="QUOTATION">Quotation</MenuItem>
-                        <MenuItem value="SALE_RETURN">Sale Return</MenuItem>
-                      </Select>
-                    </FormControl>
+                        },
+                      }}
+                    >
+                      <MenuItem value="ORDER">Order</MenuItem>
+                      <MenuItem value="ORDER_TRASH">Order Trash</MenuItem>
+                      <MenuItem value="BILL">Bill</MenuItem>
+                      <MenuItem value="QUOTATION">Quotation</MenuItem>
+                      <MenuItem value="SALE_RETURN">Sale Return</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Box>
 
                 {/* CUTTER */}
@@ -4195,141 +4195,141 @@ function OrdersPageContent() {
                 </Box>
 
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Typography sx={ORDER_ENTRY_LABEL_SX}>
-                      DATE
-                    </Typography>
-                    <DateFilterInput
-                      fullWidth
-                      size="small"
-                      value={orderEntryDate}
-                      onChange={(val) => setOrderEntryDate(val)}
-                      sx={ORDER_ENTRY_CONTROL_SX}
-                    />
+                  <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                    DATE
+                  </Typography>
+                  <DateFilterInput
+                    fullWidth
+                    size="small"
+                    value={orderEntryDate}
+                    onChange={(val) => setOrderEntryDate(val)}
+                    sx={ORDER_ENTRY_CONTROL_SX}
+                  />
                 </Box>
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Typography sx={ORDER_ENTRY_LABEL_SX}>
-                      REFERENCE
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      sx={ORDER_ENTRY_CONTROL_SX}
-                      value={paymentData.notes || ''}
-                      onChange={(e) => handlePaymentDataChange('notes', e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                    />
+                  <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                    REFERENCE
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    sx={ORDER_ENTRY_CONTROL_SX}
+                    value={paymentData.notes || ''}
+                    onChange={(e) => handlePaymentDataChange('notes', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                  />
                 </Box>
               </Box>
 
               {/* Product Selection Row */}
               <Box sx={ORDER_ENTRY_ROW2_SX}>
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, overflow: 'hidden' }}>
-                        <Typography sx={ORDER_ENTRY_LABEL_SX}>PRODUCT</Typography>
-                        {formSelectedProduct?.formula && (
-                          <Tooltip title={formSelectedProduct.formula.description || formSelectedProduct.formula.name}>
-                            <Chip
-                              size="small"
-                              label={`📐 ${formSelectedProduct.formula.name}`}
-                              sx={{
-                                height: 18,
-                                fontSize: '0.62rem',
-                                fontWeight: 800,
-                                bgcolor: '#eff6ff',
-                                color: '#1d4ed8',
-                                borderRadius: '3px',
-                                maxWidth: 140,
-                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', px: 0.75 }
-                              }}
-                            />
-                          </Tooltip>
-                        )}
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Button
-                          size="small"
-                          variant="text"
-                          startIcon={<AddIcon sx={{ fontSize: 13 }} />}
-                          onClick={() => setShowAddProductModal(true)}
-                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
-                        >
-                          Add Product
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="text"
-                          component="a"
-                          href="/dashboard/products"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
-                        >
-                          Products Page ↗
-                        </Button>
-
-                      </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, overflow: 'hidden' }}>
+                      <Typography sx={ORDER_ENTRY_LABEL_SX}>PRODUCT</Typography>
+                      {formSelectedProduct?.formula && (
+                        <Tooltip title={formSelectedProduct.formula.description || formSelectedProduct.formula.name}>
+                          <Chip
+                            size="small"
+                            label={`📐 ${formSelectedProduct.formula.name}`}
+                            sx={{
+                              height: 18,
+                              fontSize: '0.62rem',
+                              fontWeight: 800,
+                              bgcolor: '#eff6ff',
+                              color: '#1d4ed8',
+                              borderRadius: '3px',
+                              maxWidth: 140,
+                              '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', px: 0.75 }
+                            }}
+                          />
+                        </Tooltip>
+                      )}
                     </Box>
-                    <Autocomplete
-                      size="small"
-                      fullWidth
-                      sx={{ width: '100%', minWidth: 0 }}
-                      options={products || []}
-                      getOptionLabel={(option) => option.pro_title || ''}
-                      getOptionKey={(option) => option.pro_id}
-                      filterOptions={filterOrderProducts}
-                      ListboxProps={{ sx: { maxHeight: 130 } }}
-                      renderOption={(props, option) => {
-                        const { key, ...optionProps } = props;
-                        return (
-                          <li
-                            key={option.pro_id ?? key}
-                            {...optionProps}
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}
-                          >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography sx={{ fontWeight: 500 }}>{option.pro_title}</Typography>
-                              {option.pro_code && (
-                                <Typography variant="caption" sx={{ color: 'text.secondary', ml: 0.5 }}>#{option.pro_code}</Typography>
-                              )}
-                            </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+                        onClick={() => setShowAddProductModal(true)}
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
+                      >
+                        Add Product
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        component="a"
+                        href="/dashboard/products"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
+                      >
+                        Products Page ↗
+                      </Button>
 
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {visibleCrates.includes(option.pro_id) && (
-                                <Typography variant="body2" sx={{ color: 'text.secondary', mr: 1 }}>
-                                  {option.pro_crate ? 'PKR ' + fmtAmt(option.pro_crate) : 'N/A'}
-                                </Typography>
-                              )}
+                    </Box>
+                  </Box>
+                  <Autocomplete
+                    size="small"
+                    fullWidth
+                    sx={{ width: '100%', minWidth: 0 }}
+                    options={products || []}
+                    getOptionLabel={(option) => option.pro_title || ''}
+                    getOptionKey={(option) => option.pro_id}
+                    filterOptions={filterOrderProducts}
+                    ListboxProps={{ sx: { maxHeight: 130 } }}
+                    renderOption={(props, option) => {
+                      const { key, ...optionProps } = props;
+                      return (
+                        <li
+                          key={option.pro_id ?? key}
+                          {...optionProps}
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography sx={{ fontWeight: 500 }}>{option.pro_title}</Typography>
+                            {option.pro_code && (
+                              <Typography variant="caption" sx={{ color: 'text.secondary', ml: 0.5 }}>#{option.pro_code}</Typography>
+                            )}
+                          </Box>
 
-                              <IconButton
-                                size="small"
-                                tabIndex={-1}
-                                onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleVisibleCrate(option.pro_id); }}
-                                aria-label={visibleCrates.includes(option.pro_id) ? 'Hide purchase rate' : 'Show purchase rate'}
-                              >
-                                <VisibilityIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </li>
-                        );
-                      }}
-                      value={formSelectedProduct}
-                      onChange={(event, newValue) => {
-                        console.log('🔍 Product selected:', newValue);
-                        handleProductSelect(newValue);
-                      }}
-                      isOptionEqualToValue={(option, value) => option.pro_id === value?.pro_id}
-                      autoSelect={true}
-                      autoHighlight={true}
-                      openOnFocus={true}
-                      selectOnFocus={true}
-                      onHighlightChange={(_, option) => {
-                        if (option) productHighlightRef.current = option;
-                      }}
-                      renderInput={(params) => {
-                        const prevKeyDown = params.inputProps?.onKeyDown;
-                        return (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {visibleCrates.includes(option.pro_id) && (
+                              <Typography variant="body2" sx={{ color: 'text.secondary', mr: 1 }}>
+                                {option.pro_crate ? 'PKR ' + fmtAmt(option.pro_crate) : 'N/A'}
+                              </Typography>
+                            )}
+
+                            <IconButton
+                              size="small"
+                              tabIndex={-1}
+                              onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                              onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleVisibleCrate(option.pro_id); }}
+                              aria-label={visibleCrates.includes(option.pro_id) ? 'Hide purchase rate' : 'Show purchase rate'}
+                            >
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </li>
+                      );
+                    }}
+                    value={formSelectedProduct}
+                    onChange={(event, newValue) => {
+                      console.log('🔍 Product selected:', newValue);
+                      handleProductSelect(newValue);
+                    }}
+                    isOptionEqualToValue={(option, value) => option.pro_id === value?.pro_id}
+                    autoSelect={true}
+                    autoHighlight={true}
+                    openOnFocus={true}
+                    selectOnFocus={true}
+                    onHighlightChange={(_, option) => {
+                      if (option) productHighlightRef.current = option;
+                    }}
+                    renderInput={(params) => {
+                      const prevKeyDown = params.inputProps?.onKeyDown;
+                      return (
                         <TextField
                           {...params}
                           id="product-autocomplete-input"
@@ -4367,10 +4367,10 @@ function OrdersPageContent() {
                           }}
                           sx={{ ...ORDER_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: formSelectedProduct ? 700 : 500 } }}
                         />
-                        );
-                      }}
-                      disabled={products.length === 0}
-                    />
+                      );
+                    }}
+                    disabled={products.length === 0}
+                  />
                 </Box>
                 {/* WIDTH (IN) */}
                 <Box sx={ORDER_ENTRY_CELL_SX}>
@@ -4449,101 +4449,101 @@ function OrdersPageContent() {
 
                 {/* QTY (SQ FT) */}
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Typography sx={ORDER_ENTRY_LABEL_SX}>
-                      QTY (SQ FT)
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="number"
-                      id="order-qty-input"
-                      value={productFormData.quantity === 0 ? '' : productFormData.quantity}
-                      onChange={(e) => handleQuantityChange(e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                      inputProps={{ step: 'any' }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (productFormData.rate > 0) {
-                            handleAddProductToTable();
-                          } else {
-                            document.getElementById('product-rate-input')?.focus();
-                          }
-                        } else if (e.key === 'Tab' && e.shiftKey) {
-                          e.preventDefault();
-                          document.getElementById('order-pieces-input')?.focus();
-                        } else if (e.key === 'Tab') {
-                          e.preventDefault();
+                  <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                    QTY (SQ FT)
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    id="order-qty-input"
+                    value={productFormData.quantity === 0 ? '' : productFormData.quantity}
+                    onChange={(e) => handleQuantityChange(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    inputProps={{ step: 'any' }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (productFormData.rate > 0) {
+                          handleAddProductToTable();
+                        } else {
                           document.getElementById('product-rate-input')?.focus();
                         }
-                      }}
-                      sx={{ ...ORDER_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: 700 } }}
-                    />
+                      } else if (e.key === 'Tab' && e.shiftKey) {
+                        e.preventDefault();
+                        document.getElementById('order-pieces-input')?.focus();
+                      } else if (e.key === 'Tab') {
+                        e.preventDefault();
+                        document.getElementById('product-rate-input')?.focus();
+                      }
+                    }}
+                    sx={{ ...ORDER_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: 700 } }}
+                  />
                 </Box>
 
                 {/* SALE RATE */}
                 <Box sx={ORDER_ENTRY_CELL_SX}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-                      <Typography sx={ORDER_ENTRY_LABEL_SX}>
-                        SALE RATE
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {lastChargedRate != null && (
-                          <Chip
-                            size="small"
-                            label={`Last: ${lastChargedRate}`}
-                            onClick={() => handleRateChange(String(lastChargedRate))}
-                            sx={{
-                              fontSize: '0.68rem',
-                              fontWeight: 800,
-                              height: 20,
-                              cursor: 'pointer',
-                              bgcolor: '#ecfdf5',
-                              color: '#047857',
-                              border: '1px solid #a7f3d0',
-                              '&:hover': { bgcolor: '#d1fae5' }
-                            }}
-                            title="Click to apply last sale rate charged to this customer"
-                          />
-                        )}
-                        <Typography
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+                    <Typography sx={ORDER_ENTRY_LABEL_SX}>
+                      SALE RATE
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {lastChargedRate != null && (
+                        <Chip
+                          size="small"
+                          label={`Last: ${lastChargedRate}`}
+                          onClick={() => handleRateChange(String(lastChargedRate))}
                           sx={{
                             fontSize: '0.68rem',
                             fontWeight: 800,
-                            color: billPriceType === 'Whole sale' ? '#b45309' : '#1d4ed8',
-                            bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#e0f2fe',
-                            px: 0.6,
-                            py: 0.1,
-                            borderRadius: '4px',
+                            height: 20,
+                            cursor: 'pointer',
+                            bgcolor: '#ecfdf5',
+                            color: '#047857',
+                            border: '1px solid #a7f3d0',
+                            '&:hover': { bgcolor: '#d1fae5' }
                           }}
-                        >
-                          {billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}
-                        </Typography>
-                      </Box>
+                          title="Click to apply last sale rate charged to this customer"
+                        />
+                      )}
+                      <Typography
+                        sx={{
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          color: billPriceType === 'Whole sale' ? '#b45309' : '#1d4ed8',
+                          bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#e0f2fe',
+                          px: 0.6,
+                          py: 0.1,
+                          borderRadius: '4px',
+                        }}
+                      >
+                        {billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}
+                      </Typography>
                     </Box>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="number"
-                      value={productFormData.rate === 0 ? '' : productFormData.rate}
-                      onChange={(e) => handleRateChange(e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                      inputProps={{ step: 'any' }}
-                      id="product-rate-input"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddProductToTable();
-                        } else if (e.key === 'Tab' && e.shiftKey) {
-                          e.preventDefault();
-                          document.getElementById('order-qty-input')?.focus();
-                        } else if (e.key === 'Tab') {
-                          e.preventDefault();
-                          document.getElementById('add-product-btn')?.focus();
-                        }
-                      }}
-                      sx={{ ...ORDER_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: 700 } }}
-                    />
+                  </Box>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    value={productFormData.rate === 0 ? '' : productFormData.rate}
+                    onChange={(e) => handleRateChange(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    inputProps={{ step: 'any' }}
+                    id="product-rate-input"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddProductToTable();
+                      } else if (e.key === 'Tab' && e.shiftKey) {
+                        e.preventDefault();
+                        document.getElementById('order-qty-input')?.focus();
+                      } else if (e.key === 'Tab') {
+                        e.preventDefault();
+                        document.getElementById('add-product-btn')?.focus();
+                      }
+                    }}
+                    sx={{ ...ORDER_ENTRY_CONTROL_SX, '& .MuiInputBase-input': { fontWeight: 700 } }}
+                  />
                 </Box>
 
                 {/* GLASS TOTAL */}
@@ -4643,50 +4643,50 @@ function OrdersPageContent() {
                   />
                 </Box>
                 <Box sx={{ ...ORDER_ENTRY_CELL_SX, width: 44 }}>
-                    <Button
-                      variant="contained"
-                      id="add-product-btn"
-                      onClick={handleAddProductToTable}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                  <Button
+                    variant="contained"
+                    id="add-product-btn"
+                    onClick={handleAddProductToTable}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddProductToTable();
+                        return;
+                      }
+                      if (e.key === 'Tab' && e.shiftKey) {
+                        e.preventDefault();
+                        document.getElementById('product-rate-input')?.focus();
+                        return;
+                      }
+                      if (e.key === 'Tab' && !e.shiftKey) {
+                        if (formSelectedProduct && formSelectedStore && productFormData.quantity > 0 && productFormData.rate > 0) {
                           e.preventDefault();
                           handleAddProductToTable();
                           return;
                         }
-                        if (e.key === 'Tab' && e.shiftKey) {
+                        if (productTableData.length === 0) {
                           e.preventDefault();
-                          document.getElementById('product-rate-input')?.focus();
-                          return;
+                          document.getElementById('payment-labour-input')?.focus();
                         }
-                        if (e.key === 'Tab' && !e.shiftKey) {
-                          if (formSelectedProduct && formSelectedStore && productFormData.quantity > 0 && productFormData.rate > 0) {
-                            e.preventDefault();
-                            handleAddProductToTable();
-                            return;
-                          }
-                          if (productTableData.length === 0) {
-                            e.preventDefault();
-                            document.getElementById('payment-labour-input')?.focus();
-                          }
-                        }
-                      }}
-                      sx={{
-                        bgcolor: '#6f42c1',
-                        color: 'white',
-                        borderRadius: '8px',
-                        minWidth: 44,
-                        width: 44,
-                        height: 40,
-                        minHeight: 40,
-                        p: 0,
-                        fontSize: '1.25rem',
-                        fontWeight: 700,
-                        lineHeight: 1,
-                        '&:hover': { bgcolor: '#5a2d91' }
-                      }}
-                    >
-                      +
-                    </Button>
+                      }
+                    }}
+                    sx={{
+                      bgcolor: '#6f42c1',
+                      color: 'white',
+                      borderRadius: '8px',
+                      minWidth: 44,
+                      width: 44,
+                      height: 40,
+                      minHeight: 40,
+                      p: 0,
+                      fontSize: '1.25rem',
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      '&:hover': { bgcolor: '#5a2d91' }
+                    }}
+                  >
+                    +
+                  </Button>
                 </Box>
               </Box>
 
@@ -5997,7 +5997,7 @@ function OrdersPageContent() {
               <CommercialInvoiceReceipt bill={currentBillData} isOrder={true} />
             </Box>
 
-            </Box>
+          </Box>
         )}
 
         {/* Receipt Dialog */}
@@ -6441,211 +6441,211 @@ function OrdersPageContent() {
 
             <Box sx={{ px: { xs: 1.5, md: 2 }, py: 2, borderBottom: '1px solid #e2e8f0', bgcolor: '#fafbfc' }}>
               <Box sx={{ ...ORDER_FILTER_GRID, gap: { xs: 1.5, md: 2 } }}>
-                  <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Search Orders"
-                      placeholder="ID, Customer, Phone, Address, City, Order Name..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={ORDER_FILTER_FIELD_SX}
-                    />
-                  </Box>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Search Orders"
+                    placeholder="ID, Customer, Phone, Address, City, Order Name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={ORDER_FILTER_FIELD_SX}
+                  />
+                </Box>
 
-                  <Box>
-                    <Autocomplete
-                      fullWidth
-                      size="small"
-                      options={customers.filter(customer => isCustomerAccount(customer, customerCategories))}
-                      getOptionLabel={(option) => option.cus_name || ''}
-                      filterOptions={filterCustomerDropdown}
-                      value={customers.find(c => c.cus_id.toString() === filterCustomer) || null}
-                      onChange={(event, newValue) => {
-                        setFilterCustomer(newValue ? newValue.cus_id.toString() : '');
-                      }}
-                      autoSelect={true}
-                      autoHighlight={true}
-                      openOnFocus={true}
-                      selectOnFocus={true}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Customer"
-                          placeholder="All Customers"
-                          onFocus={(e) => e.target.select()}
-                          sx={ORDER_FILTER_FIELD_SX}
-                        />
-                      )}
-                    />
-                  </Box>
+                <Box>
+                  <Autocomplete
+                    fullWidth
+                    size="small"
+                    options={customers.filter(customer => isCustomerAccount(customer, customerCategories))}
+                    getOptionLabel={(option) => option.cus_name || ''}
+                    filterOptions={filterCustomerDropdown}
+                    value={customers.find(c => c.cus_id.toString() === filterCustomer) || null}
+                    onChange={(event, newValue) => {
+                      setFilterCustomer(newValue ? newValue.cus_id.toString() : '');
+                    }}
+                    autoSelect={true}
+                    autoHighlight={true}
+                    openOnFocus={true}
+                    selectOnFocus={true}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Customer"
+                        placeholder="All Customers"
+                        onFocus={(e) => e.target.select()}
+                        sx={ORDER_FILTER_FIELD_SX}
+                      />
+                    )}
+                  />
+                </Box>
 
-                  <Box>
-                    <FormControl fullWidth size="small" sx={ORDER_FILTER_FIELD_SX}>
-                      <InputLabel>Bill Type</InputLabel>
-                      <Select
-                        value={filterBillType}
-                        onChange={(e) => setFilterBillType(e.target.value)}
-                        label="Bill Type"
-                      >
-                        <MenuItem value="">All Types</MenuItem>
-                        <MenuItem value="ORDER">Order</MenuItem>
-                        <MenuItem value="ORDER_TRASH">Order Trash</MenuItem>
-                        <MenuItem value="BILL">Bill</MenuItem>
-                        <MenuItem value="QUOTATION">Quotation</MenuItem>
-                        <MenuItem value="SALE_RETURN">Sale Return</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Box>
+                <Box>
+                  <FormControl fullWidth size="small" sx={ORDER_FILTER_FIELD_SX}>
+                    <InputLabel>Bill Type</InputLabel>
+                    <Select
+                      value={filterBillType}
+                      onChange={(e) => setFilterBillType(e.target.value)}
+                      label="Bill Type"
+                    >
+                      <MenuItem value="">All Types</MenuItem>
+                      <MenuItem value="ORDER">Order</MenuItem>
+                      <MenuItem value="ORDER_TRASH">Order Trash</MenuItem>
+                      <MenuItem value="BILL">Bill</MenuItem>
+                      <MenuItem value="QUOTATION">Quotation</MenuItem>
+                      <MenuItem value="SALE_RETURN">Sale Return</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
 
-                  <Box>
-                    <Autocomplete
-                      fullWidth
-                      size="small"
-                      options={stores}
-                      getOptionLabel={(option) => option.store_name || ''}
-                      filterOptions={createUniversalFilter((o) => [o?.store_name])}
-                      value={stores.find(s => s.storeid.toString() === filterStore) || null}
-                      onChange={(event, newValue) => setFilterStore(newValue ? newValue.storeid.toString() : '')}
-                      autoSelect={true}
-                      autoHighlight={true}
-                      openOnFocus={true}
-                      selectOnFocus={true}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Store"
-                          placeholder="All Stores"
-                          onFocus={(e) => e.target.select()}
-                          sx={ORDER_FILTER_FIELD_SX}
-                        />
-                      )}
-                    />
-                  </Box>
+                <Box>
+                  <Autocomplete
+                    fullWidth
+                    size="small"
+                    options={stores}
+                    getOptionLabel={(option) => option.store_name || ''}
+                    filterOptions={createUniversalFilter((o) => [o?.store_name])}
+                    value={stores.find(s => s.storeid.toString() === filterStore) || null}
+                    onChange={(event, newValue) => setFilterStore(newValue ? newValue.storeid.toString() : '')}
+                    autoSelect={true}
+                    autoHighlight={true}
+                    openOnFocus={true}
+                    selectOnFocus={true}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Store"
+                        placeholder="All Stores"
+                        onFocus={(e) => e.target.select()}
+                        sx={ORDER_FILTER_FIELD_SX}
+                      />
+                    )}
+                  />
+                </Box>
 
-                  <Box>
-                    <DateFilterInput
-                      fullWidth
-                      size="small"
-                      label="From Date"
-                      value={dateFrom}
-                      onChange={(val) => setDateFrom(val)}
-                      sx={ORDER_FILTER_FIELD_SX}
-                    />
-                  </Box>
+                <Box>
+                  <DateFilterInput
+                    fullWidth
+                    size="small"
+                    label="From Date"
+                    value={dateFrom}
+                    onChange={(val) => setDateFrom(val)}
+                    sx={ORDER_FILTER_FIELD_SX}
+                  />
+                </Box>
 
-                  <Box>
-                    <DateFilterInput
-                      fullWidth
-                      size="small"
-                      label="To Date"
-                      value={dateTo}
-                      onChange={(val) => setDateTo(val)}
-                      sx={ORDER_FILTER_FIELD_SX}
-                    />
-                  </Box>
+                <Box>
+                  <DateFilterInput
+                    fullWidth
+                    size="small"
+                    label="To Date"
+                    value={dateTo}
+                    onChange={(val) => setDateTo(val)}
+                    sx={ORDER_FILTER_FIELD_SX}
+                  />
+                </Box>
 
-                  <Box>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Min Amount"
-                      type="number"
-                      placeholder="e.g. 1000"
-                      value={filterMinAmount}
-                      onChange={(e) => setFilterMinAmount(e.target.value)}
-                      sx={ORDER_FILTER_FIELD_SX}
-                    />
-                  </Box>
+                <Box>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Min Amount"
+                    type="number"
+                    placeholder="e.g. 1000"
+                    value={filterMinAmount}
+                    onChange={(e) => setFilterMinAmount(e.target.value)}
+                    sx={ORDER_FILTER_FIELD_SX}
+                  />
+                </Box>
 
-                  <Box>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Max Amount"
-                      type="number"
-                      placeholder="e.g. 50000"
-                      value={filterMaxAmount}
-                      onChange={(e) => setFilterMaxAmount(e.target.value)}
-                      sx={ORDER_FILTER_FIELD_SX}
-                    />
-                  </Box>
+                <Box>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Max Amount"
+                    type="number"
+                    placeholder="e.g. 50000"
+                    value={filterMaxAmount}
+                    onChange={(e) => setFilterMaxAmount(e.target.value)}
+                    sx={ORDER_FILTER_FIELD_SX}
+                  />
+                </Box>
 
-                  <Box>
-                    <FormControl fullWidth size="small" sx={ORDER_FILTER_FIELD_SX}>
-                      <InputLabel>Payment Type</InputLabel>
-                      <Select
-                        value={filterPaymentType}
-                        onChange={(e) => setFilterPaymentType(e.target.value)}
-                        label="Payment Type"
-                      >
-                        <MenuItem value="">All Types</MenuItem>
-                        <MenuItem value="CASH">Cash</MenuItem>
-                        <MenuItem value="BANK">Bank</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Box>
+                <Box>
+                  <FormControl fullWidth size="small" sx={ORDER_FILTER_FIELD_SX}>
+                    <InputLabel>Payment Type</InputLabel>
+                    <Select
+                      value={filterPaymentType}
+                      onChange={(e) => setFilterPaymentType(e.target.value)}
+                      label="Payment Type"
+                    >
+                      <MenuItem value="">All Types</MenuItem>
+                      <MenuItem value="CASH">Cash</MenuItem>
+                      <MenuItem value="BANK">Bank</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
 
-                  <Box>
-                    <FormControl fullWidth size="small" sx={ORDER_FILTER_FIELD_SX}>
-                      <InputLabel>Balance Status</InputLabel>
-                      <Select
-                        value={filterBalanceStatus}
-                        onChange={(e) => setFilterBalanceStatus(e.target.value)}
-                        label="Balance Status"
-                      >
-                        <MenuItem value="">All</MenuItem>
-                        <MenuItem value="with_balance">With Balance</MenuItem>
-                        <MenuItem value="without_balance">Without Balance</MenuItem>
-                        <MenuItem value="overpaid">Overpaid</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Box>
+                <Box>
+                  <FormControl fullWidth size="small" sx={ORDER_FILTER_FIELD_SX}>
+                    <InputLabel>Balance Status</InputLabel>
+                    <Select
+                      value={filterBalanceStatus}
+                      onChange={(e) => setFilterBalanceStatus(e.target.value)}
+                      label="Balance Status"
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      <MenuItem value="with_balance">With Balance</MenuItem>
+                      <MenuItem value="without_balance">Without Balance</MenuItem>
+                      <MenuItem value="overpaid">Overpaid</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
 
-                  <Box>
-                    <Autocomplete
-                      fullWidth
-                      size="small"
-                      options={[
-                        { value: 'created_at-desc', label: 'Newest First' },
-                        { value: 'created_at-asc', label: 'Oldest First' },
-                        { value: 'customer-asc', label: 'Customer A-Z' },
-                        { value: 'customer-desc', label: 'Customer Z-A' },
-                        { value: 'total_amount-desc', label: 'Amount High-Low' },
-                        { value: 'total_amount-asc', label: 'Amount Low-High' }
-                      ]}
-                      getOptionLabel={(option) => option.label}
-                      value={{ value: `${sortBy}-${sortOrder}`, label: getSortLabel(`${sortBy}-${sortOrder}`) }}
-                      onChange={(event, newValue) => {
-                        if (newValue) {
-                          const [field, order] = newValue.value.split('-');
-                          setSortBy(field);
-                          setSortOrder(order);
-                        }
-                      }}
-                      autoSelect={true}
-                      autoHighlight={true}
-                      openOnFocus={true}
-                      selectOnFocus={true}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Sort By"
-                          placeholder="Select..."
-                          onFocus={(e) => e.target.select()}
-                          sx={ORDER_FILTER_FIELD_SX}
-                        />
-                      )}
-                    />
-                  </Box>
+                <Box>
+                  <Autocomplete
+                    fullWidth
+                    size="small"
+                    options={[
+                      { value: 'created_at-desc', label: 'Newest First' },
+                      { value: 'created_at-asc', label: 'Oldest First' },
+                      { value: 'customer-asc', label: 'Customer A-Z' },
+                      { value: 'customer-desc', label: 'Customer Z-A' },
+                      { value: 'total_amount-desc', label: 'Amount High-Low' },
+                      { value: 'total_amount-asc', label: 'Amount Low-High' }
+                    ]}
+                    getOptionLabel={(option) => option.label}
+                    value={{ value: `${sortBy}-${sortOrder}`, label: getSortLabel(`${sortBy}-${sortOrder}`) }}
+                    onChange={(event, newValue) => {
+                      if (newValue) {
+                        const [field, order] = newValue.value.split('-');
+                        setSortBy(field);
+                        setSortOrder(order);
+                      }
+                    }}
+                    autoSelect={true}
+                    autoHighlight={true}
+                    openOnFocus={true}
+                    selectOnFocus={true}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Sort By"
+                        placeholder="Select..."
+                        onFocus={(e) => e.target.select()}
+                        sx={ORDER_FILTER_FIELD_SX}
+                      />
+                    )}
+                  />
+                </Box>
               </Box>
             </Box>
 

@@ -3,15 +3,21 @@ const mysql = require('mysql2/promise');
 
 async function run() {
   console.log('Connecting via mysql2 with single connection...');
+  const url = new URL(process.env.DATABASE_URL);
   const connection = await mysql.createConnection({
-    uri: process.env.DATABASE_URL,
+    host: url.hostname,
+    port: parseInt(url.port) || 3306,
+    user: url.username,
+    password: decodeURIComponent(url.password),
+    database: url.pathname.slice(1),
     multipleStatements: true,
+    connectTimeout: 20000,
   });
 
   try {
     console.log('Fetching customers...');
     const [customers] = await connection.query(
-      'SELECT cus_id, cus_name, cus_balance, cus_category FROM customer WHERE cus_category IN (4, 5)'
+      'SELECT cus_id, cus_name, cus_balance, cus_category FROM customers WHERE cus_category IN (4, 5)'
     );
 
     console.log(`Fetched ${customers.length} customers.`);
@@ -47,7 +53,7 @@ async function run() {
       if (entries.length === 0) {
         if (oldBal > 0) {
           updates.push(
-            mysql.format('UPDATE customer SET cus_balance = ? WHERE cus_id = ?;', [-oldBal, c.cus_id])
+            mysql.format('UPDATE customers SET cus_balance = ? WHERE cus_id = ?;', [-oldBal, c.cus_id])
           );
           noLedgerNegated++;
         }
@@ -98,7 +104,7 @@ async function run() {
         }
 
         updates.push(
-          mysql.format('UPDATE customer SET cus_balance = ? WHERE cus_id = ?;', [running, c.cus_id])
+          mysql.format('UPDATE customers SET cus_balance = ? WHERE cus_id = ?;', [running, c.cus_id])
         );
       }
     }
@@ -127,7 +133,7 @@ async function run() {
         COUNT(CASE WHEN cus_balance > 0 THEN 1 END) as payables_count,
         SUM(CASE WHEN cus_balance > 0 THEN cus_balance ELSE 0 END) as total_payables,
         COUNT(CASE WHEN cus_balance = 0 THEN 1 END) as settled_count
-      FROM customer
+      FROM customers
       WHERE cus_category IN (4, 5)
     `);
 
@@ -145,3 +151,4 @@ async function run() {
 }
 
 run().catch(console.error);
+

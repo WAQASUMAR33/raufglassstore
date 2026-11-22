@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
+import {
   Download,
   Printer,
   ArrowLeft,
@@ -30,7 +30,7 @@ export default function CustomersBalanceReport() {
       setLoading(true);
       const response = await fetch(`/api/reports?type=customers-balance`);
       const data = await response.json();
-      
+
       if (response.ok) {
         setReportData(data);
       } else {
@@ -57,7 +57,7 @@ export default function CustomersBalanceReport() {
     csv += 'Customers Balance Report\n';
     csv += `Generated on: ${new Date().toLocaleString()}\n\n`;
     csv += 'Customer Name,Phone,City,Category,Type,Current Balance,Status\n';
-    
+
     reportData.customers.forEach(customer => {
       const balance = parseFloat(customer.cus_balance);
       const status = balance < 0 ? 'Receivable' : balance > 0 ? 'Payable' : 'Zero';
@@ -143,7 +143,7 @@ export default function CustomersBalanceReport() {
                 <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900">Customer Balances</h3>
                 </div>
-                
+
                 <div className="flex-1 overflow-auto print:overflow-visible print:block">
                   <table className="min-w-full divide-y divide-gray-200 print:block print:table">
                     <thead className="bg-gray-50 sticky top-0 print:relative">
@@ -162,7 +162,7 @@ export default function CustomersBalanceReport() {
                         const balance = parseFloat(customer.cus_balance);
                         const status = balance < 0 ? 'Receivable' : balance > 0 ? 'Payable' : 'Zero';
                         const statusColor = balance < 0 ? 'text-red-600' : balance > 0 ? 'text-green-600' : 'text-gray-600';
-                        
+
                         return (
                           <tr key={customer.cus_id} className="hover:bg-gray-50 print:hover:bg-white">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -184,11 +184,10 @@ export default function CustomersBalanceReport() {
                               {fmtAmt(balance)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                              <span className={`px-2 py-1 text-xs rounded-full ${
-                                balance > 0 ? 'bg-green-100 text-green-800' : 
-                                balance < 0 ? 'bg-red-100 text-red-800' : 
-                                'bg-gray-100 text-gray-800'
-                              }`}>
+                              <span className={`px-2 py-1 text-xs rounded-full ${balance > 0 ? 'bg-green-100 text-green-800' :
+                                balance < 0 ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
                                 {status}
                               </span>
                             </td>

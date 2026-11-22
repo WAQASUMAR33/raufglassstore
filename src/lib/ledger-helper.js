@@ -72,7 +72,7 @@ export function createLedgerEntry(config) {
   if (!finalLedgerType && bill_no) {
     const bStr = bill_no.toString().toUpperCase();
     const detLower = (details || '').toLowerCase();
-    
+
     if (bStr.startsWith('PR-')) {
       finalLedgerType = 'Purchase Return';
     } else if (bStr.startsWith('EXP-')) {
@@ -133,7 +133,7 @@ export function createChainedLedgerEntries(entries) {
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
-    
+
     // Update opening balance for chained entries
     if (i > 0) {
       entry.opening_balance = runningBalance;
@@ -141,7 +141,7 @@ export function createChainedLedgerEntries(entries) {
 
     const processedEntry = createLedgerEntry(entry);
     processedEntries.push(processedEntry);
-    
+
     // Update running balance for next entry
     runningBalance = processedEntry.closing_balance;
   }
@@ -165,7 +165,7 @@ export function validateLedgerEntry(entry, accountNature = ACCOUNT_NATURE.RECEIV
   );
 
   const difference = Math.abs(calculated - parseFloat(entry.closing_balance));
-  
+
   // Allow for floating point precision errors
   if (difference > 0.01) {
     throw new Error(
