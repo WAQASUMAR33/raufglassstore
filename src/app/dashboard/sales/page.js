@@ -11013,10 +11013,10 @@ function SalesPageContent() {
                       <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>{fmtAmt(currentBillData.bank_payment)}</Typography>
                     </Box>
                   )}
-                  {currentBillData.previous_balance !== undefined && (
+                  {currentBillData.previous_balance !== undefined && Math.abs(parseFloat(currentBillData.previous_balance || 0)) > 0.009 && (
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>Prev Balance</Typography>
-                      <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>{fmtAmt(currentBillData.previous_balance)}</Typography>
+                      <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>{fmtAmt(Math.abs(parseFloat(currentBillData.previous_balance)))}</Typography>
                     </Box>
                   )}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -11780,8 +11780,6 @@ function SalesPageContent() {
                     '& .MuiFormLabel-asterisk': { color: '#ef4444 !important', fontWeight: 700 },
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '10px',
-                      backgroundColor: '#ffffff',
-                      fontSize: '0.9rem',
                       '& fieldset': { borderColor: '#cbd5e1', borderWidth: '1.5px' },
                       '&:hover fieldset': { borderColor: '#818cf8' },
                       '&.Mui-focused fieldset': { borderColor: '#16a34a', borderWidth: '2px', boxShadow: '0 0 0 3.5px rgba(22, 163, 74, 0.12)' },
@@ -13677,10 +13675,10 @@ function SalesPageContent() {
                   <Typography sx={{ fontSize: '11px', color: '#000' }}>{fmtAmt(activeBillData.bank_payment)}</Typography>
                 </Box>
               )}
-              {!isWalkinCustomer(activeBillData?.customer) && activeBillData.previous_balance !== undefined && parseFloat(activeBillData.previous_balance || 0) !== 0 && (
+              {!isWalkinCustomer(activeBillData?.customer) && activeBillData.previous_balance !== undefined && Math.abs(parseFloat(activeBillData.previous_balance || 0)) > 0.009 && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography sx={{ fontSize: '11px', color: '#000' }}>Prev Balance</Typography>
-                  <Typography sx={{ fontSize: '11px', color: '#000' }}>{fmtAmt(activeBillData.previous_balance)}</Typography>
+                  <Typography sx={{ fontSize: '11px', color: '#000' }}>{fmtAmt(Math.abs(parseFloat(activeBillData.previous_balance)))}</Typography>
                 </Box>
               )}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', mt: 0.5, pt: 0.5, borderTop: '1px dashed #000' }}>
