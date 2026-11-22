@@ -9567,7 +9567,7 @@ function SalesPageContent() {
                           size="small"
                           type="number"
                           value={(
-                            parseFloat(formSelectedCustomer?.cus_balance || 0) + calculateBalance()
+                            parseFloat(formSelectedCustomer?.cus_balance || 0) - calculateBalance()
                           ).toFixed(0)}
                           sx={{
                             bgcolor: 'white',

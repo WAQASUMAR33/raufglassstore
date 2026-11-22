@@ -350,15 +350,15 @@ export default function CommercialInvoiceReceipt({
   const totalPaid = parseFloat(bill.payment !== undefined && bill.payment !== null ? bill.payment : (cashPayment + bankPayment + advancePayment));
   const balance = billValue - totalPaid;
   const rawPrevBal = parseFloat(
-    bill.customer?.cus_balance !== undefined && bill.customer?.cus_balance !== null
-      ? bill.customer.cus_balance
-      : (bill.previous_balance !== undefined && bill.previous_balance !== null
-        ? bill.previous_balance
-        : (bill.previous_customer_balance ?? 0))
+    bill.previous_balance !== undefined && bill.previous_balance !== null
+      ? bill.previous_balance
+      : (bill.previous_customer_balance !== undefined && bill.previous_customer_balance !== null
+        ? bill.previous_customer_balance
+        : (bill.customer?.cus_balance ?? 0))
   ) || 0;
   const hasPrevBal = Math.abs(rawPrevBal) > 0.009;
   const prevBal = rawPrevBal;
-  const totalBalance = prevBal + balance;
+  const totalBalance = prevBal - balance;
 
   const invLabel = isQuotation || bill.bill_type === 'QUOTATION'
     ? 'QUOT. NO.:'
