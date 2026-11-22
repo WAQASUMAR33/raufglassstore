@@ -5927,20 +5927,6 @@ function OrdersPageContent() {
                 </Button>
                 <Button
                   variant="contained"
-                  startIcon={<PrintIcon />}
-                  sx={{
-                    bgcolor: '#fd7e14',
-                    color: 'white',
-                    borderRadius: 2,
-                    '&:hover': { bgcolor: '#e8690b' }
-                  }}
-                  onClick={() => handlePrintBill('THERMAL')}
-                  disabled={!currentBillData}
-                >
-                  Print Thermal
-                </Button>
-                <Button
-                  variant="contained"
                   sx={{
                     bgcolor: '#dc3545',
                     color: 'white',
@@ -6148,20 +6134,6 @@ function OrdersPageContent() {
               onClick={() => handlePrintCopy('CUTTER', true, currentBillData)}
             >
               Print Cutter Copy
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<PrintIcon />}
-              sx={{
-                minWidth: 130,
-                bgcolor: '#fd7e14',
-                '&:hover': { bgcolor: '#e8690b' },
-                color: 'white',
-                fontWeight: 600
-              }}
-              onClick={() => handlePrintBill('THERMAL', true)}
-            >
-              Print Thermal
             </Button>
             <Button
               variant="outlined"
@@ -7626,20 +7598,6 @@ function OrdersPageContent() {
             onClick={() => handlePrintCopy('CUTTER', true, selectedBill)}
           >
             Print Cutter Copy
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<PrintIcon />}
-            sx={{
-              minWidth: 130,
-              bgcolor: '#fd7e14',
-              '&:hover': { bgcolor: '#e8690b' },
-              color: 'white',
-              fontWeight: 600
-            }}
-            onClick={() => handlePrintBill('THERMAL', true, selectedBill)}
-          >
-            Print Thermal
           </Button>
           <Button
             variant="outlined"

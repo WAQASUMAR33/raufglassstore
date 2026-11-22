@@ -701,18 +701,6 @@ export default function SaleReceiptDialog() {
         >
           Print A4
         </Button>
-        <Button
-          variant="contained"
-          startIcon={<PrintIcon />}
-          sx={{
-            minWidth: 150,
-            bgcolor: '#fd7e14',
-            '&:hover': { bgcolor: '#e8690b' }
-          }}
-          onClick={() => handlePrintBill('THERMAL', true)}
-        >
-          Print Thermal
-        </Button>
       </DialogActions>
     </Dialog>
   );

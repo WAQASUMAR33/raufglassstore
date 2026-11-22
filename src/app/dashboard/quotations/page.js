@@ -4379,20 +4379,6 @@ function QuotationsPageContent() {
             Print Cutter Copy
           </Button>
           <Button
-            variant="contained"
-            startIcon={<PrintIcon />}
-            sx={{
-              minWidth: 130,
-              bgcolor: '#fd7e14',
-              '&:hover': { bgcolor: '#e8690b' },
-              color: 'white',
-              fontWeight: 600
-            }}
-            onClick={() => handlePrintBill('THERMAL')}
-          >
-            Print Thermal
-          </Button>
-          <Button
             variant="outlined"
             startIcon={<PictureAsPdfIcon />}
             sx={{

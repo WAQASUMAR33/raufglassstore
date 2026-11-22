@@ -726,11 +726,6 @@ export default function SaleListView() {
                                   <ListAltIcon sx={{ fontSize: 17 }} />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Print Thermal">
-                                <IconButton size="small" sx={{ color: '#fd7e14', p: 0.4 }} onClick={() => handlePrintBill('THERMAL', false, sale)}>
-                                  <PrintIcon sx={{ fontSize: 17 }} />
-                                </IconButton>
-                              </Tooltip>
                               <Tooltip title="Print A4 Invoice">
                                 <IconButton
                                   size="small"

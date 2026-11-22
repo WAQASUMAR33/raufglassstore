@@ -494,20 +494,6 @@ export default function SaleViewBillDialog() {
           </Button>
           <Button
             variant="contained"
-            startIcon={<PrintIcon />}
-            sx={{
-              minWidth: 140,
-              bgcolor: '#fd7e14',
-              '&:hover': { bgcolor: '#e8690b' }
-            }}
-            onClick={() => {
-              handlePrintBill('THERMAL', true, selectedBill);
-            }}
-          >
-            Print Thermal
-          </Button>
-          <Button
-            variant="contained"
             startIcon={<QrCode2Icon />}
             sx={{
               minWidth: 140,

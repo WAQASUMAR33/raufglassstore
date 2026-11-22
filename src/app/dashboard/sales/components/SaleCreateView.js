@@ -2180,20 +2180,6 @@ export default function SaleCreateView() {
                 </Button>
                 <Button
                   variant="contained"
-                  startIcon={<PrintIcon />}
-                  sx={{
-                    bgcolor: '#fd7e14',
-                    color: 'white',
-                    borderRadius: 2,
-                    '&:hover': { bgcolor: '#e8690b' }
-                  }}
-                  onClick={() => handlePrintBill('THERMAL')}
-                  disabled={!currentBillData}
-                >
-                  Print Thermal
-                </Button>
-                <Button
-                  variant="contained"
                   sx={{
                     bgcolor: '#dc3545',
                     color: 'white',
