@@ -817,19 +817,22 @@ export default function Sidebar({
                     width: 38,
                     height: 38,
                     borderRadius: '11px',
-                    background: 'linear-gradient(135deg, #1A55E3 0%, #2563EB 50%, #0DCAF0 100%)',
+                    bgcolor: '#ffffff',
+                    border: '1px solid #e2e8f0',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '0.875rem',
-                    letterSpacing: '0.04em',
-                    boxShadow: '0 4px 12px rgba(26, 85, 227, 0.3)',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
                     flexShrink: 0,
+                    p: 0.5,
                   }}
                 >
-                  ZT
+                  <Box
+                    component="img"
+                    src="/zain-logo.png"
+                    alt="Zain Traders"
+                    sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.85 }}>
@@ -886,19 +889,22 @@ export default function Sidebar({
                   width: 40,
                   height: 40,
                   borderRadius: '11px',
-                  background: 'linear-gradient(135deg, #1A55E3 0%, #2563EB 50%, #0DCAF0 100%)',
+                  bgcolor: '#ffffff',
+                  border: '1px solid #e2e8f0',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#ffffff',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  letterSpacing: '0.04em',
-                  boxShadow: '0 4px 12px rgba(26, 85, 227, 0.28)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
                   mb: 0.5,
+                  p: 0.5,
                 }}
               >
-                ZT
+                <Box
+                  component="img"
+                  src="/zain-logo.png"
+                  alt="Zain Traders"
+                  sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
               </Box>
             )}
 

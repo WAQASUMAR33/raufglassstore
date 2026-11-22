@@ -13,6 +13,8 @@ export const COMPANY = {
   address: 'Phalia Road , Near Aljannat Petrol pump M.B.Din.',
   addressUr: 'پھالیہ روڈ، نزد الجنت پٹرول پمپ، منڈی بہاؤالدین',
   phones: ['0302-2133218', '0347-7743218'],
+  logo: '/zain-logo.png',
+  logoTransparent: '/zain-logo-transparent.png',
 };
 
 export const POWERED_BY = {

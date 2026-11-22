@@ -127,21 +127,18 @@ export function buildGlassStickerHtml({
         border-bottom: 1.5px solid #000000;
         padding-bottom: 2px;
       ">
-        <!-- Circular Urdu Logo (displayed before Urdu brand name in RTL flow) -->
-        <div style="
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          border: 1.5px solid #000000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          background: #ffffff;
-          text-align: center;
-        ">
-          <span style="font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif; font-size: 12px; font-weight: 900; line-height: 1; color: #000000;">زین</span>
-        </div>
+        <!-- Rotated Zain Traders Brand Logo -->
+        <img
+          src="/zain-logo.png"
+          alt="Zain Traders"
+          style="
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            flex-shrink: 0;
+            display: inline-block;
+          "
+        />
 
         <!-- Company Name in Urdu (Increased size) -->
         <div style="

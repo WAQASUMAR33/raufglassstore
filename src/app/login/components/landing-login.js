@@ -25,8 +25,8 @@ export default function LandingLogin() {
         </div>
 
         <div className="brand-content">
-          <div className="brand-logo">
-            <Store size={44} color="white" strokeWidth={1.75} />
+          <div className="brand-logo" style={{ background: '#ffffff', padding: '6px' }}>
+            <img src="/zain-logo.png" alt="Zain Traders" style={{ width: '48px', height: '48px', objectFit: 'contain', display: 'block' }} />
           </div>
 
           <h1 className="brand-title">

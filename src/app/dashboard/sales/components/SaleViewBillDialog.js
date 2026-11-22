@@ -111,26 +111,36 @@ export default function SaleViewBillDialog() {
                 bgcolor: '#ffffff',
                 mb: 1
               }}>
-                <Typography variant="h4" sx={{
-                  fontWeight: 900,
-                  mb: 0.5,
-                  fontSize: { xs: '1.4rem', md: '1.8rem' },
-                  color: '#0f172a',
-                  letterSpacing: '0.03em',
-                }}>
-                  {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
-                </Typography>
-                <Typography className="nastaliq-text" sx={{
-                  fontWeight: 'bold',
-                  mb: 1,
-                  fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif !important',
-                  fontSize: { xs: '1.3rem', md: '1.6rem' },
-                  direction: 'rtl',
-                  color: '#0f172a',
-                  lineHeight: 1.5,
-                }}>
-                  {COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 1 }}>
+                  <Box
+                    component="img"
+                    src="/zain-logo.png"
+                    alt="Zain Traders"
+                    sx={{ width: 60, height: 60, objectFit: 'contain' }}
+                  />
+                  <Box sx={{ textAlign: 'left' }}>
+                    <Typography variant="h4" sx={{
+                      fontWeight: 900,
+                      fontSize: { xs: '1.4rem', md: '1.8rem' },
+                      color: '#0f172a',
+                      letterSpacing: '0.03em',
+                      lineHeight: 1.15,
+                    }}>
+                      {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
+                    </Typography>
+                    <Typography className="nastaliq-text" sx={{
+                      fontWeight: 'bold',
+                      fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif !important',
+                      fontSize: { xs: '1.2rem', md: '1.4rem' },
+                      direction: 'rtl',
+                      color: '#0f172a',
+                      lineHeight: 1.3,
+                      mt: 0.3,
+                    }}>
+                      {COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین'}
+                    </Typography>
+                  </Box>
+                </Box>
                 <Typography variant="body2" sx={{
                   mt: 0.5,
                   mb: 0.5,

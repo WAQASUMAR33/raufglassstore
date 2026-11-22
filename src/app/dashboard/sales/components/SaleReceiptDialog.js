@@ -99,6 +99,12 @@ export default function SaleReceiptDialog() {
               }}
             >
               <Box sx={{ textAlign: 'center', pb: 1, borderBottom: '1px solid #000' }}>
+                <Box
+                  component="img"
+                  src="/zain-logo.png"
+                  alt="Zain Traders"
+                  sx={{ width: 44, height: 44, objectFit: 'contain', mx: 'auto', mb: 0.5, display: 'block' }}
+                />
                 <Typography sx={{ fontSize: '15px', fontWeight: 900, color: '#000', mb: 0.25 }}>
                   {COMPANY.name || 'Zain Traders Mandi Bahauddin'}
                 </Typography>

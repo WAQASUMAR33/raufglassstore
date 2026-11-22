@@ -37,17 +37,17 @@ export default function LoginShell({
             width: '96px',
             height: '96px',
             borderRadius: '24px',
-            background: 'rgba(255,255,255,0.15)',
-            backdropFilter: 'blur(12px)',
+            background: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '28px',
-            border: '1px solid rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.4)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            padding: '12px',
           }}
         >
-          <Store size={52} color="white" strokeWidth={1.5} />
+          <img src="/zain-logo.png" alt="Zain Traders" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
 
         <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: 800, textAlign: 'center', marginBottom: '8px', lineHeight: 1.2 }}>

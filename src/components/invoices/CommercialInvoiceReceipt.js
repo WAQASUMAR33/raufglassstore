@@ -398,32 +398,17 @@ export default function CommercialInvoiceReceipt({
               <table style={{ borderCollapse: 'collapse', border: 'none' }}>
                 <tbody>
                   <tr>
-                    <td style={{ verticalAlign: 'top', paddingRight: '8px', border: 'none' }}>
-                      <div
+                    <td style={{ verticalAlign: 'middle', paddingRight: '8px', border: 'none' }}>
+                      <img
+                        src="/zain-logo.png"
+                        alt="Zain Traders"
                         style={{
-                          width: '38px',
-                          height: '38px',
-                          borderRadius: '50%',
-                          border: '1.5px solid #000000',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: '#ffffff',
-                          textAlign: 'center',
-                          lineHeight: '34px',
+                          width: '44px',
+                          height: '44px',
+                          objectFit: 'contain',
+                          display: 'block',
                         }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '18px',
-                            fontWeight: 900,
-                            fontFamily: '"Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif',
-                            color: '#000000',
-                          }}
-                        >
-                          زین
-                        </span>
-                      </div>
+                      />
                     </td>
                     <td style={{ verticalAlign: 'top', border: 'none', padding: 0 }}>
                       <div style={{ fontSize: '0.98rem', fontWeight: 900, letterSpacing: '0.02em', lineHeight: 1.1, color: '#000000' }}>
