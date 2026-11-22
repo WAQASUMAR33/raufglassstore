@@ -249,14 +249,15 @@ export default function SaleReport() {
         <td style="padding:6px;border:1px solid #ddd;text-align:right">${fmtAmt(parseFloat(d.total_amount) || 0)}</td>
       </tr>`).join('');
 
-    const subtotal = parseFloat(sale.total_amount || 0) || 0;
+    const grandTotal = parseFloat(sale.total_amount || 0) || 0;
     const discount = parseFloat(sale.discount || 0) || 0;
     const labour = parseFloat(sale.labour_charges || sale.labour || 0) || 0;
     const shipping = parseFloat(sale.shipping_amount || 0) || 0;
     const paid = Number.isFinite(Number(sale.payment)) ? parseFloat(sale.payment) || 0 : ((parseFloat(sale.cash_payment || 0) || 0) + (parseFloat(sale.bank_payment || 0) || 0) + (parseFloat(sale.advance_payment || 0) || 0));
     const prevBal = parseFloat(sale.previous_balance ?? sale.prev_balance ?? sale.previous_customer_balance ?? sale.customer?.cus_balance ?? 0) || 0;
     const totalQty = details.reduce((s, d) => s + (parseFloat(d.qnty || 0) || 0), 0);
-    const netTotal = subtotal - discount + labour + shipping;
+    const billDue = grandTotal - paid;
+    const totalBal = prevBal - billDue;
 
     const html = `<!doctype html>
       <html>
@@ -314,17 +315,19 @@ export default function SaleReport() {
 
           <div class="totals">
             <table style="width:100%">
-              <tr><td style="border:1px solid #ddd;padding:6px">Subtotal</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(subtotal)}</td></tr>
-              <tr><td style="border:1px solid #ddd;padding:6px">Labour</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(labour)}</td></tr>
-              <tr><td style="border:1px solid #ddd;padding:6px">Shipping</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(shipping)}</td></tr>
+              <tr><td style="border:1px solid #ddd;padding:6px">Bill Value</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(grandTotal)}</td></tr>
               ${ discount > 0 ? `<tr><td style="border:1px solid #ddd;padding:6px">Discount</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(discount)}</td></tr>` : '' }
-              <tr><td style="border:1px solid #ddd;padding:6px">Previous Balance</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(prevBal)}</td></tr>
-              <tr style="background:#f5f5f5"><th style="padding:6px">Grand Total</th><th style="padding:6px" class="right">${fmtAmt(netTotal)}</th></tr>
+              ${ labour > 0 ? `<tr><td style="border:1px solid #ddd;padding:6px">Labour</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(labour)}</td></tr>` : '' }
+              ${ shipping > 0 ? `<tr><td style="border:1px solid #ddd;padding:6px">Shipping</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(shipping)}</td></tr>` : '' }
               <tr><td style="border:1px solid #ddd;padding:6px">Cash</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(parseFloat(sale.cash_payment || 0) || 0)}</td></tr>
               ${ (parseFloat(sale.bank_payment || 0) || 0) > 0 ? `<tr><td style="border:1px solid #ddd;padding:6px">${sale.bank_title || 'Bank'}</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(parseFloat(sale.bank_payment || 0) || 0)}</td></tr>` : '' }
               ${ (parseFloat(sale.advance_payment || 0) || 0) > 0 ? `<tr><td style="border:1px solid #ddd;padding:6px">Advance</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(parseFloat(sale.advance_payment || 0) || 0)}</td></tr>` : '' }
               <tr style="background:#f5f5f5"><th style="padding:6px">Total Paid</th><th style="padding:6px" class="right">${fmtAmt(paid)}</th></tr>
-              <tr style="background:#d0d0d0"><th style="padding:6px">Balance</th><th style="padding:6px" class="right">${fmtAmt(netTotal - paid)}</th></tr>
+              <tr style="background:#f1f5f9"><th style="padding:6px">Bill Balance</th><th style="padding:6px" class="right">${fmtAmt(billDue)}</th></tr>
+              ${ prevBal !== 0 ? `
+              <tr><td style="border:1px solid #ddd;padding:6px">Previous Balance</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(prevBal)}</td></tr>
+              <tr style="background:#d0d0d0"><th style="padding:6px">Total Balance</th><th style="padding:6px" class="right">${fmtAmt(totalBal)}</th></tr>
+              ` : '' }
             </table>
           </div>
 
