@@ -350,15 +350,15 @@ export default function CommercialInvoiceReceipt({
   const totalPaid = parseFloat(bill.payment !== undefined && bill.payment !== null ? bill.payment : (cashPayment + bankPayment + advancePayment));
   const balance = billValue - totalPaid;
   const rawPrevBal = parseFloat(
-    bill.previous_balance !== undefined && bill.previous_balance !== null
-      ? bill.previous_balance
-      : (bill.previous_customer_balance !== undefined && bill.previous_customer_balance !== null
-        ? bill.previous_customer_balance
-        : (bill.customer?.cus_balance ?? 0))
+    bill.customer?.cus_balance !== undefined && bill.customer?.cus_balance !== null
+      ? bill.customer.cus_balance
+      : (bill.previous_balance !== undefined && bill.previous_balance !== null
+        ? bill.previous_balance
+        : (bill.previous_customer_balance ?? 0))
   ) || 0;
   const hasPrevBal = Math.abs(rawPrevBal) > 0.009;
-  const prevBal = hasPrevBal ? Math.abs(rawPrevBal) : 0;
-  const totalBalance = balance + prevBal;
+  const prevBal = rawPrevBal;
+  const totalBalance = prevBal + balance;
 
   const invLabel = isQuotation || bill.bill_type === 'QUOTATION'
     ? 'QUOT. NO.:'
@@ -1212,7 +1212,7 @@ export default function CommercialInvoiceReceipt({
                     </tr>
                     <tr style={{ backgroundColor: '#f8fafc' }}>
                       <td style={{ padding: '3px 5px', fontWeight: 700, fontSize: '0.74rem' }}>Total Balance:</td>
-                      <td style={{ padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.74rem', color: totalBalance > 0 ? '#b91c1c' : '#15803d' }}>
+                      <td style={{ padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.74rem', color: totalBalance !== 0 ? '#b91c1c' : '#15803d' }}>
                         {fmtAmt(totalBalance)}
                       </td>
                     </tr>
