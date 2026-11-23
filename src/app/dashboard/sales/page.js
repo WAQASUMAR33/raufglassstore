@@ -1830,6 +1830,7 @@ function SalesPageContent() {
 
   const [lastChargedRate, setLastChargedRate] = useState(null);
   const [lastChargedInfo, setLastChargedInfo] = useState(null);
+  const [lastRateStatus, setLastRateStatus] = useState('idle'); // 'idle' | 'loading' | 'found' | 'not_found' 
 
   const formSelectedCustomerRef = useRef(formSelectedCustomer);
   useEffect(() => {
@@ -1880,9 +1881,13 @@ function SalesPageContent() {
       showSnackbar('Please select a product first', 'warning');
       return;
     }
+    setLastRateStatus('loading');
     try {
       const res = await fetch(`/api/sales/last-rate?cus_id=${cusId}&pro_id=${proId}`);
       if (!res.ok) {
+        setLastChargedRate(null);
+        setLastChargedInfo(null);
+        setLastRateStatus('not_found');
         showSnackbar('Failed to fetch last charged rate', 'error');
         return;
       }
@@ -1891,16 +1896,21 @@ function SalesPageContent() {
         const rateVal = parseFloat(data.last_rate);
         setLastChargedRate(rateVal);
         setLastChargedInfo(data);
+        setLastRateStatus('found');
         if (onApply) onApply(rateVal);
         const billInfo = data.bill_type ? ` (${data.bill_type} #${data.bill_number || data.sale_id || ''})` : '';
         showSnackbar(`Last rate applied for ${proTitle || 'product'}: PKR ${rateVal}${billInfo}`, 'success');
       } else {
         setLastChargedRate(null);
         setLastChargedInfo(null);
+        setLastRateStatus('not_found');
         showSnackbar(`No previous sale found for ${proTitle || 'this product'} with this customer`, 'info');
       }
     } catch (err) {
       console.error('Error fetching last rate:', err);
+      setLastChargedRate(null);
+      setLastChargedInfo(null);
+      setLastRateStatus('not_found');
       showSnackbar('Error fetching last charged rate', 'error');
     }
   };
@@ -1912,9 +1922,11 @@ function SalesPageContent() {
     if (!cusId || !proId) {
       setLastChargedRate(null);
       setLastChargedInfo(null);
+      setLastRateStatus('idle');
       return;
     }
     let isMounted = true;
+    setLastRateStatus('loading');
     fetch(`/api/sales/last-rate?cus_id=${cusId}&pro_id=${proId}`)
       .then(res => res.json())
       .then(data => {
@@ -1923,6 +1935,7 @@ function SalesPageContent() {
           const rateVal = parseFloat(data.last_rate);
           setLastChargedRate(rateVal);
           setLastChargedInfo(data);
+          setLastRateStatus('found');
           // Automatically apply the last charged rate to the input field!
           handleRateChange(rateVal);
           const billInfo = data.bill_type ? ` (${data.bill_type} #${data.bill_number || data.sale_id || ''})` : '';
@@ -1930,6 +1943,7 @@ function SalesPageContent() {
         } else {
           setLastChargedRate(null);
           setLastChargedInfo(null);
+          setLastRateStatus('not_found');
         }
       })
       .catch((err) => {
@@ -1937,6 +1951,7 @@ function SalesPageContent() {
         if (isMounted) {
           setLastChargedRate(null);
           setLastChargedInfo(null);
+          setLastRateStatus('not_found');
         }
       });
     return () => { isMounted = false; };
@@ -7753,18 +7768,31 @@ function SalesPageContent() {
                       SALE RATE
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      {lastChargedRate != null ? (
+                      {lastRateStatus === 'loading' ? (
+                        <Chip
+                          size="small"
+                          label="Checking..."
+                          sx={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            height: 20,
+                            bgcolor: '#f1f5f9',
+                            color: '#64748b',
+                            border: '1px solid #cbd5e1'
+                          }}
+                        />
+                      ) : lastRateStatus === 'found' && lastChargedRate != null ? (
                         <Tooltip
                           title={
                             lastChargedInfo?.bill_number
-                              ? `Last charged: PKR ${lastChargedRate} on ${lastChargedInfo.bill_type || 'Bill'} #${lastChargedInfo.bill_number}${lastChargedInfo.date ? ` (${new Date(lastChargedInfo.date).toLocaleDateString()})` : ''}. Click or Ctrl+L to re-apply.`
-                              : `Last charged rate: PKR ${lastChargedRate}. Click or Ctrl+L to re-apply.`
+                              ? `Last charged: PKR ${lastChargedRate} on ${lastChargedInfo.bill_type || 'Bill'} #${lastChargedInfo.bill_number}${lastChargedInfo.date ? ` (${new Date(lastChargedInfo.date).toLocaleDateString()})` : ''}. Click to re-apply.`
+                              : `Last charged rate: PKR ${lastChargedRate}. Click to re-apply.`
                           }
                           arrow
                         >
                           <Chip
                             size="small"
-                            label={`Last: PKR ${lastChargedRate}`}
+                            label={`Last: ${lastChargedRate}`}
                             onClick={() => {
                               handleRateChange(lastChargedRate);
                               showSnackbar(`Applied last charged rate: PKR ${lastChargedRate}`, 'success');
@@ -7782,8 +7810,24 @@ function SalesPageContent() {
                             }}
                           />
                         </Tooltip>
+                      ) : lastRateStatus === 'not_found' ? (
+                        <Tooltip title="No previous purchase found for this customer and product. Standard catalog rate is used." arrow>
+                          <Chip
+                            size="small"
+                            label="Not Found"
+                            sx={{
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              height: 20,
+                              bgcolor: '#fef2f2',
+                              color: '#dc2626',
+                              border: '1px solid #ef4444',
+                              boxShadow: '0 1px 2px rgba(239,68,68,0.15)'
+                            }}
+                          />
+                        </Tooltip>
                       ) : (
-                        <Tooltip title="Press Ctrl+L to fetch last rate charged to this customer" arrow>
+                        <Tooltip title="Press Ctrl+L or select product to check last rate" arrow>
                           <Typography
                             onClick={() => {
                               fetchAndApplyLastRate({
