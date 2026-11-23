@@ -161,7 +161,7 @@ function orderSql(sortBy, sortOrder) {
   return Prisma.raw(`created_at ${dir}`);
 }
 
-const SALE_LIST_LEAN_SELECT = {
+const SALE_LIST_SELECT = {
   sale_id: true,
   bill_number: true,
   total_amount: true,
@@ -188,10 +188,6 @@ const SALE_LIST_LEAN_SELECT = {
       name_urdu: true,
     },
   },
-};
-
-const SALE_LIST_SELECT = {
-  ...SALE_LIST_LEAN_SELECT,
   sale_details: {
     select: {
       sale_detail_id: true,
@@ -204,7 +200,7 @@ const SALE_LIST_SELECT = {
   },
 };
 
-const RETURN_LIST_LEAN_SELECT = {
+const RETURN_LIST_SELECT = {
   return_id: true,
   sale_id: true,
   total_amount: true,
@@ -227,10 +223,6 @@ const RETURN_LIST_LEAN_SELECT = {
       name_urdu: true,
     },
   },
-};
-
-const RETURN_LIST_SELECT = {
-  ...RETURN_LIST_LEAN_SELECT,
   return_details: {
     select: {
       return_detail_id: true,
@@ -333,7 +325,6 @@ export async function fetchPaginatedSalesList(prisma, branchId, params) {
 
   const offset = (page - 1) * pageSize;
   const order = orderSql(params.sortBy, params.sortOrder);
-  const includeDetails = params.includeDetails === 'true' || Boolean(params.item) || params.quantity != null;
 
   // Optimized direct count to prevent MySQL from building and scanning large temporary union tables
   const countQuery = (includeSales && includeReturns)
@@ -360,15 +351,12 @@ export async function fetchPaginatedSalesList(prisma, branchId, params) {
   const saleIds = idRows.filter((r) => r.kind === 'SALE').map((r) => Number(r.id));
   const returnIds = idRows.filter((r) => r.kind === 'RETURN').map((r) => Number(r.id));
 
-  const saleSelect = includeDetails ? SALE_LIST_SELECT : SALE_LIST_LEAN_SELECT;
-  const returnSelect = includeDetails ? RETURN_LIST_SELECT : RETURN_LIST_LEAN_SELECT;
-
   const [sales, returns] = await Promise.all([
     saleIds.length
-      ? prisma.sale.findMany({ where: { sale_id: { in: saleIds } }, select: saleSelect })
+      ? prisma.sale.findMany({ where: { sale_id: { in: saleIds } }, select: SALE_LIST_SELECT })
       : [],
     returnIds.length
-      ? prisma.saleReturn.findMany({ where: { return_id: { in: returnIds } }, select: returnSelect })
+      ? prisma.saleReturn.findMany({ where: { return_id: { in: returnIds } }, select: RETURN_LIST_SELECT })
       : [],
   ]);
 
