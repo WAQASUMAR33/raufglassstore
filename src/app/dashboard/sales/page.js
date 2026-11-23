@@ -1829,8 +1829,48 @@ function SalesPageContent() {
   };
 
   const [lastChargedRate, setLastChargedRate] = useState(null);
+  const [lastChargedInfo, setLastChargedInfo] = useState(null);
 
-  // Fetch and apply last charged rate for a customer & product (triggered by Ctrl + L)
+  const formSelectedCustomerRef = useRef(formSelectedCustomer);
+  useEffect(() => {
+    formSelectedCustomerRef.current = formSelectedCustomer;
+  }, [formSelectedCustomer]);
+
+  const formSelectedProductRef = useRef(formSelectedProduct);
+  useEffect(() => {
+    formSelectedProductRef.current = formSelectedProduct;
+  }, [formSelectedProduct]);
+
+  // Handle rate change with functional state updater (safe for async and event calls)
+  const handleRateChange = useCallback((newRate) => {
+    const rate = parseFloat(newRate) || 0;
+    setProductFormData(prev => {
+      const quantity = parseFloat(prev.quantity) || 0;
+      const addonsTotal = (prev.selected_addons || []).reduce(
+        (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
+        0
+      );
+      const effectiveRate = rate + addonsTotal;
+      const amount = Number((quantity * effectiveRate).toFixed(0));
+      return {
+        ...prev,
+        rate: rate,
+        amount: amount
+      };
+    });
+  }, []);
+
+  // Helper to get standard catalog price (retail or wholesale)
+  const getProductCatalogRate = useCallback((product = formSelectedProduct) => {
+    if (!product) return 0;
+    const wholesaleRate = parseFloat(product.pro_wholesale_price);
+    const retailRate = parseFloat(product.pro_sale_price) || 0;
+    return (billPriceType === 'Whole sale' && Number.isFinite(wholesaleRate) && wholesaleRate > 0)
+      ? wholesaleRate
+      : retailRate;
+  }, [billPriceType, formSelectedProduct]);
+
+  // Fetch and apply last charged rate for a customer & product (triggered by Ctrl + L or click)
   const fetchAndApplyLastRate = async ({ cusId, proId, proTitle, onApply }) => {
     if (!cusId) {
       showSnackbar('Please select a customer first to check last charged rate', 'warning');
@@ -1849,10 +1889,14 @@ function SalesPageContent() {
       const data = await res.json();
       if (data && data.last_rate != null) {
         const rateVal = parseFloat(data.last_rate);
-        onApply(rateVal);
-        const billInfo = data.bill_type ? ` (${data.bill_type} #${data.sale_id || ''})` : '';
+        setLastChargedRate(rateVal);
+        setLastChargedInfo(data);
+        if (onApply) onApply(rateVal);
+        const billInfo = data.bill_type ? ` (${data.bill_type} #${data.bill_number || data.sale_id || ''})` : '';
         showSnackbar(`Last rate applied for ${proTitle || 'product'}: PKR ${rateVal}${billInfo}`, 'success');
       } else {
+        setLastChargedRate(null);
+        setLastChargedInfo(null);
         showSnackbar(`No previous sale found for ${proTitle || 'this product'} with this customer`, 'info');
       }
     } catch (err) {
@@ -1861,26 +1905,42 @@ function SalesPageContent() {
     }
   };
 
+  // Auto-fetch and auto-load last charged rate when product or customer changes
   useEffect(() => {
     const cusId = formSelectedCustomer?.cus_id;
     const proId = formSelectedProduct?.pro_id;
     if (!cusId || !proId) {
       setLastChargedRate(null);
+      setLastChargedInfo(null);
       return;
     }
     let isMounted = true;
     fetch(`/api/sales/last-rate?cus_id=${cusId}&pro_id=${proId}`)
       .then(res => res.json())
       .then(data => {
-        if (isMounted) {
-          setLastChargedRate(data?.last_rate ?? null);
+        if (!isMounted) return;
+        if (data && data.last_rate != null) {
+          const rateVal = parseFloat(data.last_rate);
+          setLastChargedRate(rateVal);
+          setLastChargedInfo(data);
+          // Automatically apply the last charged rate to the input field!
+          handleRateChange(rateVal);
+          const billInfo = data.bill_type ? ` (${data.bill_type} #${data.bill_number || data.sale_id || ''})` : '';
+          showSnackbar(`Auto-applied last charged rate: PKR ${rateVal}${billInfo}`, 'success');
+        } else {
+          setLastChargedRate(null);
+          setLastChargedInfo(null);
         }
       })
-      .catch(() => {
-        if (isMounted) setLastChargedRate(null);
+      .catch((err) => {
+        console.error('Error fetching last rate:', err);
+        if (isMounted) {
+          setLastChargedRate(null);
+          setLastChargedInfo(null);
+        }
       });
     return () => { isMounted = false; };
-  }, [formSelectedCustomer?.cus_id, formSelectedProduct?.pro_id]);
+  }, [formSelectedCustomer?.cus_id, formSelectedProduct?.pro_id, handleRateChange]);
 
   // Handle product selection
   const handleProductSelect = (selectedProduct) => {
@@ -2007,23 +2067,7 @@ function SalesPageContent() {
     }));
   };
 
-  // Handle rate change
-  const handleRateChange = (newRate) => {
-    const rate = parseFloat(newRate) || 0;
-    const quantity = parseFloat(productFormData.quantity) || 0;
-    const addonsTotal = (productFormData.selected_addons || []).reduce(
-      (sum, a) => sum + (parseFloat(a.sale_price || a.addon?.sale_price || 0) || 0),
-      0
-    );
-    const effectiveRate = rate + addonsTotal;
-    const amount = Number((quantity * effectiveRate).toFixed(0));
 
-    setProductFormData(prev => ({
-      ...prev,
-      rate: rate,
-      amount: amount
-    }));
-  };
 
   // Cutter management helpers
   const fetchCutters = useCallback(async () => {
@@ -2556,6 +2600,17 @@ function SalesPageContent() {
         !['number', 'radio', 'checkbox', 'submit', 'button'].includes(activeEl?.type)) ||
         activeEl?.tagName === 'TEXTAREA' ||
         activeEl?.isContentEditable;
+
+      // Keyboard shortcut Ctrl+L / Cmd+L: fetch & apply last charged rate globally
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L' || e.code === 'KeyL')) {
+        e.preventDefault();
+        fetchAndApplyLastRate({
+          cusId: formSelectedCustomerRef.current?.cus_id,
+          proId: formSelectedProductRef.current?.pro_id,
+          proTitle: formSelectedProductRef.current?.pro_title,
+          onApply: (rate) => handleRateChange(rate)
+        });
+      }
 
       // Trigger if 'a' is pressed and not in a text input/textarea
       if (e.key.toLowerCase() === 'a' && !isTextInput) {
@@ -7699,51 +7754,94 @@ function SalesPageContent() {
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       {lastChargedRate != null ? (
-                        <Chip
-                          size="small"
-                          label={`Last: ${lastChargedRate}`}
-                          onClick={() => handleRateChange(String(lastChargedRate))}
+                        <Tooltip
+                          title={
+                            lastChargedInfo?.bill_number
+                              ? `Last charged: PKR ${lastChargedRate} on ${lastChargedInfo.bill_type || 'Bill'} #${lastChargedInfo.bill_number}${lastChargedInfo.date ? ` (${new Date(lastChargedInfo.date).toLocaleDateString()})` : ''}. Click or Ctrl+L to re-apply.`
+                              : `Last charged rate: PKR ${lastChargedRate}. Click or Ctrl+L to re-apply.`
+                          }
+                          arrow
+                        >
+                          <Chip
+                            size="small"
+                            label={`Last: PKR ${lastChargedRate}`}
+                            onClick={() => {
+                              handleRateChange(lastChargedRate);
+                              showSnackbar(`Applied last charged rate: PKR ${lastChargedRate}`, 'success');
+                            }}
+                            sx={{
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              height: 20,
+                              cursor: 'pointer',
+                              bgcolor: '#ecfdf5',
+                              color: '#047857',
+                              border: '1px solid #10b981',
+                              boxShadow: '0 1px 2px rgba(16,185,129,0.2)',
+                              '&:hover': { bgcolor: '#d1fae5', borderColor: '#059669' }
+                            }}
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Press Ctrl+L to fetch last rate charged to this customer" arrow>
+                          <Typography
+                            onClick={() => {
+                              fetchAndApplyLastRate({
+                                cusId: formSelectedCustomer?.cus_id,
+                                proId: formSelectedProduct?.pro_id,
+                                proTitle: formSelectedProduct?.pro_title,
+                                onApply: (rate) => handleRateChange(rate)
+                              });
+                            }}
+                            sx={{
+                              fontSize: '0.65rem',
+                              fontWeight: 700,
+                              color: '#64748b',
+                              bgcolor: '#f1f5f9',
+                              px: 0.6,
+                              py: 0.1,
+                              borderRadius: '4px',
+                              cursor: formSelectedProduct ? 'pointer' : 'default',
+                              '&:hover': formSelectedProduct ? { bgcolor: '#e2e8f0', color: '#1e293b' } : {}
+                            }}
+                          >
+                            Ctrl+L
+                          </Typography>
+                        </Tooltip>
+                      )}
+                      <Tooltip
+                        title={
+                          formSelectedProduct
+                            ? `Standard ${billPriceType === 'Whole sale' ? 'wholesale' : 'retail'} catalog rate: PKR ${getProductCatalogRate()}. Click to reset.`
+                            : `Pricing type: ${billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}`
+                        }
+                        arrow
+                      >
+                        <Typography
+                          onClick={() => {
+                            if (formSelectedProduct) {
+                              const catRate = getProductCatalogRate();
+                              handleRateChange(catRate);
+                              showSnackbar(`Reset to standard ${billPriceType === 'Whole sale' ? 'wholesale' : 'retail'} rate: PKR ${catRate}`, 'info');
+                            }
+                          }}
                           sx={{
                             fontSize: '0.68rem',
                             fontWeight: 800,
-                            height: 20,
-                            cursor: 'pointer',
-                            bgcolor: '#ecfdf5',
-                            color: '#047857',
-                            border: '1px solid #a7f3d0',
-                            '&:hover': { bgcolor: '#d1fae5' }
-                          }}
-                          title="Click or press Ctrl+L to apply last sale rate charged to this customer"
-                        />
-                      ) : (
-                        <Typography
-                          sx={{
-                            fontSize: '0.65rem',
-                            fontWeight: 700,
-                            color: '#64748b',
-                            bgcolor: '#f1f5f9',
+                            color: billPriceType === 'Whole sale' ? '#b45309' : '#1d4ed8',
+                            bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#e0f2fe',
                             px: 0.6,
                             py: 0.1,
                             borderRadius: '4px',
+                            cursor: formSelectedProduct ? 'pointer' : 'default',
+                            border: '1px solid',
+                            borderColor: billPriceType === 'Whole sale' ? '#fde68a' : '#bfdbfe',
+                            '&:hover': formSelectedProduct ? { bgcolor: billPriceType === 'Whole sale' ? '#fde68a' : '#dbeafe' } : {}
                           }}
-                          title="Press Ctrl+L to fetch last rate charged to this customer"
                         >
-                          Ctrl+L
+                          {billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}
                         </Typography>
-                      )}
-                      <Typography
-                        sx={{
-                          fontSize: '0.68rem',
-                          fontWeight: 800,
-                          color: billPriceType === 'Whole sale' ? '#b45309' : '#1d4ed8',
-                          bgcolor: billPriceType === 'Whole sale' ? '#fef3c7' : '#e0f2fe',
-                          px: 0.6,
-                          py: 0.1,
-                          borderRadius: '4px',
-                        }}
-                      >
-                        {billPriceType === 'Whole sale' ? 'Wholesale' : 'Retail'}
-                      </Typography>
+                      </Tooltip>
                     </Box>
                   </Box>
                   <TextField
