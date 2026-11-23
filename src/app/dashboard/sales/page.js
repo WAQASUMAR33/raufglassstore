@@ -10998,7 +10998,7 @@ function SalesPageContent() {
                       <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>{fmtAmt(currentBillData.bank_payment)}</Typography>
                     </Box>
                   )}
-                  {currentBillData.previous_balance !== undefined && Math.abs(parseFloat(currentBillData.previous_balance || 0)) > 0.009 && (
+                  {!isWalkinCustomer(currentBillData?.customer) && currentBillData.previous_balance !== undefined && (
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>Prev Balance</Typography>
                       <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>{fmtAmt(Math.abs(parseFloat(currentBillData.previous_balance)))}</Typography>
@@ -13633,7 +13633,7 @@ function SalesPageContent() {
                   <Typography sx={{ fontSize: '11px', color: '#000' }}>{fmtAmt(activeBillData.bank_payment)}</Typography>
                 </Box>
               )}
-              {!isWalkinCustomer(activeBillData?.customer) && activeBillData.previous_balance !== undefined && Math.abs(parseFloat(activeBillData.previous_balance || 0)) > 0.009 && (
+              {!isWalkinCustomer(activeBillData?.customer) && activeBillData.previous_balance !== undefined && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography sx={{ fontSize: '11px', color: '#000' }}>Prev Balance</Typography>
                   <Typography sx={{ fontSize: '11px', color: '#000' }}>{fmtAmt(Math.abs(parseFloat(activeBillData.previous_balance)))}</Typography>

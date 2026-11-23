@@ -345,14 +345,14 @@ export default function SaleViewBillDialog() {
                         <TableContainer component={Paper} variant="outlined" sx={{ mb: 2, border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden', width: '100%', boxShadow: 'none' }}>
                           <Table size="small">
                             <TableBody>
-                              {prevBalance !== 0 && (
-                                <TableRow>
+                              <TableRow>
+
                                   <TableCell sx={{ fontWeight: 'bold', direction: 'rtl', px: 1.25, py: 0.6, borderRight: '1px solid #e0e0e0', borderBottom: '1px solid #e0e0e0', color: '#000000', fontSize: '0.875rem' }}>سابقہ بقایا</TableCell>
                                   <TableCell align="right" sx={{ px: 1.25, py: 0.6, borderBottom: '1px solid #e0e0e0', fontWeight: 'bold', color: '#000000', fontSize: '0.875rem' }}>
                                     {fmtAmt(prevBalance)}
                                   </TableCell>
                                 </TableRow>
-                              )}
+
                               <TableRow sx={{ bgcolor: '#e0e0e0' }}>
                                 <TableCell sx={{ fontWeight: 'bold', direction: 'rtl', px: 1.25, py: 0.65, borderRight: '1px solid #ffffff', color: '#000000 !important', fontSize: '0.875rem' }}>كل بقايا</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 'bold', px: 1.25, py: 0.65, color: '#000000 !important', fontSize: '0.9rem' }}>

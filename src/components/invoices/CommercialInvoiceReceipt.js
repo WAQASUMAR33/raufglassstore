@@ -356,7 +356,11 @@ export default function CommercialInvoiceReceipt({
         ? bill.previous_customer_balance
         : (bill.customer?.cus_balance ?? 0))
   ) || 0;
-  const hasPrevBal = Math.abs(rawPrevBal) > 0.009;
+  const isWalkin = !bill.customer || !bill.cus_id ||
+    String(bill.customer?.cus_name || '').toLowerCase().includes('walking') ||
+    String(bill.customer?.cus_name || '').toLowerCase().includes('walkin') ||
+    String(bill.customer?.cus_name || '').toLowerCase() === 'customer';
+  const hasPrevBal = !isWalkin || Math.abs(rawPrevBal) > 0.009;
   const prevBal = rawPrevBal;
   const totalBalance = prevBal - balance;
 

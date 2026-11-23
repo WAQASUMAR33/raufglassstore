@@ -324,7 +324,7 @@ export default function SaleReport() {
               ${ (parseFloat(sale.advance_payment || 0) || 0) > 0 ? `<tr><td style="border:1px solid #ddd;padding:6px">Advance</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(parseFloat(sale.advance_payment || 0) || 0)}</td></tr>` : '' }
               <tr style="background:#f5f5f5"><th style="padding:6px">Total Paid</th><th style="padding:6px" class="right">${fmtAmt(paid)}</th></tr>
               <tr style="background:#f1f5f9"><th style="padding:6px">Bill Balance</th><th style="padding:6px" class="right">${fmtAmt(billDue)}</th></tr>
-              ${ prevBal !== 0 ? `
+              ${ (!sale.customer || !String(sale.customer.cus_name || '').toLowerCase().includes('walk') || prevBal !== 0) ? `
               <tr><td style="border:1px solid #ddd;padding:6px">Previous Balance</td><td style="border:1px solid #ddd;padding:6px" class="right">${fmtAmt(prevBal)}</td></tr>
               <tr style="background:#d0d0d0"><th style="padding:6px">Total Balance</th><th style="padding:6px" class="right">${fmtAmt(totalBal)}</th></tr>
               ` : '' }
