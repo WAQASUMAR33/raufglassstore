@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,15 +13,19 @@ export async function GET(request) {
       return NextResponse.json({ last_rate: null });
     }
 
+    const parsedCusId = parseInt(cusId, 10);
+    const parsedProId = parseInt(proId, 10);
+
+    if (isNaN(parsedCusId) || isNaN(parsedProId)) {
+      return NextResponse.json({ last_rate: null });
+    }
+
     const detail = await prisma.saleDetail.findFirst({
       where: {
-        pro_id: parseInt(proId, 10),
+        pro_id: parsedProId,
         sale: {
-          cus_id: parseInt(cusId, 10),
-          OR: [
-            { bill_type: { in: ['BILL', 'ORDER', 'SALE'] } },
-            { bill_type: null }
-          ]
+          cus_id: parsedCusId,
+          bill_type: { in: ['BILL', 'ORDER', 'DISPATCHED'] }
         }
       },
       orderBy: {
@@ -31,7 +35,8 @@ export async function GET(request) {
         sale: {
           select: {
             sale_id: true,
-            date: true,
+            bill_number: true,
+            created_at: true,
             bill_type: true
           }
         }
@@ -42,11 +47,14 @@ export async function GET(request) {
       return NextResponse.json({ last_rate: null });
     }
 
+    const rate = detail.unit_rate ? parseFloat(detail.unit_rate) : null;
+
     return NextResponse.json({
-      last_rate: detail.unit_rate ? parseFloat(detail.unit_rate) : null,
-      glass_rate: detail.glass_rate ? parseFloat(detail.glass_rate) : null,
-      date: detail.sale?.date || null,
+      last_rate: rate,
+      unit_rate: rate,
+      date: detail.sale?.created_at || null,
       sale_id: detail.sale?.sale_id || null,
+      bill_number: detail.sale?.bill_number || detail.sale?.sale_id || null,
       bill_type: detail.sale?.bill_type || null
     });
   } catch (error) {
