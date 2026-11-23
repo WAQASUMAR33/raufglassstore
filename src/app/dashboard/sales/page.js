@@ -7443,24 +7443,6 @@ function SalesPageContent() {
                       <Typography sx={SALE_ENTRY_LABEL_SX}>
                         SELECT PRODUCT
                       </Typography>
-                      {formSelectedProduct?.formula && (
-                        <Tooltip title={formSelectedProduct.formula.description || formSelectedProduct.formula.name}>
-                          <Chip
-                            size="small"
-                            label={`📐 ${formSelectedProduct.formula.name}`}
-                            sx={{
-                              height: 18,
-                              fontSize: '0.62rem',
-                              fontWeight: 800,
-                              bgcolor: '#eff6ff',
-                              color: '#1d4ed8',
-                              borderRadius: '3px',
-                              maxWidth: 160,
-                              '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', px: 0.75 }
-                            }}
-                          />
-                        </Tooltip>
-                      )}
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
                       <Button
@@ -7471,17 +7453,6 @@ function SalesPageContent() {
                         sx={{ p: 0, minWidth: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#1A55E3', textTransform: 'none' }}
                       >
                         Add Product
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="text"
-                        component="a"
-                        href="/dashboard/products"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{ p: 0, minWidth: 'auto', fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'none', '&:hover': { color: '#1A55E3' } }}
-                      >
-                        Products Page ↗
                       </Button>
                     </Box>
                   </Box>
