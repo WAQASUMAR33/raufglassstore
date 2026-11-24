@@ -772,6 +772,15 @@ textarea:disabled {
   font-weight: bold !important;
 }
 
+/* Ensure MUI Switch inputs remain hidden and do not show native checkbox */
+.MuiSwitch-input,
+input.MuiSwitch-input {
+  opacity: 0 !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  pointer-events: none !important;
+}
+
 /* Ensure placeholder texts are readable but not full black */
 .MuiInputBase-input::placeholder {
   color: #666666 !important;

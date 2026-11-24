@@ -1233,7 +1233,29 @@ function SalesPageContent() {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   const [waSettings, setWaSettings] = useState({ is_enabled: false, auto_send_on_sale: true });
-  const [autoSendWhatsApp, setAutoSendWhatsApp] = useState(true);
+  const [autoSendWhatsApp, setAutoSendWhatsApp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('auto_send_whatsapp');
+      if (saved !== null) return saved === 'true';
+    }
+    return true;
+  });
+  const autoSendWhatsAppRef = useRef(autoSendWhatsApp);
+  useEffect(() => {
+    autoSendWhatsAppRef.current = autoSendWhatsApp;
+  }, [autoSendWhatsApp]);
+
+  const handleToggleAutoWhatsApp = () => {
+    setAutoSendWhatsApp((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('auto_send_whatsapp', String(next));
+      }
+      autoSendWhatsAppRef.current = next;
+      showSnackbar(next ? 'Auto WhatsApp receipt is ON' : 'Auto WhatsApp receipt is OFF (will not send)', next ? 'success' : 'info');
+      return next;
+    });
+  };
 
   // Fetch WhatsApp Automation settings
   useEffect(() => {
@@ -1242,8 +1264,12 @@ function SalesPageContent() {
       .then((d) => {
         if (d?.settings) {
           setWaSettings(d.settings);
-          if (d.settings.is_enabled !== undefined) {
-            setAutoSendWhatsApp(Boolean(d.settings.is_enabled && d.settings.auto_send_on_sale));
+          if (typeof window !== 'undefined' && localStorage.getItem('auto_send_whatsapp') === null) {
+            if (d.settings.is_enabled !== undefined) {
+              const initial = Boolean(d.settings.is_enabled && d.settings.auto_send_on_sale);
+              setAutoSendWhatsApp(initial);
+              autoSendWhatsAppRef.current = initial;
+            }
           }
         }
       })
@@ -4890,7 +4916,11 @@ function SalesPageContent() {
   }, [waSettings, getBillDisplayNo]);
 
   const triggerAutoWhatsAppDispatch = useCallback((bill, custPhone) => {
-    if (!autoSendWhatsApp || !waSettings?.is_enabled) return;
+    if (!autoSendWhatsAppRef.current) {
+      console.log('Auto WhatsApp dispatch is OFF. Not sending.');
+      return;
+    }
+    if (!waSettings?.is_enabled) return;
     const phone = resolveBillWhatsAppPhone(bill, custPhone);
     if (!phone) return;
 
@@ -9905,26 +9935,74 @@ function SalesPageContent() {
                 >
                   📋 Hold Bills ({drafts.length})
                 </Button>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      size="small"
-                      color="success"
-                      checked={autoSendWhatsApp}
-                      onChange={(e) => setAutoSendWhatsApp(e.target.checked)}
+                <Box
+                  onClick={handleToggleAutoWhatsApp}
+                  role="button"
+                  tabIndex={0}
+                  title={autoSendWhatsApp ? 'Auto-send WhatsApp receipt is ON. Click to turn OFF.' : 'Auto-send WhatsApp receipt is OFF. Click to turn ON.'}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    px: 1.25,
+                    py: 0.6,
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    border: '1.5px solid',
+                    borderColor: autoSendWhatsApp ? '#16a34a' : '#cbd5e1',
+                    bgcolor: autoSendWhatsApp ? '#ecfdf5' : '#f8fafc',
+                    boxShadow: autoSendWhatsApp ? '0 1px 3px rgba(22,163,74,0.18)' : 'none',
+                    transition: 'all 0.2s ease',
+                    mr: 1,
+                    ml: 0.5,
+                    '&:hover': {
+                      borderColor: autoSendWhatsApp ? '#15803d' : '#94a3b8',
+                      bgcolor: autoSendWhatsApp ? '#d1fae5' : '#f1f5f9',
+                    }
+                  }}
+                >
+                  <WhatsAppIcon sx={{ fontSize: 19, color: autoSendWhatsApp ? '#16a34a' : '#94a3b8', transition: 'color 0.2s ease' }} />
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: autoSendWhatsApp ? '#15803d' : '#64748b', transition: 'color 0.2s ease' }}>
+                    Auto-WA
+                  </Typography>
+                  <Box
+                    sx={{
+                      width: 34,
+                      height: 20,
+                      borderRadius: '10px',
+                      bgcolor: autoSendWhatsApp ? '#16a34a' : '#cbd5e1',
+                      p: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      transition: 'background-color 0.2s ease',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        bgcolor: '#ffffff',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        transform: autoSendWhatsApp ? 'translateX(14px)' : 'translateX(0)',
+                        transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      }}
                     />
-                  }
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <WhatsAppIcon sx={{ fontSize: 18, color: autoSendWhatsApp ? '#25D366' : '#94a3b8' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8rem', color: autoSendWhatsApp ? '#15803d' : '#64748b' }}>
-                        Auto-WA
-                      </Typography>
-                    </Box>
-                  }
-                  title="Automatically send bill image to customer on WhatsApp upon saving"
-                  sx={{ mr: 1, ml: 0.5 }}
-                />
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      color: autoSendWhatsApp ? '#16a34a' : '#94a3b8',
+                      minWidth: 26,
+                      textAlign: 'center',
+                      transition: 'color 0.2s ease'
+                    }}
+                  >
+                    {autoSendWhatsApp ? 'ON' : 'OFF'}
+                  </Typography>
+                </Box>
                 <Button
                   variant="contained"
                   size="large"
