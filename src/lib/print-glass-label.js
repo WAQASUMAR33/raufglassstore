@@ -163,7 +163,7 @@ export function buildGlassStickerHtml({
           line-height: 1.15;
           letter-spacing: -0.2px;
         ">
-          ${escapeHtml(itemName)}${jobDesc ? ` <span style="font-size: 10px; font-weight: 600; color: #334155;">(${escapeHtml(jobDesc)})</span>` : ''}
+          ${escapeHtml(itemName)}
         </span>
       </div>
 
