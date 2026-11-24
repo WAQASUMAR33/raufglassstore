@@ -979,81 +979,35 @@ export default function CommercialInvoiceReceipt({
               </tr>
             )}
 
-            {/* ────────── GRAND TOTAL ROW ────────── */}
-            <tr style={{ borderTop: '2px solid #000000', borderBottom: '2px solid #000000', fontWeight: 700, backgroundColor: '#f1f5f9' }}>
-              <td
-                colSpan={4}
-                style={{
-                  border: '1px solid #000000',
-                  padding: '3px 4px',
-                  textAlign: 'right',
-                  fontWeight: 700,
-                  fontSize: '0.72rem',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                {copy === 'CUTTER' ? 'Total Pcs to Cut' : 'Grand Total'}
-              </td>
-              <td
-                style={{
-                  border: '1px solid #000000',
-                  padding: '3px 2px',
-                  textAlign: 'center',
-                  fontWeight: 700,
-                  fontSize: copy === 'CUTTER' ? '0.8rem' : '0.72rem',
-                }}
-              >
-                {totalPcs}
-              </td>
-              {copy === 'OFFICE' && (
-                <>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '3px 2px',
-                      textAlign: 'center',
-                      color: '#666',
-                      fontSize: '0.65rem',
-                    }}
-                  >
-                    —
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '3px 3px',
-                      textAlign: 'right',
-                      fontWeight: 700,
-                      fontSize: '0.72rem',
-                    }}
-                  >
-                    {fmtNum(totalSqFt)}
-                  </td>
-                  <td
-                    style={{
-                      border: '1px solid #000000',
-                      padding: '3px 3px',
-                      textAlign: 'right',
-                    }}
-                  >
-                    —
-                  </td>
-                </>
-              )}
-              {copy !== 'CUTTER' && (
+            {/* ────────── CUTTER TOTAL PCS ROW (Grand Total row removed) ────────── */}
+            {copy === 'CUTTER' && (
+              <tr style={{ borderTop: '2px solid #000000', borderBottom: '2px solid #000000', fontWeight: 700, backgroundColor: '#f1f5f9' }}>
                 <td
+                  colSpan={4}
                   style={{
                     border: '1px solid #000000',
                     padding: '3px 4px',
                     textAlign: 'right',
                     fontWeight: 700,
-                    fontSize: '0.74rem',
+                    fontSize: '0.72rem',
+                    letterSpacing: '0.02em',
                   }}
                 >
-                  {fmtAmt(billValue || totalItemsValue)}
+                  Total Pcs to Cut
                 </td>
-              )}
-            </tr>
+                <td
+                  style={{
+                    border: '1px solid #000000',
+                    padding: '3px 2px',
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                  }}
+                >
+                  {totalPcs}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </Box>
