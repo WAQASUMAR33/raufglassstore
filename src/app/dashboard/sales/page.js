@@ -1911,7 +1911,7 @@ function SalesPageContent() {
     }
   };
 
-  // Auto-fetch and auto-load last charged rate when product or customer changes
+  // Auto-fetch last charged rate for display above textbox when product or customer changes
   useEffect(() => {
     const cusId = formSelectedCustomer?.cus_id;
     const proId = formSelectedProduct?.pro_id;
@@ -1932,10 +1932,8 @@ function SalesPageContent() {
           setLastChargedRate(rateVal);
           setLastChargedInfo(data);
           setLastRateStatus('found');
-          // Automatically apply the last charged rate to the input field!
-          handleRateChange(rateVal);
-          const billInfo = data.bill_type ? ` (${data.bill_type} #${data.bill_number || data.sale_id || ''})` : '';
-          showSnackbar(`Auto-applied last charged rate: PKR ${rateVal}${billInfo}`, 'success');
+          // Note: Keep original catalog rate in textbox. The last charged rate is displayed above the textbox.
+          // User can click the "Last: {rate}" chip or press Ctrl+L to apply it.
         } else {
           setLastChargedRate(null);
           setLastChargedInfo(null);
@@ -1951,7 +1949,7 @@ function SalesPageContent() {
         }
       });
     return () => { isMounted = false; };
-  }, [formSelectedCustomer?.cus_id, formSelectedProduct?.pro_id, handleRateChange]);
+  }, [formSelectedCustomer?.cus_id, formSelectedProduct?.pro_id]);
 
   // Handle product selection
   const handleProductSelect = (selectedProduct) => {
