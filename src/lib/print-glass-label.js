@@ -6,24 +6,18 @@ import { formatCustomerPhoneDisplay, formatWhatsAppPhone } from './whatsapp-loca
 
 /**
  * Generate a WhatsApp chat URL.
- * If customer mobile is available, uses customer mobile so scanning the sticker contacts customer or store.
+ * Always targets the store WhatsApp number (+923022133218) with the invoice and item information.
  */
 export function getWhatsAppTargetUrl(customer, bill, item) {
-  const storePhone = (COMPANY.phones && COMPANY.phones[0]) ? formatWhatsAppPhone(COMPANY.phones[0]) : '923022133218';
-  const cus = customer || bill?.customer || bill;
-  const rawCusPhone = cus?.cus_phone_no || cus?.cus_phone_no2 || cus?.customer_phone || cus?.phone || cus?.cus_phone;
-  const cusPhone = formatWhatsAppPhone(rawCusPhone);
-  
-  // Target phone number: use customer phone if available so delivery/fitter can message customer,
-  // or store phone if customer phone is not set.
-  const phone = cusPhone || storePhone;
-  
+  const storePhone = '923022133218';
   const billNo = bill?.sale_id || bill?.bill_number || bill?.inv_no || '';
-  const itemText = (item?.itemName || item?.item_name || item?.pro_title) ? ` ${item.itemName || item.item_name || item.pro_title}` : '';
+  const itemText = (item?.itemName || item?.item_name || item?.pro_title || item?.product?.pro_title)
+    ? ` ${item.itemName || item.item_name || item.pro_title || item.product?.pro_title}`
+    : '';
   const sizeText = item?.actualSize ? ` (${item.actualSize})` : '';
   const text = encodeURIComponent(`Bill #${billNo}${itemText}${sizeText}`);
   
-  return `https://wa.me/${phone}?text=${text}`;
+  return `https://wa.me/${storePhone}?text=${text}`;
 }
 
 /**
@@ -32,7 +26,7 @@ export function getWhatsAppTargetUrl(customer, bill, item) {
 export async function generateWhatsAppQrCode(url) {
   try {
     return await QRCode.toDataURL(url, {
-      width: 96,
+      width: 120,
       margin: 0,
       color: {
         dark: '#000000',
@@ -57,19 +51,6 @@ export function buildGlassStickerHtml({
 }) {
   const companyNameUr = COMPANY.nameUr || 'زین ٹریڈرز منڈی بہاؤالدین';
   const customerName = bill?.customer?.cus_name || bill?.cus_name || bill?.customer_name || 'Customer';
-  
-  let customerPhone = '';
-  const cus = bill?.customer || bill;
-  const rawPhone = cus?.cus_phone_no || cus?.cus_phone_no2 || cus?.customer_phone || cus?.phone || cus?.cus_phone;
-  if (rawPhone) {
-    customerPhone = String(rawPhone).trim();
-  } else {
-    customerPhone = formatCustomerPhoneDisplay(bill?.customer || bill);
-  }
-  if (!customerPhone || customerPhone === 'N/A') {
-    customerPhone = '-';
-  }
-
   const billNo = bill?.sale_id || bill?.bill_number || bill?.inv_no || '—';
   
   const srNo = item?.index || (index + 1);
@@ -117,43 +98,48 @@ export function buildGlassStickerHtml({
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     ">
-      <!-- Line 1: Logo before Urdu Brand Name (centered together, increased Urdu font size) -->
+      <!-- Line 1: Top Header (QR Code Left, Urdu Brand Center, Logo Right) -->
       <div style="
         display: flex;
         align-items: center;
-        justify-content: center;
-        direction: rtl;
-        gap: 6px;
+        justify-content: space-between;
         border-bottom: 1.5px solid #000000;
         padding-bottom: 2px;
+        gap: 4px;
       ">
-        <!-- Rotated Zain Traders Brand Logo -->
+        <!-- Left: WhatsApp QR Code (scans to +923022133218) -->
+        <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR" style="width: 28px; height: 28px; display: block;" />` : '<div style="width: 28px; height: 28px;"></div>'}
+        </div>
+
+        <!-- Center: Company Name in Urdu -->
+        <div style="
+          font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif;
+          font-size: 13.5px;
+          font-weight: 900;
+          direction: rtl;
+          text-align: center;
+          color: #000000;
+          line-height: 1.15;
+          letter-spacing: -0.2px;
+          white-space: nowrap;
+          flex: 1;
+        ">
+          ${escapeHtml(companyNameUr)}
+        </div>
+
+        <!-- Right: Zain Traders Brand Logo -->
         <img
           src="/zain-logo.png"
           alt="Zain Traders"
           style="
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             object-fit: contain;
             flex-shrink: 0;
             display: inline-block;
           "
         />
-
-        <!-- Company Name in Urdu (Increased size) -->
-        <div style="
-          font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif;
-          font-size: 15.5px;
-          font-weight: 900;
-          direction: rtl;
-          text-align: right;
-          color: #000000;
-          line-height: 1.15;
-          letter-spacing: -0.2px;
-          white-space: nowrap;
-        ">
-          ${escapeHtml(companyNameUr)}
-        </div>
       </div>
 
       <!-- Line 2: Serial Number & Product Name (NO background) -->
@@ -200,52 +186,35 @@ export function buildGlassStickerHtml({
         </div>
       </div>
 
-      <!-- Line 4: Customer Name & Phone (Left side, regular font) + WhatsApp QR code (Right side, NO text below) -->
+      <!-- Line 4: Customer Name & Inv # (Customer phone and bottom QR removed) -->
       <div style="
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
+        justify-content: center;
         border-top: 1.5px solid #000000;
         padding-top: 2px;
-        gap: 5px;
+        text-align: left;
+        min-width: 0;
       ">
-        <!-- Left Side: Customer Info (Customer Name in regular font) -->
-        <div style="display: flex; flex-direction: column; justify-content: center; overflow: hidden; flex: 1; text-align: left; min-width: 0;">
-          <div style="
-            font-size: 10px;
-            font-weight: 400;
-            color: #000000;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.25;
-          ">
-            ${escapeHtml(customerName)}
-          </div>
-          <div style="
-            font-size: 10px;
-            font-weight: 700;
-            color: #000000;
-            letter-spacing: 0.2px;
-            line-height: 1.25;
-            margin-top: 1px;
-          ">
-            ${escapeHtml(customerPhone)}
-          </div>
-          <div style="
-            font-size: 8px;
-            font-weight: 600;
-            color: #475569;
-            line-height: 1.1;
-            margin-top: 1px;
-          ">
-            Inv #${escapeHtml(String(billNo))}
-          </div>
+        <div style="
+          font-size: 11px;
+          font-weight: 700;
+          color: #000000;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          line-height: 1.25;
+        ">
+          ${escapeHtml(customerName)}
         </div>
-
-        <!-- Right Side: WhatsApp QR code (Clean, NO text below it) -->
-        <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR" style="width: 44px; height: 44px; display: block;" />` : ''}
+        <div style="
+          font-size: 9.5px;
+          font-weight: 700;
+          color: #334155;
+          line-height: 1.2;
+          margin-top: 1px;
+        ">
+          Inv #${escapeHtml(String(billNo))}
         </div>
       </div>
     </div>
