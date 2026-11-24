@@ -118,6 +118,8 @@ import {
   Backdrop,
 } from '@mui/material';
 
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+
 const fmtAmt = (val) => {
   const n = parseFloat(val || 0);
   if (n % 1 === 0) return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -2266,12 +2268,59 @@ function FinancePageContent() {
   const handleSendSaleWhatsApp = async (sale, elementId = 'sale-invoice-ledger') => {
     try {
       setIsSendingSaleWhatsApp(true);
-      const { shareViaWhatsAppDesktop, whatsAppSuccessMessage } = await import('@/lib/whatsapp-local');
-      const { opened } = await shareViaWhatsAppDesktop({
-        elementId,
-        phone: sale?.customer?.cus_phone_no,
+      const { captureElementToCanvas, formatWhatsAppPhone, resolveCustomerWhatsAppPhone } = await import('@/lib/whatsapp-local');
+      let phone = formatWhatsAppPhone(sale?.customer?.cus_phone_no) || resolveCustomerWhatsAppPhone(sale?.customer);
+      if (!phone) {
+        const manual = window.prompt(
+          'Customer phone is missing or invalid.\nEnter WhatsApp number (e.g. 0302-2133218):',
+          sale?.customer?.cus_phone_no || ''
+        );
+        if (!manual?.trim()) {
+          alert('WhatsApp cancelled — phone number required');
+          return;
+        }
+        phone = formatWhatsAppPhone(manual) || resolveCustomerWhatsAppPhone({ cus_phone_no: manual });
+        if (!phone) {
+          alert('Invalid phone number. Use format 03XX-XXXXXXX');
+          return;
+        }
+      }
+
+      const targetEl = document.getElementById(elementId) || document.getElementById('printable-invoice-a4-finance');
+      if (!targetEl) {
+        alert('Could not find invoice preview to capture image');
+        return;
+      }
+
+      const canvas = await captureElementToCanvas(targetEl);
+      if (!canvas) {
+        alert('Failed to capture receipt image');
+        return;
+      }
+
+      const base64Image = canvas.toDataURL('image/png');
+      const billNo = getBillDisplayNo(sale);
+      const caption = `Assalam-o-Alaikum, here is your bill #${billNo} from Zain Traders Mandi Bahauddin. Thank you for your business! Ph: 0302-2133218, 0347-7743218\nInvoice #${billNo}\nCustomer: ${sale?.customer?.cus_name || ''}\nTotal: Rs. ${fmtAmt(sale?.total_amount || 0)}`;
+
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          image: base64Image,
+          caption,
+          bill_no: billNo,
+          customer_name: sale?.customer?.cus_name || '',
+          total_amount: sale?.total_amount,
+        }),
       });
-      alert(`✅ ${whatsAppSuccessMessage(opened)}`);
+
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        alert(`📲 Invoice #${billNo} sent successfully via Green API to ${phone}!`);
+      } else {
+        alert(`❌ Green API error: ${resData?.error || 'Failed to send WhatsApp message'}`);
+      }
     } catch (err) {
       alert(`❌ WhatsApp error: ${err.message}`);
     } finally {
@@ -2945,73 +2994,155 @@ function FinancePageContent() {
       alert('Payment reference is missing. Re-open the voucher from the ledger.');
       return;
     }
-    if (!d?.customer?.cus_phone_no) {
-      alert('No phone number on file for this account. Add a phone on the customer record to send WhatsApp.');
-      return;
+    const rawPhone = d?.customer?.cus_phone_no;
+    let phone = null;
+    if (rawPhone) {
+      const { formatWhatsAppPhone, resolveCustomerWhatsAppPhone } = await import('@/lib/whatsapp-local');
+      phone = formatWhatsAppPhone(rawPhone) || resolveCustomerWhatsAppPhone(d?.customer);
     }
+    if (!phone) {
+      const manual = window.prompt(
+        'Customer phone is missing or invalid.\nEnter WhatsApp number (e.g. 03403051059):',
+        rawPhone || ''
+      );
+      if (!manual?.trim()) {
+        alert('WhatsApp cancelled — phone number required');
+        return;
+      }
+      const { formatWhatsAppPhone, resolveCustomerWhatsAppPhone } = await import('@/lib/whatsapp-local');
+      phone = formatWhatsAppPhone(manual) || resolveCustomerWhatsAppPhone({ cus_phone_no: manual });
+      if (!phone) {
+        alert('Invalid phone number. Use format 03XX-XXXXXXX');
+        return;
+      }
+    }
+
     const fmt = (v) => (v == null || v === '' ? '—' : fmtAmt(v));
     const isPay = d.type === 'PAY';
-    const accentColor = isPay ? '#ef4444' : '#16a34a';
-    const rows = [];
-    rows.push(`<tr style="background:#f9fafb"><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-weight:600">Previous Balance (سابقہ بقایا)</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600">${fmt(d.previousBalance)}</td></tr>`);
-    if (d.cashAmount > 0) rows.push(`<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">Cash${d.cashAcc ? ` (${d.cashAcc.cus_name})` : ''}</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right">${fmt(d.cashAmount)}</td></tr>`);
-    if (d.bankAmount > 0) rows.push(`<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">Bank${d.bankAcc ? ` (${d.bankAcc.cus_name})` : ''}</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right">${fmt(d.bankAmount)}</td></tr>`);
-    if (d.discountAmount > 0) rows.push(`<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">Discount</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right">${fmt(d.discountAmount)}</td></tr>`);
-    rows.push(`<tr style="background:#f1f5f9"><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-weight:700">Total Paid</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700">${fmt(d.totalAmount)}</td></tr>`);
-    const remRowBg = isPay ? '#ef4444' : '#16a34a';
-    rows.push(`<tr style="background:${remRowBg}"><td style="padding:12px 14px;color:white;font-weight:700">Remaining Balance (کل بقایا)</td><td style="padding:12px 14px;text-align:right;font-weight:700;color:#ffffff">${d.remainingBalance == null ? '—' : `PKR ${fmt(d.remainingBalance)}`}</td></tr>`);
+    const voucherType = isPay ? 'Debit Voucher' : 'Credit Voucher';
+    const refNo = `PAY-${d.paymentId}`;
 
     let tempEl = null;
     try {
       setIsSendingPaymentWhatsApp(true);
-      tempEl = document.createElement('div');
-      Object.assign(tempEl.style, {
-        position: 'fixed', left: '0', top: '0', zIndex: '2147483647',
-        width: '680px', background: '#fff', padding: '28px',
-        fontFamily: 'Arial, sans-serif', boxSizing: 'border-box',
+
+      // 1. Locate or render receipt container
+      let previewEl = document.getElementById('payment-receipt-preview');
+      if (!previewEl) {
+        const accentColor = isPay ? '#ef4444' : '#16a34a';
+        const rows = [];
+        rows.push(`<tr style="background:#f9fafb"><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-weight:600">Previous Balance (سابقہ بقایا)</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600">${fmt(d.previousBalance)}</td></tr>`);
+        if (d.cashAmount > 0) rows.push(`<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">Cash${d.cashAcc ? ` (${d.cashAcc.cus_name})` : ''}</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right">${fmt(d.cashAmount)}</td></tr>`);
+        if (d.bankAmount > 0) rows.push(`<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">Bank${d.bankAcc ? ` (${d.bankAcc.cus_name})` : ''}</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right">${fmt(d.bankAmount)}</td></tr>`);
+        if (d.discountAmount > 0) rows.push(`<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">Discount</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right">${fmt(d.discountAmount)}</td></tr>`);
+        rows.push(`<tr style="background:#f1f5f9"><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-weight:700">Total Paid</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700">${fmt(d.totalAmount)}</td></tr>`);
+        const remRowBg = isPay ? '#ef4444' : '#16a34a';
+        rows.push(`<tr style="background:${remRowBg}"><td style="padding:12px 14px;color:white;font-weight:700">Remaining Balance (کل بقایا)</td><td style="padding:12px 14px;text-align:right;font-weight:700;color:#ffffff">${d.remainingBalance == null ? '—' : `PKR ${fmt(d.remainingBalance)}`}</td></tr>`);
+
+        tempEl = document.createElement('div');
+        Object.assign(tempEl.style, {
+          position: 'fixed', left: '0', top: '0', zIndex: '2147483647',
+          width: '680px', background: '#fff', padding: '28px',
+          fontFamily: 'Arial, sans-serif', boxSizing: 'border-box',
+        });
+        tempEl.innerHTML = `
+          <div style="text-align:center;padding-bottom:14px;border-bottom:2px solid #000;margin-bottom:16px;">
+            <h2 style="margin:0;font-size:20px;font-weight:900;">ZAIN TRADERS</h2>
+            <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-top:2px;">Mandi Bahauddin</div>
+            <p style="margin:4px 0;direction:rtl;font-size:16px;">زین ٹریڈرز منڈی بہاؤالدین</p>
+            <p style="margin:4px 0;font-size:12px;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
+            <p style="margin:4px 0;font-weight:bold;">Ph:- 0302-2133218, 0347-7743218</p>
+            <h3 style="margin:10px 0 0 0;color:${accentColor};letter-spacing:1px;">${isPay ? 'DEBIT VOUCHER' : 'CREDIT VOUCHER'}</h3>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
+            <div>
+              <p style="margin:4px 0;"><strong>Account:</strong> ${d.customer?.cus_name || '—'}</p>
+              <p style="margin:4px 0;"><strong>Phone:</strong> ${d.customer?.cus_phone_no || '—'}</p>
+              ${d.description ? `<p style="margin:4px 0;"><strong>Note:</strong> ${d.description}</p>` : ''}
+            </div>
+            <div style="text-align:right;">
+              <p style="margin:4px 0;"><strong>Ref #:</strong> ${refNo}</p>
+              <p style="margin:4px 0;"><strong>Date:</strong> ${d.date || '—'}</p>
+              <p style="margin:4px 0;"><strong>Time:</strong> ${d.time || '—'}</p>
+              <p style="margin:4px 0;"><strong>Created By:</strong> ${getCreatedByName(d, currentUser)}</p>
+            </div>
+          </div>
+          <div style="border:1px solid #000;border-radius:4px;overflow:hidden;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;padding:8px 14px;background:#f5f5f5;border-bottom:1px solid #ddd;">
+              <span style="font-weight:700;">Description</span><span style="font-weight:700;">Amount (PKR)</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;">${rows.join('')}</table>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:40px;padding-top:12px;">
+            <div style="text-align:center;flex:1;"><div style="border-top:1px solid #000;padding-top:4px;margin:0 20px;"><small>Received By</small></div></div>
+            <div style="text-align:center;flex:1;"><div style="border-top:1px solid #000;padding-top:4px;margin:0 20px;"><small>Authorized Signature</small></div></div>
+          </div>`;
+        document.body.appendChild(tempEl);
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise((r) => setTimeout(r, 80));
+        previewEl = tempEl;
+      }
+
+      const { captureElementToCanvas } = await import('@/lib/whatsapp-local');
+      const canvas = await captureElementToCanvas(previewEl);
+      if (!canvas) {
+        alert('Failed to render voucher receipt image');
+        return;
+      }
+
+      const base64Image = canvas.toDataURL('image/png');
+
+      // 2. Build structured text caption for Green API
+      let caption = `Assalam-o-Alaikum, here is your ${voucherType} from Zain Traders Mandi Bahauddin. Thank you! Ph: 0302-2133218, 0347-7743218`;
+      caption += `\nReceipt #: ${refNo}`;
+      caption += `\nAccount: ${d.customer?.cus_name || ''}`;
+      if (d.previousBalance != null) {
+        caption += `\nPrevious Balance: Rs. ${fmt(d.previousBalance)}`;
+      }
+      if (d.cashAmount > 0) {
+        caption += `\nCash (${d.cashAcc?.cus_name || 'Cash'}): Rs. ${fmt(d.cashAmount)}`;
+      }
+      if (d.bankAmount > 0) {
+        caption += `\nBank (${d.bankAcc?.cus_name || 'Bank'}): Rs. ${fmt(d.bankAmount)}`;
+      }
+      if (d.discountAmount > 0) {
+        caption += `\nDiscount: Rs. ${fmt(d.discountAmount)}`;
+      }
+      caption += `\nTotal Paid: Rs. ${fmt(d.totalAmount)}`;
+      if (d.remainingBalance != null) {
+        caption += `\nRemaining Balance: Rs. ${fmt(d.remainingBalance)}`;
+      }
+      if (d.description) {
+        caption += `\nNote: ${d.description}`;
+      }
+
+      // 3. Dispatch via Green-API (/api/whatsapp/send)
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          image: base64Image,
+          caption,
+          bill_no: refNo,
+          customer_name: d.customer?.cus_name || '',
+          total_amount: d.totalAmount,
+          previous_balance: d.previousBalance,
+          payment: d.totalAmount,
+        }),
       });
-      tempEl.innerHTML = `
-        <div style="text-align:center;padding-bottom:14px;border-bottom:2px solid #000;margin-bottom:16px;">
-          <h2 style="margin:0;font-size:20px;font-weight:900;">ZAIN TRADERS</h2>
-          <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-top:2px;">Mandi Bahauddin</div>
-          <p style="margin:4px 0;direction:rtl;font-size:16px;">زین ٹریڈرز منڈی بہاؤالدین</p>
-          <p style="margin:4px 0;font-size:12px;">Phalia Road , Near Aljannat Petrol pump M.B.Din.</p>
-          <p style="margin:4px 0;font-weight:bold;">Ph:- 0302-2133218, 0347-7743218</p>
-          <h3 style="margin:10px 0 0 0;color:${accentColor};letter-spacing:1px;">${isPay ? 'DEBIT VOUCHER' : 'CREDIT VOUCHER'}</h3>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
-          <div>
-            <p style="margin:4px 0;"><strong>Account:</strong> ${d.customer?.cus_name || '—'}</p>
-            <p style="margin:4px 0;"><strong>Phone:</strong> ${d.customer?.cus_phone_no || '—'}</p>
-            ${d.description ? `<p style="margin:4px 0;"><strong>Note:</strong> ${d.description}</p>` : ''}
-          </div>
-          <div style="text-align:right;">
-            <p style="margin:4px 0;"><strong>Ref #:</strong> PAY-${d.paymentId ?? '—'}</p>
-            <p style="margin:4px 0;"><strong>Date:</strong> ${d.date || '—'}</p>
-            <p style="margin:4px 0;"><strong>Time:</strong> ${d.time || '—'}</p>
-            <p style="margin:4px 0;"><strong>Created By:</strong> ${getCreatedByName(d, currentUser)}</p>
-          </div>
-        </div>
-        <div style="border:1px solid #000;border-radius:4px;overflow:hidden;margin-bottom:20px;">
-          <div style="display:flex;justify-content:space-between;padding:8px 14px;background:#f5f5f5;border-bottom:1px solid #ddd;">
-            <span style="font-weight:700;">Description</span><span style="font-weight:700;">Amount (PKR)</span>
-          </div>
-          <table style="width:100%;border-collapse:collapse;">${rows.join('')}</table>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:40px;padding-top:12px;">
-          <div style="text-align:center;flex:1;"><div style="border-top:1px solid #000;padding-top:4px;margin:0 20px;"><small>Received By</small></div></div>
-          <div style="text-align:center;flex:1;"><div style="border-top:1px solid #000;padding-top:4px;margin:0 20px;"><small>Authorized Signature</small></div></div>
-        </div>`;
-      document.body.appendChild(tempEl);
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      await new Promise((r) => setTimeout(r, 80));
-      const { captureElementToCanvas, shareCanvasViaWhatsAppDesktop, whatsAppSuccessMessage } =
-        await import('@/lib/whatsapp-local');
-      const canvas = await captureElementToCanvas(tempEl);
-      const { opened } = await shareCanvasViaWhatsAppDesktop(canvas, d.customer.cus_phone_no);
-      alert(whatsAppSuccessMessage(opened));
+
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        alert(`📲 ${voucherType} #${refNo} sent successfully via Green API to ${phone}!`);
+      } else {
+        const errorMsg = resData?.error || 'Failed to send WhatsApp message via Green API';
+        console.error('Green API dispatch error:', errorMsg);
+        alert(`❌ ${errorMsg}`);
+      }
     } catch (err) {
-      alert(err.message || 'WhatsApp error');
+      console.error('WhatsApp dispatch error:', err);
+      alert(`❌ WhatsApp error: ${err.message || 'Unknown error'}`);
     } finally {
       if (tempEl && tempEl.parentNode) tempEl.parentNode.removeChild(tempEl);
       setIsSendingPaymentWhatsApp(false);
@@ -5840,17 +5971,24 @@ function FinancePageContent() {
         <DialogActions sx={{ p: 2, borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 1 }}>
           <Button onClick={() => setShowPaymentReceipt(false)}>Close</Button>
           <Button
-            variant="outlined"
-            color="success"
+            variant="contained"
+            sx={{
+              bgcolor: '#25D366',
+              '&:hover': { bgcolor: '#1ebe5d' },
+              color: 'white',
+              fontWeight: 700,
+              textTransform: 'none',
+              boxShadow: '0 2px 8px rgba(37,211,102,0.35)',
+            }}
             disabled={
               isSendingPaymentWhatsApp ||
-              paymentReceiptData?.paymentId == null ||
-              !paymentReceiptData?.customer?.cus_phone_no
+              paymentReceiptData?.paymentId == null
             }
             onClick={handleSendPaymentWhatsApp}
-            startIcon={isSendingPaymentWhatsApp ? <CircularProgress size={18} /> : null}
+            startIcon={isSendingPaymentWhatsApp ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <WhatsAppIcon sx={{ fontSize: 20 }} />}
+            title="Send voucher receipt to customer via Green API WhatsApp"
           >
-            {isSendingPaymentWhatsApp ? 'Sending…' : 'Send WhatsApp'}
+            {isSendingPaymentWhatsApp ? 'Sending WhatsApp…' : 'Send WhatsApp'}
           </Button>
           <Button
             variant="contained"
