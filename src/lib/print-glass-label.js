@@ -142,26 +142,26 @@ export function buildGlassStickerHtml({
         />
       </div>
 
-      <!-- Line 2: Serial Number & Product Name (NO background) -->
-      <div style="display: flex; align-items: baseline; gap: 5px; padding-top: 1px; min-width: 0;">
+      <!-- Line 2: Serial Number at top, Product Name in the next line -->
+      <div style="display: flex; flex-direction: column; min-width: 0; padding-top: 1px;">
         <span style="
           color: #000000;
           font-weight: 900;
-          font-size: 12px;
-          flex-shrink: 0;
+          font-size: 13px;
           line-height: 1.15;
         ">
           #${srNo}
         </span>
         <span style="
           font-weight: 800;
-          font-size: 12px;
+          font-size: 11.5px;
           color: #000000;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           line-height: 1.15;
           letter-spacing: -0.2px;
+          margin-top: 1px;
         ">
           ${escapeHtml(itemName)}
         </span>
