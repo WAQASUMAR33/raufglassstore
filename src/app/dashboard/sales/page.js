@@ -4885,25 +4885,10 @@ function SalesPageContent() {
     return text;
   }, [waSettings, getBillDisplayNo]);
 
-  // Send WhatsApp manually on button click
-  const handleSendWhatsAppManually = async () => {
-    // 1. If user is currently creating/editing a bill with items in table, save and send
-    if (productTableData.length > 0) {
-      await handleSaveBill(false, true);
-      return;
-    }
-    // 2. If a bill is already saved/active on screen
-    if (currentBillData) {
-      await handleSendWhatsApp(currentBillData);
-      return;
-    }
-    showSnackbar('Please add products to sale or load a bill to send via WhatsApp', 'info');
-  };
-
   const handleSendWhatsApp = async (bill, customPhone, elementId = 'receipt-preview') => {
     try {
       setIsSendingWhatsApp(true);
-      const { shareViaWhatsAppDesktop, whatsAppSuccessMessage, captureElementToCanvas } = await import('@/lib/whatsapp-local');
+      const { captureElementToCanvas } = await import('@/lib/whatsapp-local');
       let phone = resolveBillWhatsAppPhone(bill, customPhone);
       if (!phone) {
         const manual = window.prompt(
@@ -4923,47 +4908,52 @@ function SalesPageContent() {
 
       const caption = buildWhatsAppBillCaption(bill);
 
-      // Check if Cloud Gateway is active
-      if (waSettings?.is_enabled) {
-        const targetEl = document.getElementById('whatsapp-invoice-render') || document.getElementById(elementId) || document.getElementById('receipt-preview') || document.getElementById('receipt-whatsapp-capture');
-        if (targetEl) {
-          const canvas = await captureElementToCanvas(targetEl);
-          if (canvas) {
-            const base64Image = canvas.toDataURL('image/png');
-            const res = await fetch('/api/whatsapp/send', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                phone,
-                image: base64Image,
-                caption,
-                bill_no: getBillDisplayNo(bill),
-                customer_name: bill?.customer?.cus_name || '',
-                total_amount: bill?.total_amount,
-                previous_balance: bill?.previous_balance,
-                payment: bill?.payment,
-              }),
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-              showSnackbar(`📲 WhatsApp bill sent successfully to ${phone}!`, 'success');
-              return;
-            } else {
-              console.warn('Cloud WhatsApp failed, falling back to desktop:', data?.error);
-              showSnackbar(`Gateway notice: ${data?.error || 'Opening WhatsApp Desktop...'}`, 'info');
-            }
-          }
-        }
+      // Locate invoice element to capture
+      const targetEl =
+        document.getElementById(elementId) ||
+        document.getElementById('receipt-preview') ||
+        document.getElementById('printable-invoice') ||
+        document.getElementById('whatsapp-invoice-render') ||
+        document.getElementById('printable-invoice-a4');
+
+      if (!targetEl) {
+        showSnackbar('Could not find invoice preview to capture image', 'error');
+        return;
       }
 
-      // Fallback: Desktop clipboard + protocol
-      const { opened } = await shareViaWhatsAppDesktop({
-        elementId,
-        phone,
-        text: caption,
+      showSnackbar('Capturing receipt and sending via Green API...', 'info');
+      const canvas = await captureElementToCanvas(targetEl);
+      if (!canvas) {
+        showSnackbar('Failed to capture receipt image', 'error');
+        return;
+      }
+
+      const base64Image = canvas.toDataURL('image/png');
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          image: base64Image,
+          caption,
+          bill_no: getBillDisplayNo(bill),
+          customer_name: bill?.customer?.cus_name || '',
+          total_amount: bill?.total_amount,
+          previous_balance: bill?.previous_balance,
+          payment: bill?.payment,
+        }),
       });
-      showSnackbar(`✅ ${whatsAppSuccessMessage(opened)}`, 'success');
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showSnackbar(`📲 WhatsApp receipt sent successfully via Green API to ${phone}!`, 'success');
+      } else {
+        const errMsg = data?.error || 'Failed to send WhatsApp message via Green API';
+        console.error('Green API dispatch error:', errMsg);
+        showSnackbar(`❌ ${errMsg}`, 'error');
+      }
     } catch (err) {
+      console.error('Error sending WhatsApp:', err);
       showSnackbar(`❌ WhatsApp error: ${err.message}`, 'error');
     } finally {
       setIsSendingWhatsApp(false);
@@ -9878,34 +9868,6 @@ function SalesPageContent() {
                 <Button
                   variant="contained"
                   size="large"
-                  startIcon={isSendingWhatsApp ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <WhatsAppIcon sx={{ fontSize: 20 }} />}
-                  sx={{
-                    background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-                    color: 'white',
-                    borderRadius: 3,
-                    px: 2.5,
-                    boxShadow: '0 4px 14px rgba(37,211,102,0.3)',
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    transition: 'transform 120ms ease, box-shadow 120ms ease',
-                    mr: 1,
-                    ml: 0.5,
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #1ebe5d 0%, #0d6e62 100%)',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 20px rgba(37,211,102,0.4)'
-                    }
-                  }}
-                  onClick={handleSendWhatsAppManually}
-                  disabled={savingBill || isSendingWhatsApp}
-                  title="Send bill receipt to customer via WhatsApp manually"
-                >
-                  {isSendingWhatsApp ? 'Sending...' : 'Send WhatsApp'}
-                </Button>
-                <Button
-                  variant="contained"
-                  size="large"
                   startIcon={<SaveIcon />}
                   sx={{
                     background: 'linear-gradient(135deg,#2ecc71 0%,#28a745 50%,#1e7e34 100%)',
@@ -11247,17 +11209,19 @@ function SalesPageContent() {
             variant="contained"
             startIcon={isSendingWhatsApp ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <WhatsAppIcon />}
             sx={{
-              minWidth: 140,
+              minWidth: 150,
               bgcolor: '#25D366',
               '&:hover': { bgcolor: '#1ebe5d' },
               color: 'white',
-              fontWeight: 600
+              fontWeight: 700,
+              textTransform: 'none',
+              boxShadow: '0 2px 8px rgba(37,211,102,0.35)',
             }}
-            onClick={() => handleSendWhatsApp(currentBillData)}
+            onClick={() => handleSendWhatsApp(currentBillData, null, 'receipt-preview')}
             disabled={isSendingWhatsApp}
-            title={waSettings?.is_enabled ? 'Send customer invoice directly to WhatsApp' : 'Copy invoice to clipboard and open WhatsApp Desktop'}
+            title="Send customer invoice directly to WhatsApp via Green API"
           >
-            {isSendingWhatsApp ? 'Sending...' : 'WhatsApp'}
+            {isSendingWhatsApp ? 'Sending WhatsApp...' : 'Send WhatsApp'}
           </Button>
           <Button
             variant="contained"
@@ -12174,17 +12138,19 @@ function SalesPageContent() {
             variant="contained"
             startIcon={isSendingWhatsApp ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <WhatsAppIcon />}
             sx={{
-              minWidth: 140,
+              minWidth: 150,
               bgcolor: '#25D366',
               '&:hover': { bgcolor: '#1ebe5d' },
               color: 'white',
-              fontWeight: 600,
+              fontWeight: 700,
+              textTransform: 'none',
+              boxShadow: '0 2px 8px rgba(37,211,102,0.35)',
             }}
             onClick={() => handleSendWhatsApp(selectedBill, null, 'printable-invoice')}
             disabled={isSendingWhatsApp}
-            title={waSettings?.is_enabled ? 'Send customer invoice directly to WhatsApp' : 'Copy invoice to clipboard and open WhatsApp Desktop'}
+            title="Send customer invoice directly to WhatsApp via Green API"
           >
-            {isSendingWhatsApp ? 'Sending...' : 'WhatsApp'}
+            {isSendingWhatsApp ? 'Sending WhatsApp...' : 'Send WhatsApp'}
           </Button>
           <Button
             variant="contained"
