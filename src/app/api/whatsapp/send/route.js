@@ -4,7 +4,19 @@ import { sendWhatsAppImageMessage, getWhatsAppSettings } from '@/lib/whatsapp-se
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { phone, image, caption, bill_no, customer_name, total_amount } = body;
+    const {
+      phone,
+      image,
+      caption,
+      bill_no,
+      customer_name,
+      total_amount,
+      current_bill,
+      payment,
+      bill_balance,
+      previous_balance,
+      total_balance
+    } = body;
 
     if (!phone) {
       return NextResponse.json(
@@ -32,8 +44,21 @@ export async function POST(req) {
       if (customer_name) {
         finalCaption += `\nCustomer: ${customer_name}`;
       }
-      if (total_amount) {
-        finalCaption += `\nAmount: Rs. ${Number(total_amount).toLocaleString()}`;
+      const billVal = current_bill !== undefined && current_bill !== null ? current_bill : total_amount;
+      if (billVal !== undefined && billVal !== null && billVal !== '') {
+        finalCaption += `\nCurrent Bill: Rs. ${Math.round(Number(billVal) || 0).toLocaleString('en-US')}`;
+      }
+      if (payment !== undefined && payment !== null && payment !== '') {
+        finalCaption += `\nPayment: Rs. ${Math.round(Number(payment) || 0).toLocaleString('en-US')}`;
+      }
+      if (bill_balance !== undefined && bill_balance !== null && bill_balance !== '') {
+        finalCaption += `\nBill Balance: Rs. ${Math.round(Number(bill_balance) || 0).toLocaleString('en-US')}`;
+      }
+      if (previous_balance !== undefined && previous_balance !== null && previous_balance !== '') {
+        finalCaption += `\nPrevious Balance: Rs. ${Math.round(Number(previous_balance) || 0).toLocaleString('en-US')}`;
+      }
+      if (total_balance !== undefined && total_balance !== null && total_balance !== '') {
+        finalCaption += `\nTotal Balance: Rs. ${Math.round(Number(total_balance) || 0).toLocaleString('en-US')}`;
       }
     }
 

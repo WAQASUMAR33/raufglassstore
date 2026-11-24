@@ -4842,6 +4842,53 @@ function SalesPageContent() {
     return null;
   }, [customers]);
 
+  const buildWhatsAppBillCaption = useCallback((bill) => {
+    if (!bill) return '';
+    const header = waSettings?.custom_caption || 'Assalam-o-Alaikum, here is your bill from Zain Traders Mandi Bahauddin. Thank you for your business! Ph: 0302-2133218, 0347-7743218';
+    const billNo = getBillDisplayNo(bill);
+    const custName = bill.customer?.cus_name || bill.cus_name || 'Walking Customer';
+
+    const billValue = parseFloat(bill.total_amount || 0);
+    const cashPayment = parseFloat(bill.cash_payment || (bill.payment && !bill.bank_payment ? bill.payment : 0) || 0);
+    const bankPayment = parseFloat(bill.bank_payment || 0);
+    const advancePayment = parseFloat(bill.advance_payment || 0);
+    const totalPaid = parseFloat(bill.payment !== undefined && bill.payment !== null ? bill.payment : (cashPayment + bankPayment + advancePayment));
+    const billBalance = billValue - totalPaid;
+
+    const rawPrevBal = parseFloat(
+      bill.previous_balance !== undefined && bill.previous_balance !== null
+        ? bill.previous_balance
+        : (bill.previous_customer_balance !== undefined && bill.previous_customer_balance !== null
+          ? bill.previous_customer_balance
+          : (bill.customer?.cus_balance ?? 0))
+    ) || 0;
+
+    const isWalkin = !bill.customer || !bill.cus_id ||
+      String(bill.customer?.cus_name || '').toLowerCase().includes('walking') ||
+      String(bill.customer?.cus_name || '').toLowerCase().includes('walkin') ||
+      String(bill.customer?.cus_name || '').toLowerCase() === 'customer';
+
+    const hasPrevBal = !isWalkin || Math.abs(rawPrevBal) > 0.009;
+    const prevBal = rawPrevBal;
+    const totalBalance = prevBal - billBalance;
+
+    const fmt = (num) => Math.round(Number(num) || 0).toLocaleString('en-US');
+
+    let text = `${header}`;
+    if (billNo) text += `\nInvoice #${billNo}`;
+    if (custName) text += `\nCustomer: ${custName}`;
+    text += `\nCurrent Bill: Rs. ${fmt(billValue)}`;
+    text += `\nPayment: Rs. ${fmt(totalPaid)}`;
+    text += `\nBill Balance: Rs. ${fmt(billBalance)}`;
+
+    if (hasPrevBal) {
+      text += `\nPrevious Balance: Rs. ${fmt(prevBal)}`;
+      text += `\nTotal Balance: Rs. ${fmt(totalBalance)}`;
+    }
+
+    return text;
+  }, [waSettings, getBillDisplayNo]);
+
   const triggerAutoWhatsAppDispatch = useCallback((bill, custPhone) => {
     if (!autoSendWhatsApp || !waSettings?.is_enabled) return;
     const phone = resolveBillWhatsAppPhone(bill, custPhone);
@@ -4856,15 +4903,19 @@ function SalesPageContent() {
         if (!canvas) return;
         const base64Image = canvas.toDataURL('image/png');
         const billNo = getBillDisplayNo(bill);
+        const caption = buildWhatsAppBillCaption(bill);
         const res = await fetch('/api/whatsapp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             phone,
             image: base64Image,
+            caption,
             bill_no: billNo,
             customer_name: bill?.customer?.cus_name || '',
             total_amount: bill?.total_amount,
+            previous_balance: bill?.previous_balance,
+            payment: bill?.payment,
           }),
         });
         const d = await res.json();
@@ -4877,7 +4928,7 @@ function SalesPageContent() {
         console.error('Auto WhatsApp dispatch error:', autoErr);
       }
     }, 600);
-  }, [autoSendWhatsApp, waSettings, resolveBillWhatsAppPhone, getBillDisplayNo]);
+  }, [autoSendWhatsApp, waSettings, resolveBillWhatsAppPhone, getBillDisplayNo, buildWhatsAppBillCaption]);
 
   const handleSendWhatsApp = async (bill, customPhone, elementId = 'receipt-preview') => {
     try {
@@ -4900,6 +4951,8 @@ function SalesPageContent() {
         }
       }
 
+      const caption = buildWhatsAppBillCaption(bill);
+
       // Check if Cloud Gateway is active
       if (waSettings?.is_enabled) {
         const targetEl = document.getElementById('whatsapp-invoice-render') || document.getElementById(elementId) || document.getElementById('receipt-preview') || document.getElementById('receipt-whatsapp-capture');
@@ -4913,9 +4966,12 @@ function SalesPageContent() {
               body: JSON.stringify({
                 phone,
                 image: base64Image,
+                caption,
                 bill_no: getBillDisplayNo(bill),
                 customer_name: bill?.customer?.cus_name || '',
                 total_amount: bill?.total_amount,
+                previous_balance: bill?.previous_balance,
+                payment: bill?.payment,
               }),
             });
             const data = await res.json();
@@ -4934,6 +4990,7 @@ function SalesPageContent() {
       const { opened } = await shareViaWhatsAppDesktop({
         elementId,
         phone,
+        text: caption,
       });
       showSnackbar(`✅ ${whatsAppSuccessMessage(opened)}`, 'success');
     } catch (err) {

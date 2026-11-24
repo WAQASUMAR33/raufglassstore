@@ -150,7 +150,7 @@ export function whatsAppSuccessMessage(opened) {
 }
 
 /** Capture DOM element by id/ref, copy PNG to clipboard, open WhatsApp Desktop. */
-export async function shareViaWhatsAppDesktop({ elementId, element, phone }) {
+export async function shareViaWhatsAppDesktop({ elementId, element, phone, text }) {
   const sourceEl = element ?? (elementId ? document.getElementById(elementId) : null);
   if (!sourceEl) throw new Error('Preview not found');
 
@@ -158,7 +158,7 @@ export async function shareViaWhatsAppDesktop({ elementId, element, phone }) {
   if (!canvas) throw new Error('Could not capture document');
 
   await copyCanvasToClipboard(canvas);
-  const opened = openWhatsAppDesktop(phone);
+  const opened = openWhatsAppDesktop(phone, text);
   return { opened, copied: true };
 }
 
