@@ -153,7 +153,7 @@ export function expandInvoiceLineItems(detail, availableAddons = []) {
       const cleanTokenName = token.replace(/\s*\(.*?\)/, '').trim();
       const catalogMatch = (availableAddons || []).find(
         cat => cat.name?.toLowerCase() === cleanTokenName.toLowerCase() ||
-               cat.short_code?.toLowerCase() === cleanTokenName.toLowerCase()
+          cat.short_code?.toLowerCase() === cleanTokenName.toLowerCase()
       );
       return {
         name: cleanTokenName,
@@ -165,7 +165,7 @@ export function expandInvoiceLineItems(detail, availableAddons = []) {
       if (a.rate > 0) return a;
       const catalogMatch = availableAddons.find(
         cat => cat.name?.toLowerCase() === a.name?.toLowerCase() ||
-               cat.short_code?.toLowerCase() === a.name?.toLowerCase()
+          cat.short_code?.toLowerCase() === a.name?.toLowerCase()
       );
       return {
         name: a.name,
@@ -237,23 +237,23 @@ export default function CommercialInvoiceReceipt({
     isQuotation || bill.bill_type === 'QUOTATION'
       ? 'Quotation'
       : bill.bill_type === 'ORDER' || isOrder
-      ? 'Commercial Invoice'
-      : bill.is_return
-      ? 'Sale Return Invoice'
-      : 'Commercial Invoice'
+        ? 'Commercial Invoice'
+        : bill.is_return
+          ? 'Sale Return Invoice'
+          : 'Commercial Invoice'
   );
 
   const copyBadgeText = copy === 'CUTTER'
     ? 'CUTTER COPY'
     : copy === 'CUSTOMER'
-    ? 'CUSTOMER COPY'
-    : 'OFFICE COPY';
+      ? 'CUSTOMER COPY'
+      : 'OFFICE COPY';
 
   const copyBadgeBg = copy === 'CUTTER'
     ? '#b45309'
     : copy === 'CUSTOMER'
-    ? '#047857'
-    : '#1e40af';
+      ? '#047857'
+      : '#1e40af';
 
   const [availableAddons, setAvailableAddons] = React.useState(cachedAddons || []);
 
@@ -1079,113 +1079,113 @@ export default function CommercialInvoiceReceipt({
                     overflow: 'hidden',
                   }}
                 >
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: '0.68rem',
-              }}
-            >
-              <tbody>
-                {/* Discount */}
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Discount:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(discount)}</td>
-                </tr>
+                  <table
+                    style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: '0.68rem',
+                    }}
+                  >
+                    <tbody>
+                      {/* Discount */}
+                      <tr>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Discount:</td>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(discount)}</td>
+                      </tr>
 
-                {/* Delivery / Carriage */}
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Loader / Delivery:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(carriage)}</td>
-                </tr>
+                      {/* Delivery / Carriage */}
+                      <tr>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Loader / Delivery:</td>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(carriage)}</td>
+                      </tr>
 
-                {/* Additional charges (Fitter, Labour, Cutter, Hardware) */}
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Fitter Amount:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(fittingCharges)}</td>
-                </tr>
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Labour:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(labourCharges)}</td>
-                </tr>
-                {cutterCharges > 0 && (
-                  <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cutter Amount:</td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cutterCharges)}</td>
-                  </tr>
-                )}
-                <tr>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Hardware Amount:</td>
-                  <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
-                </tr>
+                      {/* Additional charges (Fitter, Labour, Cutter, Hardware) */}
+                      <tr>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Fitter Amount:</td>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(fittingCharges)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Labour:</td>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(labourCharges)}</td>
+                      </tr>
+                      {cutterCharges > 0 && (
+                        <tr>
+                          <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cutter Amount:</td>
+                          <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cutterCharges)}</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Hardware Amount:</td>
+                        <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(hardwareCharges)}</td>
+                      </tr>
 
-                <tr style={{ backgroundColor: '#f8fafc' }}>
-                  <td style={{ borderBottom: '1px solid #000000', padding: '3px 5px', fontWeight: 700, fontSize: '0.72rem' }}>Bill Value:</td>
-                  <td style={{ borderBottom: '1px solid #000000', padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.72rem' }}>{fmtAmt(billValue)}</td>
-                </tr>
+                      <tr style={{ backgroundColor: '#f8fafc' }}>
+                        <td style={{ borderBottom: '1px solid #000000', padding: '3px 5px', fontWeight: 700, fontSize: '0.72rem' }}>Bill Value:</td>
+                        <td style={{ borderBottom: '1px solid #000000', padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.72rem' }}>{fmtAmt(billValue)}</td>
+                      </tr>
 
-                {/* Payment Details */}
-                {bankPayment > 0 && cashPayment > 0 ? (
-                  <>
-                    <tr>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cash Received:</td>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>
-                        Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
-                      </td>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
-                    </tr>
-                  </>
-                ) : bankPayment > 0 ? (
-                  <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>
-                      Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
-                    </td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
-                  </tr>
-                ) : (
-                  <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cash Received:</td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
-                  </tr>
-                )}
-                {advancePayment > 0 && (
-                  <tr>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Advance Payment:</td>
-                    <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(advancePayment)}</td>
-                  </tr>
-                )}
+                      {/* Payment Details */}
+                      {bankPayment > 0 && cashPayment > 0 ? (
+                        <>
+                          <tr>
+                            <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cash Received:</td>
+                            <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
+                          </tr>
+                          <tr>
+                            <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>
+                              Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
+                            </td>
+                            <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
+                          </tr>
+                        </>
+                      ) : bankPayment > 0 ? (
+                        <tr>
+                          <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>
+                            Bank Payment{bankTitle ? ` (${bankTitle})` : ''}:
+                          </td>
+                          <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(bankPayment)}</td>
+                        </tr>
+                      ) : (
+                        <tr>
+                          <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Cash Received:</td>
+                          <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(cashPayment)}</td>
+                        </tr>
+                      )}
+                      {advancePayment > 0 && (
+                        <tr>
+                          <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600 }}>Advance Payment:</td>
+                          <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400 }}>{fmtAmt(advancePayment)}</td>
+                        </tr>
+                      )}
 
-                <tr style={{ backgroundColor: '#f1f5f9' }}>
-                  <td style={{ borderBottom: hasPrevBal ? '1px solid #cbd5e1' : 'none', padding: '3px 5px', fontWeight: 700, fontSize: '0.74rem' }}>Balance:</td>
-                  <td style={{ borderBottom: hasPrevBal ? '1px solid #cbd5e1' : 'none', padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.74rem', color: balance > 0 ? '#b91c1c' : '#15803d' }}>
-                    {fmtAmt(balance)}
-                  </td>
-                </tr>
-                {hasPrevBal && (
-                  <>
-                    <tr>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600, color: '#64748b' }}>Prev. Balance:</td>
-                      <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400, color: '#64748b' }}>{fmtAmt(prevBal)}</td>
-                    </tr>
-                    <tr style={{ backgroundColor: '#f8fafc' }}>
-                      <td style={{ padding: '3px 5px', fontWeight: 700, fontSize: '0.74rem' }}>Total Balance:</td>
-                      <td style={{ padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.74rem', color: totalBalance !== 0 ? '#b91c1c' : '#15803d' }}>
-                        {fmtAmt(totalBalance)}
-                      </td>
-                    </tr>
-                  </>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-)}
+                      <tr style={{ backgroundColor: '#f1f5f9' }}>
+                        <td style={{ borderBottom: hasPrevBal ? '1px solid #cbd5e1' : 'none', padding: '3px 5px', fontWeight: 700, fontSize: '0.74rem' }}>Balance:</td>
+                        <td style={{ borderBottom: hasPrevBal ? '1px solid #cbd5e1' : 'none', padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.74rem', color: balance > 0 ? '#b91c1c' : '#15803d' }}>
+                          {fmtAmt(balance)}
+                        </td>
+                      </tr>
+                      {hasPrevBal && (
+                        <>
+                          <tr>
+                            <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', fontWeight: 600, color: '#64748b' }}>Prev. Balance:</td>
+                            <td style={{ borderBottom: '1px solid #cbd5e1', padding: '2px 5px', textAlign: 'right', fontWeight: 400, color: '#64748b' }}>{fmtAmt(prevBal)}</td>
+                          </tr>
+                          <tr style={{ backgroundColor: '#f8fafc' }}>
+                            <td style={{ padding: '3px 5px', fontWeight: 700, fontSize: '0.74rem' }}>Total Balance:</td>
+                            <td style={{ padding: '3px 5px', textAlign: 'right', fontWeight: 700, fontSize: '0.74rem', color: totalBalance !== 0 ? '#b91c1c' : '#15803d' }}>
+                              {fmtAmt(totalBalance)}
+                            </td>
+                          </tr>
+                        </>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      )}
     </Box>
   );
 }
