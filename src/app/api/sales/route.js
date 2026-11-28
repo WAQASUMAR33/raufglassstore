@@ -13,7 +13,7 @@ import { logActivity, AUDIT_ACTIONS, AUDIT_MODULES } from '@/lib/audit-logger';
 import { withCache, invalidateCache } from '@/lib/server-cache';
 
 const SPECIAL_ACCOUNTS_CACHE_TTL_MS = 10 * 60_000;
-const saleLog = () => {};
+const saleLog = () => { };
 let specialAccountsCache = { data: null, expiresAt: 0 };
 
 /** Set customer balances from freshly computed ledger closing amounts (POST fast path). */
@@ -220,7 +220,7 @@ async function prepareLedgerDeletion(tx, bill_no) {
   for (const cusIdStr in accountEntries) {
     const cus_id = parseInt(cusIdStr);
     const deletedForAccount = accountEntries[cus_id];
-    
+
     deletedForAccount.sort((a, b) => {
       const timeDiff = a.created_at.getTime() - b.created_at.getTime();
       return timeDiff !== 0 ? timeDiff : a.l_id - b.l_id;
@@ -537,6 +537,7 @@ export async function GET(request) {
               }
             },
             sale_details: {
+              orderBy: { sale_detail_id: 'asc' },
               include: {
                 product: {
                   include: {
@@ -602,6 +603,7 @@ export async function GET(request) {
                 }
               },
               sale_details: {
+                orderBy: { sale_detail_id: 'asc' },
                 include: {
                   product: {
                     include: {
@@ -768,8 +770,8 @@ export async function GET(request) {
           console.warn('Could not compute previous customer balance for sale in GET', sale.sale_id, err.message);
         }
 
-        const saleWithBillNumber = { 
-          ...sale, 
+        const saleWithBillNumber = {
+          ...sale,
           notes: sale.notes || sale.reference || null,
           bill_number: sale.bill_number ?? null,
           transport_details: transportDetails,
@@ -1026,119 +1028,120 @@ export async function GET(request) {
       try {
         const findOptions = listMode
           ? {
-              select: {
-                sale_id: true,
-                bill_number: true,
-                total_amount: true,
-                discount: true,
-                payment: true,
-                payment_type: true,
-                shipping_amount: true,
-                labour_charges: true,
-                bill_type: true,
-                reference: true,
-                created_at: true,
-                updated_at: true,
-                cus_id: true,
-                cash_payment: true,
-                bank_payment: true,
-                advance_payment: true,
-                store_id: true,
-                customer: {
-                  select: {
-                    cus_id: true,
-                    cus_name: true,
-                    cus_phone_no: true,
-                    cus_phone_no2: true,
-                    cus_address: true,
-                    cus_balance: true,
-                    name_urdu: true,
-                  },
+            select: {
+              sale_id: true,
+              bill_number: true,
+              total_amount: true,
+              discount: true,
+              payment: true,
+              payment_type: true,
+              shipping_amount: true,
+              labour_charges: true,
+              bill_type: true,
+              reference: true,
+              created_at: true,
+              updated_at: true,
+              cus_id: true,
+              cash_payment: true,
+              bank_payment: true,
+              advance_payment: true,
+              store_id: true,
+              customer: {
+                select: {
+                  cus_id: true,
+                  cus_name: true,
+                  cus_phone_no: true,
+                  cus_phone_no2: true,
+                  cus_address: true,
+                  cus_balance: true,
+                  name_urdu: true,
                 },
-                ...(slimList
-                  ? {}
-                  : {
-                      sale_details: {
-                        select: {
-                          sale_detail_id: true,
-                          qnty: true,
-                          unit_rate: true,
-                          total_amount: true,
-                          store_id: true,
-                          product: {
-                            select: { pro_id: true, pro_title: true },
-                          },
-                        },
+              },
+              ...(slimList
+                ? {}
+                : {
+                  sale_details: {
+                    select: {
+                      sale_detail_id: true,
+                      qnty: true,
+                      unit_rate: true,
+                      total_amount: true,
+                      store_id: true,
+                      product: {
+                        select: { pro_id: true, pro_title: true },
                       },
-                    }),
-              },
-              where: {
-                branch_id: branchId,
-                ...listBillTypeWhere(),
-              },
-              orderBy: { created_at: 'desc' },
-            }
+                    },
+                  },
+                }),
+            },
+            where: {
+              branch_id: branchId,
+              ...listBillTypeWhere(),
+            },
+            orderBy: { created_at: 'desc' },
+          }
           : {
-              where: {
-                branch_id: branchId,
-                ...listBillTypeWhere(),
+            where: {
+              branch_id: branchId,
+              ...listBillTypeWhere(),
+            },
+            include: {
+              customer: {
+                include: {
+                  customer_category: true
+                }
               },
-              include: {
-                customer: {
-                  include: {
-                    customer_category: true
-                  }
-                },
-                sale_details: {
-                  include: {
-                    product: {
-                      include: {
-                        category: true,
-                        sub_category: true,
-                        formula: true
-                      }
+              sale_details: {
+                orderBy: { sale_detail_id: 'asc' },
+                include: {
+                  product: {
+                    include: {
+                      category: true,
+                      sub_category: true,
+                      formula: true
                     }
-                  }
-                },
-                debit_account: {
-                  select: {
-                    cus_id: true,
-                    cus_name: true,
-                    cus_phone_no: true
-                  }
-                },
-                credit_account: {
-                  select: {
-                    cus_id: true,
-                    cus_name: true,
-                    cus_phone_no: true
-                  }
-                },
-                loader: {
-                  select: {
-                    loader_id: true,
-                    loader_name: true,
-                    loader_number: true,
-                    loader_phone: true
-                  }
-                },
-                split_payments: {
-                  include: {
-                    debit_account: true,
-                    credit_account: true
-                  }
-                },
-                updated_by_user: {
-                  select: {
-                    full_name: true,
-                    role: true
                   }
                 }
               },
-              orderBy: {
-                created_at: 'desc'
+              debit_account: {
+                select: {
+                  cus_id: true,
+                  cus_name: true,
+                  cus_phone_no: true
+                }
+              },
+              credit_account: {
+                select: {
+                  cus_id: true,
+                  cus_name: true,
+                  cus_phone_no: true
+                }
+              },
+              loader: {
+                select: {
+                  loader_id: true,
+                  loader_name: true,
+                  loader_number: true,
+                  loader_phone: true
+                }
+              },
+              split_payments: {
+                include: {
+                  debit_account: true,
+                  credit_account: true
+                }
+              },
+              updated_by_user: {
+                select: {
+                  full_name: true,
+                  role: true
+                }
               }
-            };
+            },
+            orderBy: {
+              created_at: 'desc'
+            }
+          };
 
         if (limit && limit > 0) {
           findOptions.take = limit;
@@ -1679,8 +1682,8 @@ export async function POST(request) {
               isOrder
                 ? customerOpeningBalance
                 : (previous_balance != null && previous_balance !== ''
-                    ? previous_balance
-                    : customerOpeningBalance)
+                  ? previous_balance
+                  : customerOpeningBalance)
             ).toFixed(2)),
             debit_account_id: debit_account_id || null,
             credit_account_id: credit_account_id || null,
@@ -1741,7 +1744,7 @@ export async function POST(request) {
         sale_id: sale.sale_id,
         store_id: parseInt(store_id),
         pro_id: detail.pro_id,
-        vehicle_no: detail.vehicle_no || null,
+        vehicle_no: detail.serial_no ? String(detail.serial_no) : (detail.vehicle_no || null),
         size: detail.size ? String(detail.size) : null,
         qnty: Number(parseFloat(detail.qnty || 0).toFixed(2)),
         unit: detail.unit,
@@ -2790,11 +2793,11 @@ export async function PUT(request) {
           const detailsLower = (entry.details || '').toLowerCase();
           if (detailsLower.includes('advance payment') || detailsLower.includes('payment received - order')) {
             // For legacy entries: CASH / BANK_TRANSFER; for new entries: DEBIT with cash_payment or bank_payment
-            const isCashEntry = entry.trnx_type === 'CASH' || 
+            const isCashEntry = entry.trnx_type === 'CASH' ||
               (['DEBIT', 'CREDIT'].includes(entry.trnx_type) && parseFloat(entry.cash_payment || 0) > 0 && parseFloat(entry.bank_payment || 0) === 0);
             const isBankEntry = entry.trnx_type === 'BANK_TRANSFER' ||
               (['DEBIT', 'CREDIT'].includes(entry.trnx_type) && parseFloat(entry.bank_payment || 0) > 0);
-            
+
             if (isCashEntry) {
               oldAdvanceCash = parseFloat(entry.debit_amount || entry.credit_amount || 0);
             } else if (isBankEntry) {
@@ -2893,7 +2896,7 @@ export async function PUT(request) {
             sale_id: sale.sale_id,
             store_id: finalStoreId,
             pro_id: detail.pro_id,
-            vehicle_no: detail.vehicle_no || null,
+            vehicle_no: detail.serial_no ? String(detail.serial_no) : (detail.vehicle_no || null),
             size: detail.size ? String(detail.size) : null,
             qnty: Number(parseFloat(detail.qnty || 0).toFixed(2)),
             unit: detail.unit,
@@ -3121,7 +3124,7 @@ export async function PUT(request) {
           const paymentParts = [];
           if (cashAmount > 0) paymentParts.push(`Cash: ${cashAmount}`);
           if (bankAmount > 0) paymentParts.push(`Bank (${bank_title || 'Bank Account'}): ${bankAmount}`);
-          
+
           let paymentDetails;
           if (isOrder) {
             const advanceParts = [];
@@ -3775,7 +3778,7 @@ export async function DELETE(request) {
         total_bill_amount: existingSale?.total_bill_amount,
         bill_type: existingSale?.bill_type,
       },
-    }).catch(() => {});
+    }).catch(() => { });
 
     invalidateCache('customers');
     invalidateCache('sales');

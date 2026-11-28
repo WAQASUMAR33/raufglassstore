@@ -863,8 +863,10 @@ function QuotationsPageContent() {
         const rate = parseFloat(d.unit_rate) || 0;
         const amt = parseFloat(d.total_amount) || (qnty * rate) || 0;
         const prodFormula = getProductFormula(prod, products, formulas);
+        const sNo = d.serial_no || d.vehicle_no || (d.size ? d.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)?.[1] : null) || (index + 1);
         return {
           id: d.sale_detail_id || (Date.now() + index),
+          serial_no: sNo,
           pro_id: d.pro_id,
           pro_title: prod?.pro_title || prod?.pro_name || d.pro_title || 'Unknown Product',
           product: prod || { pro_id: d.pro_id, pro_title: d.pro_title },
@@ -1851,29 +1853,34 @@ function QuotationsPageContent() {
           if (hwAmt > 0) refStr += ` [Hardware: Rs. ${hwAmt}]`;
           return refStr;
         })(),
-        sale_details: productTableData.map((product, idx) => ({
-          serial_no: product.serial_no || (idx + 1),
-          pieces: product.pieces || 1,
-          calc_width: product.calc_width || null,
-          calc_height: product.calc_height || null,
-          pro_id: product.pro_id,
-          vehicle_no: null,
-          qnty: product.quantity,
-          unit: 'PCS',
-          unit_rate: product.effective_rate ?? product.rate,
-          total_amount: product.amount,
-          discount: 0,
-          cus_id: formSelectedCustomer.cus_id,
-          size: product.is_general
+        sale_details: productTableData.map((product, idx) => {
+          const sNo = product.serial_no || (idx + 1);
+          const baseSize = product.is_general
             ? (`General: ${product.pro_title || 'General Item'}` + (product.comments ? ` - ${product.comments}` : ''))
-            : (product.size || (product.width_in && product.height_in ? `${product.width_in}"×${product.height_in}" (Avail: ${product.calc_width}"×${product.calc_height}") [${product.pieces || 1} pcs]` : '')),
-          comments: product.comments || '',
-          selected_addons: product.selected_addons || [],
-          addons_rate: product.addons_rate || 0,
-          glass_rate: product.glass_rate ?? product.rate,
-          glass_amount: product.glass_amount ?? (product.quantity * product.rate),
-          addons_amount: product.addons_amount ?? 0,
-        })),
+            : (product.size || (product.width_in && product.height_in ? `${product.width_in}"×${product.height_in}" (Avail: ${product.calc_width}"×${product.calc_height}") [${product.pieces || 1} pcs]` : ''));
+          const finalSize = baseSize ? (baseSize.includes('[S#:') ? baseSize : `${baseSize} [S#: ${sNo}]`) : `[S#: ${sNo}]`;
+          return {
+            serial_no: sNo,
+            pieces: product.pieces || 1,
+            calc_width: product.calc_width || null,
+            calc_height: product.calc_height || null,
+            pro_id: product.pro_id,
+            vehicle_no: String(sNo),
+            qnty: product.quantity,
+            unit: 'PCS',
+            unit_rate: product.effective_rate ?? product.rate,
+            total_amount: product.amount,
+            discount: 0,
+            cus_id: formSelectedCustomer.cus_id,
+            size: finalSize,
+            comments: product.comments || '',
+            selected_addons: product.selected_addons || [],
+            addons_rate: product.addons_rate || 0,
+            glass_rate: product.glass_rate ?? product.rate,
+            glass_amount: product.glass_amount ?? (product.quantity * product.rate),
+            addons_amount: product.addons_amount ?? 0,
+          };
+        }),
         transport_details: transportOptions.map(transport => ({
           account_id: transport.accountId,
           amount: transport.amount,
@@ -1916,20 +1923,33 @@ function QuotationsPageContent() {
           reference: paymentData.notes || null,
           created_at: new Date().toISOString(),
           customer: formSelectedCustomer,
-          sale_details: productTableData.map((product, index) => ({
-            sale_detail_id: index + 1,
-            pro_id: product.pro_id,
-            qnty: product.quantity,
-            unit: 'PCS',
-            unit_rate: product.rate,
-            total_amount: product.amount,
-            size: product.is_general
+          sale_details: productTableData.map((product, index) => {
+            const sNo = product.serial_no || (index + 1);
+            const baseSize = product.is_general
               ? (`General: ${product.pro_title || 'General Item'}` + (product.comments ? ` - ${product.comments}` : ''))
-              : (product.size || null),
-            product: {
-              pro_title: product.pro_title || 'N/A'
-            }
-          })),
+              : (product.size || null);
+            const finalSize = baseSize ? (baseSize.includes('[S#:') ? baseSize : `${baseSize} [S#: ${sNo}]`) : `[S#: ${sNo}]`;
+            return {
+              sale_detail_id: index + 1,
+              serial_no: sNo,
+              vehicle_no: String(sNo),
+              pro_id: product.pro_id,
+              qnty: product.quantity,
+              unit: 'PCS',
+              unit_rate: product.rate,
+              total_amount: product.amount,
+              comments: product.comments || '',
+              selected_addons: product.selected_addons || [],
+              addons_rate: product.addons_rate || 0,
+              addons_amount: product.addons_amount || 0,
+              glass_rate: product.glass_rate || product.rate,
+              glass_amount: product.glass_amount !== undefined ? product.glass_amount : (parseFloat(product.quantity || 0) * parseFloat(product.glass_rate || product.rate || 0)),
+              size: finalSize,
+              product: {
+                pro_title: product.pro_title || 'N/A'
+              }
+            };
+          }),
           labour: parseFloat(paymentData.labour) || 0,
           labour_charges: parseFloat(paymentData.labour) || 0,
           fitting_charges: parseFloat(paymentData.fitterAmount) || 0,

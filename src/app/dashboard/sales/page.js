@@ -190,22 +190,29 @@ function buildSaleReceiptBill({
     reference: paymentData.notes || null,
     created_at: createdAt || new Date().toISOString(),
     customer: formSelectedCustomer,
-    sale_details: (cartItems || []).map((product, index) => ({
-      sale_detail_id: index + 1,
-      pro_id: product.pro_id,
-      qnty: product.quantity,
-      unit: 'PCS',
-      unit_rate: product.effective_rate || product.rate,
-      total_amount: product.amount,
-      size: product.size || null,
-      comments: product.comments || '',
-      selected_addons: product.selected_addons || [],
-      addons_rate: product.addons_rate || 0,
-      addons_amount: product.addons_amount || 0,
-      glass_rate: product.glass_rate || product.rate,
-      glass_amount: product.glass_amount !== undefined ? product.glass_amount : (parseFloat(product.quantity || 0) * parseFloat(product.glass_rate || product.rate || 0)),
-      product: { pro_title: product.pro_title || 'N/A' },
-    })),
+    sale_details: (cartItems || []).map((product, index) => {
+      const sNo = product.serial_no || (index + 1);
+      const baseSize = product.is_general ? `General: ${product.pro_title}` : (product.size || '');
+      const finalSize = baseSize ? (baseSize.includes('[S#:') ? baseSize : `${baseSize} [S#: ${sNo}]`) : `[S#: ${sNo}]`;
+      return {
+        sale_detail_id: index + 1,
+        serial_no: sNo,
+        vehicle_no: String(sNo),
+        size: finalSize,
+        pro_id: product.pro_id,
+        qnty: product.quantity,
+        unit: 'PCS',
+        unit_rate: product.effective_rate || product.rate,
+        total_amount: product.amount,
+        comments: product.comments || '',
+        selected_addons: product.selected_addons || [],
+        addons_rate: product.addons_rate || 0,
+        addons_amount: product.addons_amount || 0,
+        glass_rate: product.glass_rate || product.rate,
+        glass_amount: product.glass_amount !== undefined ? product.glass_amount : (parseFloat(product.quantity || 0) * parseFloat(product.glass_rate || product.rate || 0)),
+        product: { pro_title: product.pro_title || 'N/A' },
+      };
+    }),
     labour: parseFloat(paymentData.labour) || 0,
     labour_charges: labourChargesValue,
     cutter_amount: parseFloat(paymentData.cutterAmount) || 0,
@@ -903,13 +910,15 @@ function SalesPageContent() {
             selectedStore = stores[0];
           }
 
-          // Map Products if available (reversed order)
+          // Map Products if available
           if (fullQuotation.sale_details && Array.isArray(fullQuotation.sale_details) && fullQuotation.sale_details.length > 0) {
-            const mappedProducts = fullQuotation.sale_details.slice().reverse().map((item, index) => {
+            const mappedProducts = fullQuotation.sale_details.map((item, index) => {
               const prod = item.product || products.find(p => p.pro_id === item.pro_id);
               const parsed = parseSizeDetails(item.size, prod, formulas);
+              const sNo = item.serial_no || item.vehicle_no || (item.size ? item.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)?.[1] : null) || (index + 1);
               return {
                 id: Date.now() + index,
+                serial_no: sNo,
                 pro_id: item.pro_id,
                 pro_title: prod ? (prod.pro_title || prod.pro_name) : 'Unknown Product',
                 product: prod,
@@ -2586,7 +2595,7 @@ function SalesPageContent() {
       formula: getProductFormula(formSelectedProduct, products, formulas)
     };
 
-    setProductTableData(prev => [newProduct, ...prev]);
+    setProductTableData(prev => [...prev, newProduct]);
     showSnackbar('Product added to cart', 'success');
 
     // Reset form
@@ -2651,8 +2660,8 @@ function SalesPageContent() {
     });
   };
 
-  // Cart shows newest item on top; invoice/DB should list first-added item first (S# 1).
-  const getCartItemsInAddOrder = (cart = productTableData) => [...cart].reverse();
+  // Preserve the exact arrangement of items as configured in the table by the user
+  const getCartItemsInAddOrder = (cart = productTableData) => [...cart];
 
   const getSaleDetailsInAddOrder = (details) => {
     if (!Array.isArray(details) || !details.length) return [];
@@ -2664,7 +2673,7 @@ function SalesPageContent() {
     return [...details];
   };
 
-  const getSaleDetailsForCart = (details) => [...getSaleDetailsInAddOrder(details)].reverse();
+  const getSaleDetailsForCart = (details) => [...getSaleDetailsInAddOrder(details)];
 
   // Smart rate and quantity formatter: hide .00 for whole numbers, keep decimals otherwise
   const fmtRateQty = (val) => {
@@ -2979,23 +2988,27 @@ function SalesPageContent() {
         selectedStore = stores[0];
       }
 
-      // Map products (reversed order)
+      // Map products
       if (fullOrder.sale_details && Array.isArray(fullOrder.sale_details)) {
-        const mappedProducts = fullOrder.sale_details.slice().reverse().map((item, index) => ({
-          id: Date.now() + index,
-          pro_id: item.pro_id,
-          pro_title: item.product ? item.product.pro_title : 'Unknown Product',
-          quantity: parseFloat(item.qnty || 0),
-          rate: parseFloat(item.unit_rate || 0),
-          amount: parseFloat(item.total_amount || 0),
-          crate: item.product ? (item.product.pro_crate || '') : '',
-          cost_price: getProductCostPrice(item.product),
-          stock: 0, // Stock will need to be fetched or updated
-          ...parseSizeDetails(item.size),
-          size: item.size || '',
-          storeid: fullOrder.store_id, // Map the store ID from the order
-          store_name: selectedStore ? selectedStore.store_name : 'Unknown'
-        }));
+        const mappedProducts = fullOrder.sale_details.map((item, index) => {
+          const sNo = item.serial_no || item.vehicle_no || (item.size ? item.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)?.[1] : null) || (index + 1);
+          return {
+            id: Date.now() + index,
+            serial_no: sNo,
+            pro_id: item.pro_id,
+            pro_title: item.product ? item.product.pro_title : 'Unknown Product',
+            quantity: parseFloat(item.qnty || 0),
+            rate: parseFloat(item.unit_rate || 0),
+            amount: parseFloat(item.total_amount || 0),
+            crate: item.product ? (item.product.pro_crate || '') : '',
+            cost_price: getProductCostPrice(item.product),
+            stock: 0, // Stock will need to be fetched or updated
+            ...parseSizeDetails(item.size),
+            size: item.size || '',
+            storeid: fullOrder.store_id, // Map the store ID from the order
+            store_name: selectedStore ? selectedStore.store_name : 'Unknown'
+          };
+        });
         setProductTableData(mappedProducts);
       } else {
         setProductTableData([]);
@@ -3106,13 +3119,15 @@ function SalesPageContent() {
         selectedStore = stores[0];
       }
 
-      // Map products (reversed order)
+      // Map products
       if (fullQuotation.sale_details) {
-        const mappedProducts = fullQuotation.sale_details.slice().reverse().map((detail, index) => {
+        const mappedProducts = fullQuotation.sale_details.map((detail, index) => {
           const prod = detail.product || products.find(p => p.pro_id === detail.pro_id);
           const parsed = parseSizeDetails(detail.size, prod, formulas);
+          const sNo = detail.serial_no || detail.vehicle_no || (detail.size ? detail.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)?.[1] : null) || (index + 1);
           return {
             id: Date.now() + index + Math.random(),
+            serial_no: sNo,
             pro_id: detail.pro_id,
             pro_title: prod?.pro_title || prod?.pro_name || detail.pro_title || 'Unknown Product',
             product: prod,
@@ -3544,24 +3559,29 @@ function SalesPageContent() {
         is_loaded_order: paymentData.isLoadedOrder || !!loadedOrderId, // Flag to indicate if this is a loaded order
         order_id: loadedOrderId || null, // Pass order_id to backend for direct conversion
         loaded_order_id: loadedOrderId || null,
-        sale_details: getCartItemsInAddOrder().map((product, idx) => ({
-          serial_no: product.serial_no || (idx + 1),
-          pieces: product.pieces || 1,
-          calc_width: product.calc_width || null,
-          calc_height: product.calc_height || null,
-          pro_id: product.pro_id,
-          vehicle_no: null,
-          size: product.is_general ? `General: ${product.pro_title}` : (product.size || null),
-          qnty: product.quantity,
-          unit: 'PCS', // Default unit
-          unit_rate: product.effective_rate || product.rate,
-          total_amount: product.amount,
-          discount: 0,
-          cus_id: formSelectedCustomer.cus_id,
-          selected_addons: product.selected_addons || [],
-          addons_rate: product.addons_rate || 0,
-          addons_amount: product.addons_amount || 0
-        })),
+        sale_details: getCartItemsInAddOrder().map((product, idx) => {
+          const sNo = product.serial_no || (idx + 1);
+          const baseSize = product.is_general ? `General: ${product.pro_title}` : (product.size || '');
+          const finalSize = baseSize ? (baseSize.includes('[S#:') ? baseSize : `${baseSize} [S#: ${sNo}]`) : `[S#: ${sNo}]`;
+          return {
+            serial_no: sNo,
+            pieces: product.pieces || 1,
+            calc_width: product.calc_width || null,
+            calc_height: product.calc_height || null,
+            pro_id: product.pro_id,
+            vehicle_no: String(sNo),
+            size: finalSize,
+            qnty: product.quantity,
+            unit: 'PCS', // Default unit
+            unit_rate: product.effective_rate || product.rate,
+            total_amount: product.amount,
+            discount: 0,
+            cus_id: formSelectedCustomer.cus_id,
+            selected_addons: product.selected_addons || [],
+            addons_rate: product.addons_rate || 0,
+            addons_amount: product.addons_amount || 0
+          };
+        }),
         addon_details: (() => {
           const map = new Map();
           getCartItemsInAddOrder().forEach(item => {
@@ -3660,16 +3680,22 @@ function SalesPageContent() {
             reference: (paymentData.notes ? paymentData.notes + ' ' : '') + `[OFFLINE - Local]`,
             created_at: new Date().toISOString(),
             customer: formSelectedCustomer,
-            sale_details: getCartItemsInAddOrder().map((product, index) => ({
-              sale_detail_id: index + 1,
-              pro_id: product.pro_id,
-              qnty: product.quantity,
-              unit: 'PCS',
-              unit_rate: product.effective_rate || product.rate,
-              total_amount: product.amount,
-              product: { pro_title: product.pro_title || 'N/A' },
-              comments: product.comments || ''
-            })),
+            sale_details: getCartItemsInAddOrder().map((product, index) => {
+              const sNo = product.serial_no || (index + 1);
+              return {
+                sale_detail_id: index + 1,
+                serial_no: sNo,
+                vehicle_no: String(sNo),
+                size: product.size ? `${product.size} [S#: ${sNo}]` : `[S#: ${sNo}]`,
+                pro_id: product.pro_id,
+                qnty: product.quantity,
+                unit: 'PCS',
+                unit_rate: product.effective_rate || product.rate,
+                total_amount: product.amount,
+                product: { pro_title: product.pro_title || 'N/A' },
+                comments: product.comments || ''
+              };
+            }),
             labour: parseFloat(paymentData.labour) || 0,
             notes: paymentData.notes || '',
             isOffline: true
@@ -5839,20 +5865,24 @@ function SalesPageContent() {
         if (store) setFormSelectedStore(store);
       }
 
-      // 3. Set Products (reversed order)
+      // 3. Set Products
       if (orderData.sale_details && Array.isArray(orderData.sale_details)) {
-        const products = orderData.sale_details.slice().reverse().map((detail, index) => ({
-          id: Date.now() + index + Math.random(),
-          pro_id: detail.pro_id,
-          pro_title: detail.product?.pro_title || detail.product?.pro_name || 'Unknown Product',
-          storeid: orderData.store_id,
-          store_name: stores.find(s => s.storeid === orderData.store_id)?.store_name || 'Store',
-          quantity: parseFloat(detail.qnty) || 0,
-          rate: parseFloat(detail.unit_rate) || 0,
-          amount: parseFloat(detail.total_amount) || 0,
-          cost_price: getProductCostPrice(detail.product),
-          stock: detail.product?.pro_stock_qnty || 0 // Note: This might need a fresh fetch for latest stock
-        }));
+        const products = orderData.sale_details.map((detail, index) => {
+          const sNo = detail.serial_no || detail.vehicle_no || (detail.size ? detail.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)?.[1] : null) || (index + 1);
+          return {
+            id: Date.now() + index + Math.random(),
+            serial_no: sNo,
+            pro_id: detail.pro_id,
+            pro_title: detail.product?.pro_title || detail.product?.pro_name || 'Unknown Product',
+            storeid: orderData.store_id,
+            store_name: stores.find(s => s.storeid === orderData.store_id)?.store_name || 'Store',
+            quantity: parseFloat(detail.qnty) || 0,
+            rate: parseFloat(detail.unit_rate) || 0,
+            amount: parseFloat(detail.total_amount) || 0,
+            cost_price: getProductCostPrice(detail.product),
+            stock: detail.product?.pro_stock_qnty || 0 // Note: This might need a fresh fetch for latest stock
+          };
+        });
         setProductTableData(products);
       }
 
@@ -6462,6 +6492,7 @@ function SalesPageContent() {
         const matchingStore = stores.find(s => s.storeid === detailStoreId);
         return {
           id: detail.sale_detail_id || (Date.now() + index),
+          serial_no: detail.serial_no || detail.vehicle_no || (detail.size ? detail.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)?.[1] : null) || (index + 1),
           pro_id: detail.pro_id,
           pro_title: detail.product?.pro_title || detail.pro_title || `Product #${detail.pro_id}`,
           storeid: detailStoreId || '',

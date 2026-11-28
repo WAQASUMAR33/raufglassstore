@@ -183,18 +183,25 @@ function buildOrderReceiptBill({
     customer: formSelectedCustomer
       ? { ...formSelectedCustomer, cus_balance: Number((prevBalanceAtSave + totalCashReceived).toFixed(2)) }
       : null,
-    sale_details: productTableData.map((product, index) => ({
-      sale_detail_id: index + 1,
-      pro_id: product.pro_id,
-      qnty: product.quantity,
-      unit: 'PCS',
-      unit_rate: product.rate,
-      total_amount: product.amount,
-      size: product.is_general
+    sale_details: productTableData.map((product, index) => {
+      const sNo = product.serial_no || (index + 1);
+      const baseSize = product.is_general
         ? (`General: ${product.pro_title || 'General Item'}` + (product.comments ? ` - ${product.comments}` : ''))
-        : (product.size || null),
-      product: { pro_title: product.pro_title || 'N/A' },
-    })),
+        : (product.size || '');
+      const finalSize = baseSize ? (baseSize.includes('[S#:') ? baseSize : `${baseSize} [S#: ${sNo}]`) : `[S#: ${sNo}]`;
+      return {
+        sale_detail_id: index + 1,
+        serial_no: sNo,
+        vehicle_no: String(sNo),
+        size: finalSize,
+        pro_id: product.pro_id,
+        qnty: product.quantity,
+        unit: 'PCS',
+        unit_rate: product.rate,
+        total_amount: product.amount,
+        product: { pro_title: product.pro_title || 'N/A' },
+      };
+    }),
     labour: parseFloat(paymentData.labour) || 0,
     labour_charges: parseFloat(paymentData.labour) || 0,
     notes: paymentData.notes || '',
@@ -707,14 +714,16 @@ function OrdersPageContent() {
           if (selectedStore) setFormSelectedStore(selectedStore);
 
           if (qData.sale_details && Array.isArray(qData.sale_details) && qData.sale_details.length > 0) {
-            const mapped = qData.sale_details.slice().reverse().map((item, index) => {
+            const mapped = qData.sale_details.map((item, index) => {
               const prod = item.product || products.find(p => p.pro_id === item.pro_id);
               const parsed = parseSizeDetails(item.size, prod, formulas);
               const qnty = parseFloat(item.qnty || 0);
               const rate = parseFloat(item.unit_rate || 0);
               const amt = parseFloat(item.total_amount || 0) || (qnty * rate);
+              const sNo = item.serial_no || item.vehicle_no || (item.size ? item.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)?.[1] : null) || (index + 1);
               return {
                 id: Date.now() + index,
+                serial_no: sNo,
                 pro_id: item.pro_id,
                 pro_title: prod ? (prod.pro_title || prod.pro_name) : 'Unknown Product',
                 product: prod,
@@ -2455,23 +2464,28 @@ function OrdersPageContent() {
         previous_balance: prevBalanceAtSave,
         is_loaded_order: paymentData.isLoadedOrder || false, // Flag for converted orders
         advance_payment: (billType === 'ORDER' || billType === 'ORDER_TRASH') ? totalCashReceived : 0, // Save advance payment for orders
-        sale_details: productTableData.map((product, idx) => ({
-          serial_no: product.serial_no || (idx + 1),
-          pieces: product.pieces || 1,
-          calc_width: product.calc_width || null,
-          calc_height: product.calc_height || null,
-          pro_id: product.pro_id,
-          vehicle_no: null,
-          size: product.is_general
+        sale_details: productTableData.map((product, idx) => {
+          const sNo = product.serial_no || (idx + 1);
+          const baseSize = product.is_general
             ? (`General: ${product.pro_title || 'General Item'}` + (product.comments ? ` - ${product.comments}` : ''))
-            : (product.size || null),
-          qnty: product.quantity,
-          unit: 'PCS', // Default unit
-          unit_rate: product.effective_rate || product.rate,
-          total_amount: product.amount,
-          discount: 0,
-          cus_id: formSelectedCustomer.cus_id
-        })),
+            : (product.size || '');
+          const finalSize = baseSize ? (baseSize.includes('[S#:') ? baseSize : `${baseSize} [S#: ${sNo}]`) : `[S#: ${sNo}]`;
+          return {
+            serial_no: sNo,
+            vehicle_no: String(sNo),
+            pieces: product.pieces || 1,
+            calc_width: product.calc_width || null,
+            calc_height: product.calc_height || null,
+            pro_id: product.pro_id,
+            size: finalSize,
+            qnty: product.quantity,
+            unit: 'PCS', // Default unit
+            unit_rate: product.effective_rate || product.rate,
+            total_amount: product.amount,
+            discount: 0,
+            cus_id: formSelectedCustomer.cus_id
+          };
+        }),
         transport_details: transportOptions.map(transport => ({
           account_id: transport.accountId,
           amount: transport.amount,
@@ -3545,6 +3559,7 @@ function OrdersPageContent() {
         const prodFormula = getProductFormula(prod, products, formulas);
         return {
           id: d.sale_detail_id || (Date.now() + index),
+          serial_no: d.serial_no || d.vehicle_no || (d.size ? d.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)?.[1] : null) || (index + 1),
           pro_id: d.pro_id,
           pro_title: prod?.pro_title || prod?.pro_name || d.pro_title || 'Unknown Product',
           product: prod || { pro_id: d.pro_id, pro_title: d.pro_title },

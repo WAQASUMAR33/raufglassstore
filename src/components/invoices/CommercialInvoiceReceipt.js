@@ -91,14 +91,24 @@ export function expandInvoiceLineItems(detail, availableAddons = []) {
   if (!pcs) pcs = 1;
 
   if (!jobDesc && sizeStr) {
-    const cleanSize = sizeStr.replace(/\[(?:Ad-?Ons?|Addons?):\s*[^\]]+\]/i, '').trim();
+    const cleanSize = sizeStr.replace(/\[(?:Ad-?Ons?|Addons?):\s*[^\]]+\]/i, '').replace(/\[(?:S#|Sr#?):\s*[^\]]+\]/i, '').trim();
     const commentMatch = cleanSize.match(/\]\s*-\s*(.+)$/) || cleanSize.match(/^-\s*(.+)$/);
     if (commentMatch) {
       jobDesc = commentMatch[1].trim();
     }
   }
   if (jobDesc) {
-    jobDesc = jobDesc.replace(/\s*\((?:Ad-?Ons?|Addons?):\s*[^)]+\)/i, '').trim();
+    jobDesc = jobDesc.replace(/\[(?:S#|Sr#?):\s*[^\]]+\]/gi, '').replace(/\s*\((?:Ad-?Ons?|Addons?):\s*[^)]+\)/i, '').trim();
+  }
+
+  let serialNo = detail.serial_no ?? detail.serialNo ?? detail.sr_no ?? detail.s_no ?? null;
+  if (!serialNo && detail.vehicle_no) {
+    const vStr = String(detail.vehicle_no).trim();
+    if (vStr) serialNo = vStr;
+  }
+  if (!serialNo && sizeStr) {
+    const sMatch = sizeStr.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i);
+    if (sMatch) serialNo = sMatch[1].trim();
   }
 
   let itemName = detail.product?.pro_title || detail.pro_title || detail.product_name || 'Glass Item';
@@ -165,6 +175,7 @@ export function expandInvoiceLineItems(detail, availableAddons = []) {
   }
 
   return [{
+    serialNo: serialNo,
     pro_id: detail.pro_id,
     itemName: itemName,
     jobDesc: jobDesc || '-',
@@ -269,31 +280,30 @@ export default function CommercialInvoiceReceipt({
   const totalSqFt = lines.filter(item => !item.isAddon).reduce((sum, item) => sum + (item.qtySqFt || 0), 0);
   const totalItemsValue = lines.reduce((sum, item) => sum + (item.amount || 0), 0);
 
-  // Group lines by product for per-group sub totals
+  // Group lines by contiguous product runs for per-group sub totals while strictly preserving item order
   const productGroups = React.useMemo(() => {
     if (!lines || lines.length === 0) return [];
-    const map = new Map();
     const groupOrder = [];
 
-    lines.forEach((item) => {
+    lines.forEach((item, idx) => {
       const key = item.pro_id ? `id_${item.pro_id}` : `name_${(item.itemName || '').trim().toLowerCase()}`;
-      if (!map.has(key)) {
+      const lastGroup = groupOrder[groupOrder.length - 1];
+      if (!lastGroup || lastGroup.key !== key) {
         const group = {
-          key,
+          key: `${key}_${idx}`,
           itemName: item.itemName,
-          items: [],
-          totalPcs: 0,
-          totalSqFt: 0,
-          totalAmount: 0,
+          items: [item],
+          totalPcs: (typeof item.pcs === 'number' ? item.pcs : 0),
+          totalSqFt: (item.qtySqFt || 0),
+          totalAmount: (item.amount || 0),
         };
-        map.set(key, group);
         groupOrder.push(group);
+      } else {
+        lastGroup.items.push(item);
+        lastGroup.totalPcs += (typeof item.pcs === 'number' ? item.pcs : 0);
+        lastGroup.totalSqFt += (item.qtySqFt || 0);
+        lastGroup.totalAmount += (item.amount || 0);
       }
-      const group = map.get(key);
-      group.items.push(item);
-      group.totalPcs += (typeof item.pcs === 'number' ? item.pcs : 0);
-      group.totalSqFt += (item.qtySqFt || 0);
-      group.totalAmount += (item.amount || 0);
     });
 
     return groupOrder;
@@ -728,20 +738,20 @@ export default function CommercialInvoiceReceipt({
                           }}
                         >
                           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
-                            <span>{runningRowIndex}</span>
+                            <span>{(item.serialNo != null && String(item.serialNo).trim() !== '') ? item.serialNo : runningRowIndex}</span>
                             <button
                               type="button"
                               className="no-print"
                               title="Print 2x2 sticker label for this item"
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                const targetIdx = runningRowIndex - 1;
+                                const targetIdx = (item.serialNo != null && String(item.serialNo).trim() !== '') ? item.serialNo : runningRowIndex;
                                 if (typeof onPrintLabel === 'function') {
                                   onPrintLabel(item, targetIdx);
                                 } else {
                                   await printDirectSingleItemLabel({
                                     bill,
-                                    item,
+                                    item: { ...item, serialNo: targetIdx },
                                     index: targetIdx,
                                     pieceMode: 'per-piece',
                                   });

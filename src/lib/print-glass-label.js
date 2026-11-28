@@ -53,7 +53,12 @@ export function buildGlassStickerHtml({
   const customerName = bill?.customer?.cus_name || bill?.cus_name || bill?.customer_name || 'Customer';
   const billNo = bill?.sale_id || bill?.bill_number || bill?.inv_no || '—';
   
-  const srNo = item?.index || (index + 1);
+  const srNo = (item?.serialNo != null && String(item?.serialNo).trim() !== '') ? item.serialNo
+    : (item?.serial_no != null && String(item?.serial_no).trim() !== '') ? item.serial_no
+    : (item?.srNo != null && String(item?.srNo).trim() !== '') ? item.srNo
+    : (item?.vehicle_no != null && String(item?.vehicle_no).trim() !== '') ? item.vehicle_no
+    : (item?.size && item.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i) ? item.size.match(/\[(?:S#|Sr#?):\s*([^\]]+)\]/i)[1].trim() : null)
+    || (item?.index != null && String(item?.index).trim() !== '' ? item.index : (index + 1));
   const itemName = item?.itemName || item?.item_name || item?.product?.pro_title || item?.pro_title || item?.title || 'Glass Item';
   const jobDesc = (item?.jobDesc && item?.jobDesc !== '-') ? item.jobDesc : (item?.job_description || item?.job_desc || '');
   
