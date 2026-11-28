@@ -182,9 +182,9 @@ export default function InternalTransferPage() {
           l_id: entry.l_id
         };
       }
-      if (entry.credit_amount > 0) {
+      if ((entry.details && entry.details.includes('(To ')) || entry.debit_amount > 0) {
         map[billNo].source = entry.customer?.cus_name || '—';
-      } else if (entry.debit_amount > 0) {
+      } else if ((entry.details && entry.details.includes('(From ')) || entry.credit_amount > 0) {
         map[billNo].destination = entry.customer?.cus_name || '—';
       }
     });
@@ -201,6 +201,17 @@ export default function InternalTransferPage() {
       t.details.toLowerCase().includes(q)
     );
   }, [recentTransfers, searchTerm]);
+
+  // Ensure an account cannot be selected in both Source and Destination dropdowns at the same time
+  const sourceOptions = useMemo(() => {
+    const destIdNum = parseInt(destinationId);
+    return accounts.filter(acc => !destIdNum || acc.cus_id !== destIdNum);
+  }, [accounts, destinationId]);
+
+  const destinationOptions = useMemo(() => {
+    const srcIdNum = parseInt(sourceId);
+    return accounts.filter(acc => !srcIdNum || acc.cus_id !== srcIdNum);
+  }, [accounts, sourceId]);
 
   return (
     <DashboardLayout>
@@ -268,12 +279,17 @@ export default function InternalTransferPage() {
                     Source Account (Transfer From) *
                   </label>
                   <Autocomplete
-                    options={accounts}
+                    options={sourceOptions}
                     getOptionLabel={(option) => `${option.cus_name} (Bal: PKR ${fmtAmt(option.cus_balance)})`}
                     value={accounts.find(acc => acc.cus_id === parseInt(sourceId)) || null}
                     onChange={(event, newValue) => {
-                      setSourceId(newValue ? newValue.cus_id.toString() : '');
+                      const newSrc = newValue ? newValue.cus_id.toString() : '';
+                      setSourceId(newSrc);
+                      if (newSrc && newSrc === destinationId) {
+                        setDestinationId('');
+                      }
                     }}
+                    getOptionDisabled={(option) => option.cus_id === parseInt(destinationId)}
                     disabled={loading || submitting}
                     renderInput={(params) => (
                       <TextField
@@ -291,18 +307,40 @@ export default function InternalTransferPage() {
                   />
                 </div>
 
+                {/* Swap Accounts Button */}
+                <div className="flex justify-center -my-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const temp = sourceId;
+                      setSourceId(destinationId);
+                      setDestinationId(temp);
+                    }}
+                    disabled={loading || submitting || (!sourceId && !destinationId)}
+                    className="p-1.5 rounded-full border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 text-gray-500 hover:text-blue-600 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Swap Source and Destination"
+                  >
+                    <SwapIcon sx={{ fontSize: 20 }} />
+                  </button>
+                </div>
+
                 {/* Destination Account Dropdown */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Destination Account (Transfer To) *
                   </label>
                   <Autocomplete
-                    options={accounts}
+                    options={destinationOptions}
                     getOptionLabel={(option) => `${option.cus_name} (Bal: PKR ${fmtAmt(option.cus_balance)})`}
                     value={accounts.find(acc => acc.cus_id === parseInt(destinationId)) || null}
                     onChange={(event, newValue) => {
-                      setDestinationId(newValue ? newValue.cus_id.toString() : '');
+                      const newDest = newValue ? newValue.cus_id.toString() : '';
+                      setDestinationId(newDest);
+                      if (newDest && newDest === sourceId) {
+                        setSourceId('');
+                      }
                     }}
+                    getOptionDisabled={(option) => option.cus_id === parseInt(sourceId)}
                     disabled={loading || submitting}
                     renderInput={(params) => (
                       <TextField

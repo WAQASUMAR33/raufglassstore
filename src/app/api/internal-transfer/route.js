@@ -240,8 +240,8 @@ export async function GET(request) {
         return errorResponse('Transfer not found or invalid', 404);
       }
 
-      const sourceEntry = entries.find((e) => parseFloat(e.credit_amount || 0) > 0);
-      const destEntry = entries.find((e) => parseFloat(e.debit_amount || 0) > 0);
+      const sourceEntry = entries.find((e) => (e.details && e.details.includes('(To ')) || parseFloat(e.debit_amount || 0) > 0);
+      const destEntry = entries.find((e) => (e.details && e.details.includes('(From ')) || parseFloat(e.credit_amount || 0) > 0);
       if (!sourceEntry || !destEntry) {
         return errorResponse('Transfer entries are incomplete', 404);
       }
@@ -256,7 +256,7 @@ export async function GET(request) {
         destination_id: destEntry.cus_id,
         source_name: sourceEntry.customer?.cus_name,
         destination_name: destEntry.customer?.cus_name,
-        amount: parseFloat(sourceEntry.payments || sourceEntry.credit_amount || 0),
+        amount: parseFloat(sourceEntry.payments || sourceEntry.debit_amount || sourceEntry.credit_amount || 0),
         date: entryDate,
         description: cleanTransferDescription(sourceEntry.details),
       });
@@ -265,9 +265,16 @@ export async function GET(request) {
     const [accounts, recentEntries] = await Promise.all([
       prisma.customer.findMany({
         where: {
-          customer_category: {
-            cus_cat_title: { in: ['Bank', 'Cash Account', 'Cash'] },
-          },
+          OR: [
+            { customer_category: { cus_cat_title: { in: ['Cash Account', 'Bank Account', 'Bank', 'Cash', 'Banks'] } } },
+            { customer_category: { cus_cat_title: { contains: 'Bank' } } },
+            { customer_category: { cus_cat_title: { contains: 'Cash' } } },
+          ],
+          NOT: {
+            customer_category: {
+              cus_cat_title: { in: ['Customer', 'Walkin Customer', 'Supplier', 'Fitter', 'Labour', 'Cargo', 'Transport', 'Adjustment', 'Hardware', 'STEEL', 'FURNITURE', 'CUTER', 'TRACTOR MARKET'] }
+            }
+          }
         },
         select: {
           cus_id: true,
