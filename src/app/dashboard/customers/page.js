@@ -161,9 +161,32 @@ export default function CustomersPage() {
   // Balance Nature for new customers (Receivable = negative, Payable = positive)
   const [balanceNature, setBalanceNature] = useState('receivable');
 
+  // Derive whether currently selected account is a Supplier
+  const selectedFormCategory = customerCategories.find(c => c.cus_cat_id === formData.cus_category);
+  const selectedFormType = customerTypes.find(t => t.cus_type_id === formData.cus_type);
+  const isSupplierAccount = Boolean(
+    (selectedFormCategory?.cus_cat_title && selectedFormCategory.cus_cat_title.toLowerCase().includes('supplier')) ||
+    (selectedFormType?.cus_type_title && selectedFormType.cus_type_title.toLowerCase().includes('supplier')) ||
+    (editingCustomer?.customer_category?.cus_cat_title && editingCustomer.customer_category.cus_cat_title.toLowerCase().includes('supplier')) ||
+    (editingCustomer?.customer_type?.cus_type_title && editingCustomer.customer_type.cus_type_title.toLowerCase().includes('supplier'))
+  );
+
+  // Auto-switch balance nature when switching between Customer and Supplier accounts
+  const prevIsSupplierRef = useRef(false);
+  useEffect(() => {
+    if (!showCustomerForm || editingCustomer) return;
+    if (isSupplierAccount && !prevIsSupplierRef.current) {
+      setBalanceNature('payable');
+    } else if (!isSupplierAccount && prevIsSupplierRef.current) {
+      setBalanceNature('receivable');
+    }
+    prevIsSupplierRef.current = isSupplierAccount;
+  }, [isSupplierAccount, showCustomerForm, editingCustomer]);
+
   const openNewCustomerForm = () => {
     setEditingCustomer(null);
     setBalanceNature('receivable');
+    prevIsSupplierRef.current = false;
     setFormData({ ...EMPTY_CUSTOMER_FORM });
     setShowCustomerForm(true);
   };
@@ -1368,14 +1391,18 @@ export default function CustomersPage() {
                 width: 42, height: 42,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
               }}>
-                <PersonIcon sx={{ fontSize: 24, color: '#fff' }} />
+                {isSupplierAccount ? <BusinessIcon sx={{ fontSize: 24, color: '#fff' }} /> : <PersonIcon sx={{ fontSize: 24, color: '#fff' }} />}
               </Avatar>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-                  {editingCustomer ? 'Edit Customer Account' : 'Add New Customer Account'}
+                  {editingCustomer
+                    ? (isSupplierAccount ? 'Edit Supplier Account' : 'Edit Customer Account')
+                    : (isSupplierAccount ? 'Add New Supplier Account' : 'Add New Customer Account')}
                 </Typography>
                 <Typography variant="caption" sx={{ opacity: 0.8, fontSize: '0.8rem' }}>
-                  {editingCustomer ? 'Update customer profile information' : 'Create a new customer profile and ledger account'}
+                  {editingCustomer
+                    ? (isSupplierAccount ? 'Update supplier profile information' : 'Update customer profile information')
+                    : (isSupplierAccount ? 'Create a new supplier profile and ledger account' : 'Create a new customer profile and ledger account')}
                 </Typography>
               </Box>
             </Box>
@@ -1909,9 +1936,13 @@ export default function CustomersPage() {
                     helperText={
                       editingCustomer
                         ? 'Balance is managed via ledger transactions'
-                        : balanceNature === 'receivable'
-                        ? 'Negative balance (-) = Customer owes money (Receivable)'
-                        : 'Positive balance (+) = Advance payment / We owe customer (Payable)'
+                        : isSupplierAccount
+                        ? (balanceNature === 'payable'
+                            ? 'Positive balance (+) = We owe money to supplier (Payable / واجب الادا)'
+                            : 'Negative balance (-) = Advance payment to supplier (Supplier owes us / پیشگی)')
+                        : (balanceNature === 'receivable'
+                            ? 'Negative balance (-) = Customer owes money (Receivable / قابل وصول)'
+                            : 'Positive balance (+) = Advance payment / We owe customer (Payable)')
                     }
                     sx={{
                       bgcolor: editingCustomer ? '#f8fafc' : '#ffffff',
@@ -1965,28 +1996,57 @@ export default function CustomersPage() {
                   {!editingCustomer && (
                     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5, flexWrap: 'wrap' }}>
                       <span className="text-xs font-semibold text-gray-500">Balance Nature:</span>
-                      <button
-                        type="button"
-                        onClick={() => setBalanceNature('receivable')}
-                        className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${
-                          balanceNature === 'receivable'
-                            ? 'bg-rose-600 text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        Receivable (Customer Owes) [-]
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBalanceNature('payable')}
-                        className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${
-                          balanceNature === 'payable'
-                            ? 'bg-emerald-600 text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        Payable (Advance) [+]
-                      </button>
+                      {isSupplierAccount ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setBalanceNature('payable')}
+                            className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${
+                              balanceNature === 'payable'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            Payable (We Owe Supplier) [+]
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBalanceNature('receivable')}
+                            className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${
+                              balanceNature === 'receivable'
+                                ? 'bg-rose-600 text-white shadow-sm'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            Advance (Supplier Owes Us) [-]
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setBalanceNature('receivable')}
+                            className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${
+                              balanceNature === 'receivable'
+                                ? 'bg-rose-600 text-white shadow-sm'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            Receivable (Customer Owes) [-]
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBalanceNature('payable')}
+                            className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${
+                              balanceNature === 'payable'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            Payable (Advance) [+]
+                          </button>
+                        </>
+                      )}
                     </Box>
                   )}
                 </Box>
@@ -2118,7 +2178,9 @@ export default function CustomersPage() {
                 {isSubmitting ? (
                   <CircularProgress size={20} color="inherit" />
                 ) : (
-                  editingCustomer ? 'Update Customer' : 'Create Customer'
+                  editingCustomer
+                    ? (isSupplierAccount ? 'Update Supplier' : 'Update Customer')
+                    : (isSupplierAccount ? 'Create Supplier' : 'Create Customer')
                 )}
               </Button>
             </Box>
