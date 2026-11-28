@@ -99,6 +99,7 @@ import {
 import CutterManagerModal from '@/components/cutters/CutterManagerModal';
 import AddonPickerModal from '@/components/addons/AddonPickerModal';
 import DuplicateRowDialog from '@/components/common/DuplicateRowDialog';
+import { handleGridKeyDown, gridNavProps } from '@/lib/grid-keyboard-nav';
 import CommercialInvoiceReceipt from '@/components/invoices/CommercialInvoiceReceipt';
 import { printDirectBillLabels } from '@/lib/print-glass-label';
 import { printReceiptReport, downloadReceiptPdf } from '@/lib/invoice-report-service';
@@ -4984,7 +4985,7 @@ function OrdersPageContent() {
               </Box>
 
               {/* Product Table */}
-              <TableContainer component={Paper} sx={{ mb: 2, border: '1px solid #e9ecef' }}>
+              <TableContainer component={Paper} onKeyDown={handleGridKeyDown} sx={{ mb: 2, border: '1px solid #e9ecef' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: '#2e7d32', '& th': { bgcolor: '#2e7d32 !important' } }}>
@@ -5045,6 +5046,7 @@ function OrdersPageContent() {
                                   e.target.select();
                                   setActiveRowId(product.id);
                                 }}
+                                inputProps={{ ...gridNavProps(index, 'serial_no') }}
                                 sx={{
                                   width: 48,
                                   '& .MuiInputBase-input': {
@@ -5084,6 +5086,7 @@ function OrdersPageContent() {
                                         e.target.select();
                                         setActiveRowId(product.id);
                                       }}
+                                      inputProps={{ ...gridNavProps(index, 'pro_title') }}
                                       sx={{
                                         width: '100%',
                                         minWidth: 150,
@@ -5113,6 +5116,7 @@ function OrdersPageContent() {
                                   e.target.select();
                                   setActiveRowId(product.id);
                                 }}
+                                inputProps={{ ...gridNavProps(index, 'comments') }}
                                 sx={{
                                   width: '100%',
                                   minWidth: 140,
@@ -5149,7 +5153,7 @@ function OrdersPageContent() {
                                       borderRadius: '4px'
                                     }
                                   }}
-                                  inputProps={{ min: 0, step: 'any' }}
+                                  inputProps={{ min: 0, step: 'any', ...gridNavProps(index, 'width_in') }}
                                 />
                                 <Typography variant="caption" sx={{ fontWeight: 900, color: '#64748b' }}>×</Typography>
                                 <TextField
@@ -5175,7 +5179,7 @@ function OrdersPageContent() {
                                       borderRadius: '4px'
                                     }
                                   }}
-                                  inputProps={{ min: 0, step: 'any' }}
+                                  inputProps={{ min: 0, step: 'any', ...gridNavProps(index, 'height_in') }}
                                 />
                               </Box>
                             </TableCell>
@@ -5201,7 +5205,7 @@ function OrdersPageContent() {
                                     borderRadius: '4px'
                                   }
                                 }}
-                                inputProps={{ min: 1, step: 1 }}
+                                inputProps={{ min: 1, step: 1, ...gridNavProps(index, 'pieces') }}
                               />
                             </TableCell>
                             <TableCell sx={{ py: 0.5, minWidth: 135 }} align="center">
@@ -5230,7 +5234,7 @@ function OrdersPageContent() {
                                         borderRadius: '4px'
                                       }
                                     }}
-                                    inputProps={{ min: 0, step: 'any' }}
+                                    inputProps={{ min: 0, step: 'any', ...gridNavProps(index, 'calc_width') }}
                                   />
                                   <Typography variant="caption" sx={{ fontWeight: 900, color: '#15803d' }}>×</Typography>
                                   <TextField
@@ -5256,7 +5260,7 @@ function OrdersPageContent() {
                                         borderRadius: '4px'
                                       }
                                     }}
-                                    inputProps={{ min: 0, step: 'any' }}
+                                    inputProps={{ min: 0, step: 'any', ...gridNavProps(index, 'calc_height') }}
                                   />
                                 </Box>
                               ) : (
@@ -5284,7 +5288,7 @@ function OrdersPageContent() {
                                     fontSize: '0.9rem'
                                   }
                                 }}
-                                inputProps={{ min: 0.01, step: 'any' }}
+                                inputProps={{ min: 0.01, step: 'any', ...gridNavProps(index, 'quantity') }}
                               />
                             </TableCell>
                             <TableCell sx={{ py: 1 }}>
@@ -5357,7 +5361,7 @@ function OrdersPageContent() {
                                     fontSize: '0.95rem'
                                   }
                                 }}
-                                inputProps={{ min: 0, step: 'any' }}
+                                inputProps={{ min: 0, step: 'any', ...gridNavProps(index, 'rate') }}
                               />
                               {product.addons_rate > 0 && (
                                 <Typography variant="caption" sx={{ display: 'block', color: '#059669', fontWeight: 700, fontSize: '0.7rem' }}>
