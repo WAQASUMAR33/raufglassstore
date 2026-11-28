@@ -280,30 +280,34 @@ export default function CommercialInvoiceReceipt({
   const totalSqFt = lines.filter(item => !item.isAddon).reduce((sum, item) => sum + (item.qtySqFt || 0), 0);
   const totalItemsValue = lines.reduce((sum, item) => sum + (item.amount || 0), 0);
 
-  // Group lines by contiguous product runs for per-group sub totals while strictly preserving item order
+  // Group lines by product for per-group sub totals while preserving item and product order
   const productGroups = React.useMemo(() => {
     if (!lines || lines.length === 0) return [];
+    const map = new Map();
     const groupOrder = [];
 
-    lines.forEach((item, idx) => {
-      const key = item.pro_id ? `id_${item.pro_id}` : `name_${(item.itemName || '').trim().toLowerCase()}`;
-      const lastGroup = groupOrder[groupOrder.length - 1];
-      if (!lastGroup || lastGroup.key !== key) {
+    lines.forEach((item) => {
+      const key = item.pro_id
+        ? `id_${item.pro_id}_${(item.itemName || '').trim().toLowerCase()}`
+        : `name_${(item.itemName || '').trim().toLowerCase()}`;
+
+      if (!map.has(key)) {
         const group = {
-          key: `${key}_${idx}`,
+          key,
           itemName: item.itemName,
-          items: [item],
-          totalPcs: (typeof item.pcs === 'number' ? item.pcs : 0),
-          totalSqFt: (item.qtySqFt || 0),
-          totalAmount: (item.amount || 0),
+          items: [],
+          totalPcs: 0,
+          totalSqFt: 0,
+          totalAmount: 0,
         };
+        map.set(key, group);
         groupOrder.push(group);
-      } else {
-        lastGroup.items.push(item);
-        lastGroup.totalPcs += (typeof item.pcs === 'number' ? item.pcs : 0);
-        lastGroup.totalSqFt += (item.qtySqFt || 0);
-        lastGroup.totalAmount += (item.amount || 0);
       }
+      const group = map.get(key);
+      group.items.push(item);
+      group.totalPcs += (typeof item.pcs === 'number' ? item.pcs : 0);
+      group.totalSqFt += (item.qtySqFt || 0);
+      group.totalAmount += (item.amount || 0);
     });
 
     return groupOrder;
